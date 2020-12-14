@@ -10,14 +10,29 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:iobroker-javascript.helloWorld"
+		"onCommand:iobroker-javascript.download",
+		"onCommand:iobroker-javascript.upload",
+		"onCommand:iobroker-javascript.startScript",
+		"onCommand:iobroker-javascript.stopScript"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "iobroker-javascript.helloWorld",
-				"title": "Hello World"
+				"command": "iobroker-javascript.download",
+				"title": "iobroker: Download script"
+			},
+			{
+				"command": "iobroker-javascript.upload",
+				"title": "iobroker: Upload script"
+			},
+			{
+				"command": "iobroker-javascript.startScript",
+				"title": "iobroker: Start script"
+			},
+			{
+				"command": "iobroker-javascript.stopScript",
+				"title": "iobroker: Stop script"
 			}
 		]
 	},
