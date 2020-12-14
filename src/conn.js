@@ -1,6 +1,5 @@
 ////// ----------------------- Connection "class" ---------------------- ////////////
 /* jshint browser: true */
-/* global document */
 /* global console */
 /* global session */
 /* global window */
@@ -290,10 +289,6 @@ export const servConn = {
           clearInterval(that._countInterval);
           that._countInterval = null;
         }
-        var elem = document.getElementById("server-disconnect");
-        if (elem) {
-          elem.style.display = "none";
-        }
 
         that._socket.emit("name", connOptions.name);
         console.log(new Date().toISOString() + " Connected => authenticate");
@@ -370,20 +365,12 @@ export const servConn = {
             if (that._isConnected) {
               return;
             }
-            var elem = document.getElementById("server-disconnect");
-            if (elem) {
-              elem.style.display = "";
-            }
+            
             that._connCallbacks.onConnChange(that._isConnected);
             typeof app !== "undefined" && app.onConnChange(that._isConnected);
           }, 5000);
-        } else {
-          var elem = document.getElementById("server-disconnect");
-          if (elem) {
-            elem.style.display = "";
-          }
-        }
-
+        } 
+        
         // reconnect
         that.reconnect(connOptions);
       });
