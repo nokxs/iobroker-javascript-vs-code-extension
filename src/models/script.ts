@@ -1,0 +1,1 @@
+// Represents an iobroker script
