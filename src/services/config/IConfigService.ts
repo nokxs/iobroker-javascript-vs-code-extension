@@ -1,6 +1,7 @@
 import { Config } from "../../models/config";
 
 export interface IConfigService {
-    read(): Config | unknown
-    write(config: Config): void
+    read(): Promise<Config | unknown>
+    write(config: Config): Promise<void>
+    createConfigInteractivly(): Promise<Config>
 }

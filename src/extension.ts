@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 // Import the module and reference it with the alias vscode in your code below
 import { inject, injectable } from 'inversify';
 
+import { Config } from './models/config';
 import { IConfigService } from './services/config/IConfigService';
 import TYPES from './types';
 import container from './inversify.config';
@@ -15,10 +16,17 @@ var socketio = require('socket.io-client')('http://localhost:8084');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 
 	const configService = container.get<IConfigService>(TYPES.services.config);
-	const config = configService.read();
+
+	var config: Config | unknown = await configService.read();
+	if (!config) {
+		config = await configService.createConfigInteractivly();
+		if (config) {
+			await configService.write(<Config>config);
+		}
+	}
 
 	socketio.on("stateChange", (id: string, value: any) => {
 		console.log(`State: ${id}: ${JSON.stringify(value)}`);
