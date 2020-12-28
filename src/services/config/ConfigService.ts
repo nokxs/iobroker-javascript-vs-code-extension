@@ -1,20 +1,20 @@
 import * as fs from 'fs';
 
+import { Config, NoConfig } from "../../models/config";
 import { QuickPickOptions, Uri, WorkspaceFolder, debug, window, workspace } from "vscode";
 
-import { Config } from "../../models/config";
 import { IConfigService } from "./IConfigService";
 import { injectable } from "inversify";
 
 @injectable()
 export class ConfigService implements IConfigService {
     
-    async read(): Promise<Config | unknown> {
+    async read(): Promise<Config> {
         
         if (workspace.workspaceFolders) {
             for (const folder of workspace.workspaceFolders) {
                 const expectedConfigFilePath = this.getConfigPath(folder.uri);
-                const configFileExists = fs.existsSync(expectedConfigFilePath.path);
+                const configFileExists = fs.existsSync(expectedConfigFilePath.fsPath);
                 
                 if (configFileExists) {
                     const configFileContent = await workspace.fs.readFile(expectedConfigFilePath);
@@ -26,7 +26,7 @@ export class ConfigService implements IConfigService {
             window.showWarningMessage("Cannot load config. No workspace available. Please open a directory to start with iobroker-javascript.");
         }
 
-        return null;
+        return new NoConfig();
     }
 
     async write(config: Config): Promise<void> {
@@ -46,8 +46,8 @@ export class ConfigService implements IConfigService {
     }
 
     async createConfigInteractivly(): Promise<Config> {
-        const ioBrokerUrl = await window.showInputBox({prompt: "The URL to your ioBroker installation", value: "http://iobroker.local"});
-        const port = await window.showInputBox({prompt: "The port of the socket.io Adapter", value: "8082"});
+        const ioBrokerUrl = await window.showInputBox({prompt: "The URL to your ioBroker installation", value: "http://localhost"});
+        const port = await window.showInputBox({prompt: "The port of the socket.io Adapter", value: "8084"});
         const scriptPath = await window.showInputBox({prompt: "The relative path in your workspace to the scripts", value: "/"});
 
         if (ioBrokerUrl && port && scriptPath) {
@@ -55,7 +55,7 @@ export class ConfigService implements IConfigService {
         }
 
         window.showWarningMessage("The given information for the configuration was invalid. Creating default configuration");
-        return new Config("http://iobroker.local", 8082, "/");
+        return new Config("http://localhost", 8084, "/");
     }
 
     private getConfigPath(root: Uri) {

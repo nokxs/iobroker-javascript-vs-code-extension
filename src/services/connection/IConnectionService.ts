@@ -1,4 +1,5 @@
 import { Script } from "../../models/script";
+import { Uri } from "vscode";
 
 export interface IConnectionEventListener {
     onConnected(): void;
@@ -8,7 +9,7 @@ export interface IConnectionEventListener {
 export interface IConnectionService {
     isConnected: Boolean;
     
-    connect(): Promise<void>;
+    connect(uri: Uri): Promise<void>;
     disconnect(): Promise<void>;
     
     registerEventListener(listener: IConnectionEventListener): void;
