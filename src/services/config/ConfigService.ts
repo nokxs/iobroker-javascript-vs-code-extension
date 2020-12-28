@@ -63,15 +63,12 @@ export class ConfigService implements IConfigService {
     }
 
     private async getWorkspaceForConfigWrite() : Promise<WorkspaceFolder | undefined> {
-        if (workspace.workspaceFolders) {            
+        if (workspace.workspaceFolders && workspace.workspaceFolders.length > 0) {            
             if (workspace.workspaceFolders.length >= 2) {
                 return await window.showWorkspaceFolderPick({ placeHolder: "Select workspace to save .iobroker-config.json to" });    
             }
 
-            const activeDocument = window.activeTextEditor?.document.uri;
-            if (activeDocument) {
-                return workspace.getWorkspaceFolder(activeDocument);
-            }
+            return workspace.workspaceFolders[0];
         }
         
         return undefined;

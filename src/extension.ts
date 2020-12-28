@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 
+import { Config, NoConfig } from './models/config';
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import { inject, injectable } from 'inversify';
 
-import { Config } from './models/config';
 import { IConfigService } from './services/config/IConfigService';
 import { IConnectionService } from './services/connection/IConnectionService';
 import TYPES from './types';
@@ -23,7 +23,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	const connectionService = container.get<IConnectionService>(TYPES.services.connection);
 
 	var config: Config = await configService.read();
-	if (!config) {
+	if (config instanceof NoConfig) {
 		config = await configService.createConfigInteractivly();
 		if (config) {
 			await configService.write(config);
