@@ -1,7 +1,9 @@
 import { Config } from "../../models/config";
+import { WorkspaceFolder } from "vscode";
 
 export interface IConfigService {
-    read(): Promise<Config>
-    write(config: Config): Promise<void>
+    read(workspaceFolder: WorkspaceFolder): Promise<Config>
+    write(config: Config, workspaceFolder: WorkspaceFolder): Promise<void>
     createConfigInteractivly(): Promise<Config>
+    getWorkspaceToUse(): Promise<WorkspaceFolder>
 }

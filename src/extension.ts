@@ -7,6 +7,8 @@ import { inject, injectable } from 'inversify';
 
 import { IConfigService } from './services/config/IConfigService';
 import { IConnectionService } from './services/connection/IConnectionService';
+import { IFileService } from './services/file/IFileService';
+import { NoWorkspaceFolder } from './models/NoWorkspaceFolder';
 import TYPES from './types';
 import container from './inversify.config';
 
@@ -21,18 +23,27 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	const configService = container.get<IConfigService>(TYPES.services.config);
 	const connectionService = container.get<IConnectionService>(TYPES.services.connection);
+	const fileService = container.get<IFileService>(TYPES.services.file);
 
-	var config: Config = await configService.read();
+	var workspaceFolder = await configService.getWorkspaceToUse();
+
+	if (workspaceFolder instanceof NoWorkspaceFolder) {
+		vscode.window.showErrorMessage("Cannot continue execution of extension 'ioBroker.javascript', because no valid workspace was selected. Exiting.");
+		return;
+	}
+
+	var config: Config = await configService.read(workspaceFolder);
 	if (config instanceof NoConfig) {
 		config = await configService.createConfigInteractivly();
 		if (config) {
-			await configService.write(config);
+			await configService.write(config, workspaceFolder);
 		}
 	}
 
 	await connectionService.connect(vscode.Uri.parse(`${config.ioBrokerUrl}:${config.socketIoPort}`));
 	const scripts = await connectionService.downloadAllScripts();
 
+	await fileService.saveAllToFile(scripts, workspaceFolder);
 
 
 	// socketio.on("stateChange", (id: string, value: any) => {
