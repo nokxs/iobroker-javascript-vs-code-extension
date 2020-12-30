@@ -1,4 +1,4 @@
-import { Config } from "../../models/config";
+import { Config } from "../../models/Config";
 import { WorkspaceFolder } from "vscode";
 
 export interface IConfigService {

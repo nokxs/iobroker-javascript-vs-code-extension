@@ -1,4 +1,4 @@
-import { Script } from "../../models/script";
+import { Script } from "../../models/Script";
 import { WorkspaceFolder } from "vscode";
 
 export interface IFileService {

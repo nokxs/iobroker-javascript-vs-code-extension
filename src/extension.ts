@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 import { IStartup } from './IStartup';
-import TYPES from './types';
-import container from './inversify.config';
+import TYPES from './Types';
+import container from './Inversify.config';
 
 // https://rpeshkov.net/blog/vscode-extension-di/
 // https://github.com/inversify/InversifyJS

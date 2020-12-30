@@ -1,11 +1,11 @@
 import { IStartup } from "./IStartup";
 import { inject, injectable } from "inversify";
-import TYPES from "./types";
+import TYPES from "./Types";
 import { ICommandService } from "./services/command/ICommandService";
 import { IConfigService } from "./services/config/IConfigService";
 import { NoWorkspaceFolder } from "./models/NoWorkspaceFolder";
 import { ExtensionContext, Uri, window } from "vscode";
-import { Config, NoConfig } from "./models/config";
+import { Config, NoConfig } from "./models/Config";
 import { IConnectionService } from "./services/connection/IConnectionService";
 
 @injectable()

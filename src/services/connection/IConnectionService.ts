@@ -1,4 +1,4 @@
-import { Script } from "../../models/script";
+import { Script } from "../../models/Script";
 import { Uri } from "vscode";
 
 export interface IConnectionEventListener {

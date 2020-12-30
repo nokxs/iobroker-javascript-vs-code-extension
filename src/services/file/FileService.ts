@@ -1,7 +1,7 @@
 import { Uri, WorkspaceFolder, workspace } from "vscode";
 
 import { IFileService } from "./IFileService";
-import { Script } from "../../models/script";
+import { Script } from "../../models/Script";
 import { injectable } from "inversify";
 
 @injectable()

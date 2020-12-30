@@ -1,6 +1,6 @@
 import { ICommand } from "./ICommand";
 import { inject, injectable } from "inversify";
-import TYPES from "../types";
+import TYPES from "../Types";
 import { IConnectionService } from "../services/connection/IConnectionService";
 import { IFileService } from "../services/file/IFileService";
 import { IConfigService } from "../services/config/IConfigService";
@@ -17,14 +17,14 @@ export class DownloadAllCommand implements ICommand {
     ) {}
     
     async execute(...args: any[]) {
-        const message = window.setStatusBarMessage("Downloading scripts from iobroker...");
+        const message = window.setStatusBarMessage("Downloading all scripts from iobroker...");
         const scripts = await this.connectionService.downloadAllScripts();
         const workspaceFolder = await this.configService.getWorkspaceToUse();
 
 	    await this.fileService.saveAllToFile(scripts, workspaceFolder);
         
         message.dispose();
-        window.setStatusBarMessage("Finished downloading scripts from iobroker", 10 * 1000);
+        window.setStatusBarMessage("Finished downloading all scripts from iobroker", 10 * 1000);
     }
 
 }

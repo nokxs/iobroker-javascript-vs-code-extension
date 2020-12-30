@@ -2,7 +2,7 @@ import * as socketio from 'socket.io-client';
 
 import { IConnectionEventListener, IConnectionService } from "./IConnectionService";
 
-import { Script } from "../../models/script";
+import { Script } from "../../models/Script";
 import { Uri } from "vscode";
 import { injectable } from "inversify";
 

@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 
 import { ICommandService } from "./ICommandService";
 import { injectable, multiInject } from "inversify";
-import TYPES from "../../types";
+import TYPES from "../../Types";
 import { ICommand } from "../../commands/ICommand";
 
 @injectable()

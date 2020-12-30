@@ -13,7 +13,7 @@ import { IConnectionService } from './services/connection/IConnectionService';
 import { IFileService } from './services/file/IFileService';
 import { IStartup } from './IStartup';
 import { Startup } from './Startup';
-import TYPES from './types';
+import TYPES from './Types';
 
 const container = new Container();
 
