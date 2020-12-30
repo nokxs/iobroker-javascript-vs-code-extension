@@ -10,9 +10,10 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:iobroker-javascript.download",
+		"onCommand:iobroker-javascript.downloadCurrent",
 		"onCommand:iobroker-javascript.downloadAll",
-		"onCommand:iobroker-javascript.upload",
+		"onCommand:iobroker-javascript.uploadCurrent",
+		"onCommand:iobroker-javascript.uploadAll",
 		"onCommand:iobroker-javascript.startScript",
 		"onCommand:iobroker-javascript.stopScript"
 	],
@@ -20,24 +21,28 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "iobroker-javascript.download",
-				"title": "iobroker: Download script"
+				"command": "iobroker-javascript.downloadCurrent",
+				"title": "iobroker: Download current script"
 			},
 			{
 				"command": "iobroker-javascript.downloadAll",
 				"title": "iobroker: Download all scripts"
 			},
 			{
-				"command": "iobroker-javascript.upload",
-				"title": "iobroker: Upload script"
+				"command": "iobroker-javascript.uploadCurrent",
+				"title": "iobroker: Upload current script"
 			},
 			{
-				"command": "iobroker-javascript.startScript",
-				"title": "iobroker: Start script"
+				"command": "iobroker-javascript.uploadAll",
+				"title": "iobroker: Upload all scripts"
 			},
 			{
-				"command": "iobroker-javascript.stopScript",
-				"title": "iobroker: Stop script"
+				"command": "iobroker-javascript.startCurrentScript",
+				"title": "iobroker: Start current script"
+			},
+			{
+				"command": "iobroker-javascript.stopCurrentScript",
+				"title": "iobroker: Stop current script"
 			}
 		]
 	},

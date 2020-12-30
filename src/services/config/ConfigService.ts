@@ -8,9 +8,7 @@ import { NoWorkspaceFolder } from '../../models/NoWorkspaceFolder';
 import { injectable } from "inversify";
 
 @injectable()
-export class ConfigService implements IConfigService {
-    private workspaceToUse: WorkspaceFolder = new NoWorkspaceFolder();
-    
+export class ConfigService implements IConfigService {    
     async read(workspaceFolder: WorkspaceFolder): Promise<Config> {
         
         const expectedConfigFilePath = this.getConfigPath(workspaceFolder.uri);
@@ -46,27 +44,6 @@ export class ConfigService implements IConfigService {
 
         window.showWarningMessage("The given information for the configuration was invalid. Creating default configuration");
         return new Config("http://localhost", 8084, "/");
-    }
-
-    async getWorkspaceToUse(): Promise<WorkspaceFolder> {
-        if (this.workspaceToUse instanceof NoWorkspaceFolder) {
-            this.workspaceToUse = await this.getWorkspaceToUseInternal();            
-        }
-        
-        return this.workspaceToUse;
-    }
-
-    private async getWorkspaceToUseInternal(): Promise<WorkspaceFolder> {
-        if (workspace.workspaceFolders && workspace.workspaceFolders.length > 0) {            
-            if (workspace.workspaceFolders.length >= 2) {
-                const pickedWorkspace = await window.showWorkspaceFolderPick({ placeHolder: "Select workspace to save .iobroker-config.json to" });
-                return pickedWorkspace ?? new NoWorkspaceFolder();
-            } 
-
-            return workspace.workspaceFolders[0];
-        }
-        
-        return new NoWorkspaceFolder();
     }
 
     private getConfigPath(root: Uri) {

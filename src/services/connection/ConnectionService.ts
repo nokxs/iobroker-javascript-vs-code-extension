@@ -2,9 +2,11 @@ import * as socketio from 'socket.io-client';
 
 import { IConnectionEventListener, IConnectionService } from "./IConnectionService";
 
-import { Script } from "../../models/Script";
+import { Script, ScriptObject } from "../../models/Script";
 import { Uri } from "vscode";
-import { injectable } from "inversify";
+import { inject, injectable } from "inversify";
+import TYPES from '../../Types';
+import { IScriptService } from '../script/IScriptService';
 
 @injectable()
 export class ConnectionService implements IConnectionService {
@@ -12,6 +14,10 @@ export class ConnectionService implements IConnectionService {
 
     private eventListeners: IConnectionEventListener[] = new Array();
     private client: SocketIOClient.Socket | undefined = undefined;
+    
+    constructor(
+        @inject(TYPES.services.script) private scriptService: IScriptService,
+    ) {}
 
     registerEventListener(listener: IConnectionEventListener): void {
         this.eventListeners.push(listener);
@@ -40,37 +46,51 @@ export class ConnectionService implements IConnectionService {
         });
     }
 
-    downloadAllScripts(): Promise<Script[]> {
-        return new Promise<Script[]>((resolve) => {
+    downloadAllScripts(): Promise<ScriptObject[]> {
+        return new Promise<ScriptObject[]>((resolve) => {
             if (this.client && this.isConnected) {
-                this.client.emit("getObjectView", "system","script",{"startkey":"script.js.","endkey":"script.js.\u9999"}, (err: any, doc: { rows: Script[]}) => {
+                this.client.emit("getObjectView", "system","script",{"startkey":"script.js.","endkey":"script.js.\u9999"}, (err: any, doc: { rows: ScriptObject[]}) => {
                     resolve(doc.rows);
                 });
             }
         });
     }
 
-    downloadScript(scriptPath: String): Promise<Script> {
-        throw new Error("Method not implemented.");
+    downloadScript(scriptUri: Uri): Promise<Script> {
+        return new Promise<Script>(async (resolve) => {
+            if (this.client && this.isConnected) {
+                const ioBrokerId = await this.scriptService.getIoBrokerId(scriptUri);
+
+                this.client.emit("getObject", ioBrokerId, (err: any, script: Script) => {
+                    resolve(script);
+                });
+            }
+        });
     }
 
     uploadScript(script: Script): Promise<void> {
+        return new Promise<void>(async (resolve) => {
+            if (this.client && this.isConnected) {
+                this.client.emit("setObject", script._id, script, (err: any) => {
+                    resolve();
+                });
+            }
+        });
+    }
+
+    startScript(script: ScriptObject): Promise<void> {
         throw new Error("Method not implemented.");
     }
 
-    startScript(script: Script): Promise<void> {
+    stopScript(script: ScriptObject): Promise<void> {
         throw new Error("Method not implemented.");
     }
 
-    stopScript(script: Script): Promise<void> {
+    registerForLogs(script: ScriptObject, logAction: () => {}): Promise<void> {
         throw new Error("Method not implemented.");
     }
 
-    registerForLogs(script: Script, logAction: () => {}): Promise<void> {
-        throw new Error("Method not implemented.");
-    }
-
-    unregisterForLogs(script: Script): Promise<void> {
+    unregisterForLogs(script: ScriptObject): Promise<void> {
         throw new Error("Method not implemented.");
     }
 

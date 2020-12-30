@@ -1,10 +1,9 @@
 // Represents an iobroker script
-export interface Script{
+export interface ScriptObject{
     id: string;
-    value: Value;
+    value: Script;
 }
-
-export interface Value {
+export interface Script {
     common: Common;
     type: string;
     from: string;
