@@ -11,6 +11,7 @@
 	],
 	"activationEvents": [
 		"onCommand:iobroker-javascript.download",
+		"onCommand:iobroker-javascript.downloadAll",
 		"onCommand:iobroker-javascript.upload",
 		"onCommand:iobroker-javascript.startScript",
 		"onCommand:iobroker-javascript.stopScript"
@@ -21,6 +22,10 @@
 			{
 				"command": "iobroker-javascript.download",
 				"title": "iobroker: Download script"
+			},
+			{
+				"command": "iobroker-javascript.downloadAll",
+				"title": "iobroker: Download all scripts"
 			},
 			{
 				"command": "iobroker-javascript.upload",

@@ -9,6 +9,7 @@ import { injectable } from "inversify";
 
 @injectable()
 export class ConfigService implements IConfigService {
+    private workspaceToUse: WorkspaceFolder = new NoWorkspaceFolder();
     
     async read(workspaceFolder: WorkspaceFolder): Promise<Config> {
         
@@ -48,6 +49,14 @@ export class ConfigService implements IConfigService {
     }
 
     async getWorkspaceToUse(): Promise<WorkspaceFolder> {
+        if (this.workspaceToUse instanceof NoWorkspaceFolder) {
+            this.workspaceToUse = await this.getWorkspaceToUseInternal();            
+        }
+        
+        return this.workspaceToUse;
+    }
+
+    private async getWorkspaceToUseInternal(): Promise<WorkspaceFolder> {
         if (workspace.workspaceFolders && workspace.workspaceFolders.length > 0) {            
             if (workspace.workspaceFolders.length >= 2) {
                 const pickedWorkspace = await window.showWorkspaceFolderPick({ placeHolder: "Select workspace to save .iobroker-config.json to" });

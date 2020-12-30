@@ -6,7 +6,8 @@ const TYPES = {
         file: Symbol.for("FileService"),
         command: Symbol.for("CommandService")
     },
-    command: Symbol.for("Command")
+    command: Symbol.for("Command"),
+    startup: Symbol.for("Startup")
 };
 
 export default TYPES;
