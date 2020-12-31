@@ -1,5 +1,6 @@
 import { Script, ScriptObject } from "../../models/Script";
 
+import { LogMessage } from "../../models/LogMessage";
 import { Uri } from "vscode";
 
 export interface IConnectionEventListener {
@@ -22,6 +23,6 @@ export interface IConnectionService {
     startScript(script: ScriptObject): Promise<void>;
     stopScript(script: ScriptObject): Promise<void>;
 
-    registerForLogs(script: Script, logAction: () => void): Promise<void>;
+    registerForLogs(logAction: (logMessage: LogMessage) => void): Promise<void>;
     unregisterForLogs(script: ScriptObject): Promise<void>;
 }

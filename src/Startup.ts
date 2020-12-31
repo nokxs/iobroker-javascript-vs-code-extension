@@ -40,8 +40,7 @@ export class Startup implements IStartup {
     
         await this.connectionService.connect(Uri.parse(`${config.ioBrokerUrl}:${config.socketIoPort}`));
 
-        const script = await this.connectionService.downloadAllScripts();
-        await this.connectionService.registerForLogs(script[0].value, () => {});
+        await this.connectionService.registerForLogs((logMessage) => { console.log(logMessage); });
     }
 
 }

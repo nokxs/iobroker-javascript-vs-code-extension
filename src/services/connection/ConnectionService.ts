@@ -3,7 +3,7 @@ import * as socketio from 'socket.io-client';
 import { IConnectionEventListener, IConnectionService } from "./IConnectionService";
 
 import { Script, ScriptObject } from "../../models/Script";
-import { Uri } from "vscode";
+import { Uri, window } from "vscode";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { IScriptService } from '../script/IScriptService';
@@ -87,28 +87,41 @@ export class ConnectionService implements IConnectionService {
         throw new Error("Method not implemented.");
     }
 
-    registerForLogs(script: Script, logAction: () => void): Promise<void> {
-        return new Promise<void>(async (resolve) => {
+    registerForLogs(logAction: (logMessage: LogMessage) => void): Promise<void> {
+        return new Promise<void>(async (resolve, reject) => {
             if (this.client && this.isConnected) {
 
                 this.client.on("log", (message: LogMessage) => {
-                    console.log(message);
+                    logAction(message);
                 });
     
                 this.client.emit("requireLog", true, (err: any) => {
-                    console.log(err);
-                    resolve();
+                    if (err) {
+                        window.showErrorMessage(err);
+                        reject();
+                    } else {
+                        resolve();
+                    }
                 });
             }
         });
-
-        // socketio.on("objectChange", (id: string, value: any) => {
-        // 	console.log(`Object: ${id}: ${JSON.stringify(value)}`);
-        // });
     }
 
-    unregisterForLogs(script: ScriptObject): Promise<void> {
-        throw new Error("Method not implemented.");
+    unregisterForLogs(): Promise<void> {
+        return new Promise<void>(async (resolve, reject) => {
+            if (this.client && this.isConnected) {
+
+                this.client.off("log");    
+                this.client.emit("requireLog", false, (err: any) => {
+                    if (err) {
+                        window.showErrorMessage(err);
+                        reject();
+                    } else {
+                        resolve();
+                    }
+                });
+            }
+        });
     }
 
     private registerSocketEvents(): void {
