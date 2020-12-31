@@ -20,7 +20,7 @@ export interface IConnectionService {
     downloadScript(scriptPath: Uri): Promise<Script>;
     uploadScript(script: Script): Promise<void>;
     
-    startScript(script: ScriptObject): Promise<void>;
+    startScript(script: Script): Promise<void>;
     stopScript(script: ScriptObject): Promise<void>;
 
     registerForLogs(logAction: (logMessage: LogMessage) => void): Promise<void>;

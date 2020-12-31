@@ -17,6 +17,7 @@ import { IStartup } from './IStartup';
 import { IWorkspaceService } from './services/workspace/IWorkspaceService';
 import { LogService } from './services/log/LogService';
 import { ScriptService } from './services/script/ScriptService';
+import { StartScriptCommand } from './commands/StartScript';
 import { Startup } from './Startup';
 import TYPES from './Types';
 import { UploadAllCommand } from './commands/UploadAllCommand';
@@ -38,5 +39,6 @@ container.bind<ILogService>(TYPES.services.log).to(LogService).inSingletonScope(
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
 container.bind<ICommand>(TYPES.command).to(UploadAllCommand);
 container.bind<ICommand>(TYPES.command).to(UploadCurrentCommand);
+container.bind<ICommand>(TYPES.command).to(StartScriptCommand);
 
 export default container;

@@ -79,7 +79,7 @@ export class ConnectionService implements IConnectionService {
         });
     }
 
-    startScript(script: ScriptObject): Promise<void> {
+    startScript(script: Script): Promise<void> {
         throw new Error("Method not implemented.");
     }
 

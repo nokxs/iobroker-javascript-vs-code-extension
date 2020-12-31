@@ -13,6 +13,10 @@ export class ScriptService implements IScriptService {
     ) {}
 
     async getIoBrokerId(fileUri: Uri): Promise<string> {
+        if (fileUri.scheme !== "file") {
+            return "";
+        }
+        
         const workspace = await this.workspaceService.getWorkspaceToUse();
         const idSuffixPath = fileUri.path.substr(workspace.uri.path.length);
         const suffixLength = idSuffixPath.lastIndexOf(".");
