@@ -4,6 +4,6 @@ export class Config {
 
 export class NoConfig extends Config {
     constructor() {
-        super("http://invalid", 8084, "/");
+        super("http://invalid", 8081, "/");
     }
 }

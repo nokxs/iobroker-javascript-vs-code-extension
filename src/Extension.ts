@@ -46,27 +46,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	// 		// console.log("Set object");
 	// 	});
 	// });
-
-	// addCommand("iobroker-javascript.download", () => {
-	// 	console.log("Download not implemented");
-	// });
-
-	// addCommand("iobroker-javascript.upload", () => {
-	// 	console.log("Upload not implemented");
-	// });
-
-	// addCommand("iobroker-javascript.startScript", () => {
-	// 	console.log("Start not implemented");
-	// });
-
-	// addCommand("iobroker-javascript.stopScript", () => {
-	// 	console.log("Stop not implemented");
-	// });
-
-	// function addCommand(command: string, callback: (...args: any[]) => any) {
-	// 	let disposable = vscode.commands.registerCommand(command, callback);
-	// 	context.subscriptions.push(disposable);
-	// }
 }
 
 // this method is called when your extension is deactivated

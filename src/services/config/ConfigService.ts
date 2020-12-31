@@ -35,7 +35,7 @@ export class ConfigService implements IConfigService {
 
     async createConfigInteractivly(): Promise<Config> {
         const ioBrokerUrl = await window.showInputBox({prompt: "The URL to your ioBroker installation", value: "http://localhost"});
-        const port = await window.showInputBox({prompt: "The port of the socket.io Adapter", value: "8084"});
+        const port = await window.showInputBox({prompt: "The port of the socket.io Adapter", value: "8081"});
         const scriptPath = await window.showInputBox({prompt: "The relative path in your workspace to the scripts", value: "/"});
 
         if (ioBrokerUrl && port && scriptPath) {
@@ -43,7 +43,7 @@ export class ConfigService implements IConfigService {
         }
 
         window.showWarningMessage("The given information for the configuration was invalid. Creating default configuration");
-        return new Config("http://localhost", 8084, "/");
+        return new Config("http://localhost", 8081, "/");
     }
 
     private getConfigPath(root: Uri) {

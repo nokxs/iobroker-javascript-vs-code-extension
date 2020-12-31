@@ -7,6 +7,7 @@ import { Uri } from "vscode";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { IScriptService } from '../script/IScriptService';
+import { LogMessage } from '../../models/LogMessage';
 
 @injectable()
 export class ConnectionService implements IConnectionService {
@@ -86,8 +87,24 @@ export class ConnectionService implements IConnectionService {
         throw new Error("Method not implemented.");
     }
 
-    registerForLogs(script: ScriptObject, logAction: () => {}): Promise<void> {
-        throw new Error("Method not implemented.");
+    registerForLogs(script: Script, logAction: () => void): Promise<void> {
+        return new Promise<void>(async (resolve) => {
+            if (this.client && this.isConnected) {
+
+                this.client.on("log", (message: LogMessage) => {
+                    console.log(message);
+                });
+    
+                this.client.emit("requireLog", true, (err: any) => {
+                    console.log(err);
+                    resolve();
+                });
+            }
+        });
+
+        // socketio.on("objectChange", (id: string, value: any) => {
+        // 	console.log(`Object: ${id}: ${JSON.stringify(value)}`);
+        // });
     }
 
     unregisterForLogs(script: ScriptObject): Promise<void> {

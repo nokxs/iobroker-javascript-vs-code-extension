@@ -25,6 +25,10 @@
 				"title": "iobroker: Download current script"
 			},
 			{
+				"command": "iobroker-javascript.showAllLog",
+				"title": "iobroker: Show all log output"
+			},
+			{
 				"command": "iobroker-javascript.downloadAll",
 				"title": "iobroker: Download all scripts"
 			},

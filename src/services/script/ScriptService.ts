@@ -1,6 +1,7 @@
-import { ScriptObject } from "../../models/Script";
+
 import { inject, injectable } from "inversify";
 import { Uri } from "vscode";
+import { ScriptObject } from "../../models/Script";
 import TYPES from "../../Types";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { IScriptService } from "./IScriptService";
