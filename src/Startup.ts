@@ -8,6 +8,7 @@ import { ExtensionContext, Uri, window } from "vscode";
 import { Config, NoConfig } from "./models/Config";
 import { IConnectionService } from "./services/connection/IConnectionService";
 import { IWorkspaceService } from "./services/workspace/IWorkspaceService";
+import { ILogService } from "./services/log/ILogService";
 
 @injectable()
 export class Startup implements IStartup {
@@ -15,10 +16,9 @@ export class Startup implements IStartup {
         @inject(TYPES.services.command) private commandService: ICommandService,
         @inject(TYPES.services.config) private configService: IConfigService,
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
-        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService
-    ) {
-        
-    }
+        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
+        @inject(TYPES.services.log) private logService: ILogService
+    ) {}
 
     async init(context: ExtensionContext): Promise<void> {
         this.commandService.registerCommands(context);
@@ -40,7 +40,7 @@ export class Startup implements IStartup {
     
         await this.connectionService.connect(Uri.parse(`${config.ioBrokerUrl}:${config.socketIoPort}`));
 
-        await this.connectionService.registerForLogs((logMessage) => { console.log(logMessage); });
+        await this.logService.startReceiving();
     }
 
 }

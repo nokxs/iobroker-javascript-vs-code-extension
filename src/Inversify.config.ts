@@ -11,9 +11,11 @@ import { ICommandService } from './services/command/ICommandService';
 import { IConfigService } from './services/config/IConfigService';
 import { IConnectionService } from './services/connection/IConnectionService';
 import { IFileService } from './services/file/IFileService';
+import { ILogService } from "./services/log/ILogService";
 import { IScriptService } from './services/script/IScriptService';
 import { IStartup } from './IStartup';
 import { IWorkspaceService } from './services/workspace/IWorkspaceService';
+import { LogService } from './services/log/LogService';
 import { ScriptService } from './services/script/ScriptService';
 import { Startup } from './Startup';
 import TYPES from './Types';
@@ -31,6 +33,7 @@ container.bind<IConnectionService>(TYPES.services.connection).to(ConnectionServi
 container.bind<IFileService>(TYPES.services.file).to(FileService).inSingletonScope();
 container.bind<ICommandService>(TYPES.services.command).to(CommandService).inSingletonScope();
 container.bind<IScriptService>(TYPES.services.script).to(ScriptService).inSingletonScope();
+container.bind<ILogService>(TYPES.services.log).to(LogService).inSingletonScope();
 
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
 container.bind<ICommand>(TYPES.command).to(UploadAllCommand);

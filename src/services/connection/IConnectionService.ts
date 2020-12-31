@@ -24,5 +24,5 @@ export interface IConnectionService {
     stopScript(script: ScriptObject): Promise<void>;
 
     registerForLogs(logAction: (logMessage: LogMessage) => void): Promise<void>;
-    unregisterForLogs(script: ScriptObject): Promise<void>;
+    unregisterForLogs(): Promise<void>;
 }

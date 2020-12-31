@@ -6,7 +6,8 @@ const TYPES = {
         file: Symbol.for("FileService"),
         command: Symbol.for("CommandService"),
         workspace: Symbol.for("WorkspaceService"),
-        script: Symbol.for("ScriptService")
+        script: Symbol.for("ScriptService"),
+        log: Symbol.for("LogService")
     },
     command: Symbol.for("Command"),
     startup: Symbol.for("Startup")
