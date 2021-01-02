@@ -42,5 +42,4 @@ export class Startup implements IStartup {
 
         await this.logService.startReceiving();
     }
-
 }

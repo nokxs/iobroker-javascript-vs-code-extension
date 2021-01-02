@@ -1,14 +1,20 @@
 import * as fs from 'fs';
 
 import { Config, NoConfig } from "../../models/Config";
-import { Uri, WorkspaceFolder, window, workspace } from "vscode";
+import { Uri, WorkspaceFolder, window, workspace, QuickInputButtons } from "vscode";
 
 import { IConfigService } from "./IConfigService";
-import { NoWorkspaceFolder } from '../../models/NoWorkspaceFolder';
-import { injectable } from "inversify";
+import { inject, injectable } from "inversify";
+import TYPES from '../../Types';
+import { ITypeDefinitionService } from '../typeDefinition/ITypeDefinitionService';
 
 @injectable()
-export class ConfigService implements IConfigService {    
+export class ConfigService implements IConfigService {
+    
+    constructor(
+        @inject(TYPES.services.typeDefinition) private typeDefinitionService: ITypeDefinitionService,
+    ) {}
+
     async read(workspaceFolder: WorkspaceFolder): Promise<Config> {
         
         const expectedConfigFilePath = this.getConfigPath(workspaceFolder.uri);
@@ -37,6 +43,12 @@ export class ConfigService implements IConfigService {
         const ioBrokerUrl = await window.showInputBox({prompt: "The URL to your ioBroker installation", value: "http://localhost"});
         const port = await window.showInputBox({prompt: "The port of the socket.io Adapter", value: "8081"});
         const scriptPath = await window.showInputBox({prompt: "The relative path in your workspace to the scripts", value: "/"});
+        const shouldCreateTypeDefinitionConfig = await window.showQuickPick(["Yes", "No"], {canPickMany: false, placeHolder: "Configure ioBroker type defintions?"});
+        
+        if (shouldCreateTypeDefinitionConfig && shouldCreateTypeDefinitionConfig === "Yes") {
+            await this.typeDefinitionService.downloadFromGithubAndSave();
+            await this.typeDefinitionService.createConfig();
+        }
 
         if (ioBrokerUrl && port && scriptPath) {
             return new Config(ioBrokerUrl, Number.parseInt(port), scriptPath);            
