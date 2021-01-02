@@ -7,7 +7,8 @@ const TYPES = {
         command: Symbol.for("CommandService"),
         workspace: Symbol.for("WorkspaceService"),
         script: Symbol.for("ScriptService"),
-        log: Symbol.for("LogService")
+        log: Symbol.for("LogService"),
+        typeDefinition: Symbol.for("TypeDefinitionService")
     },
     command: Symbol.for("Command"),
     startup: Symbol.for("Startup")

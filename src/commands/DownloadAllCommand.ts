@@ -2,9 +2,9 @@ import { ICommand } from "./ICommand";
 import { inject, injectable } from "inversify";
 import TYPES from "../Types";
 import { IConnectionService } from "../services/connection/IConnectionService";
-import { IFileService } from "../services/file/IFileService";
 import { window } from "vscode";
 import { IWorkspaceService } from "../services/workspace/IWorkspaceService";
+import { IScriptService } from "../services/script/IScriptService";
 
 @injectable()
 export class DownloadAllCommand implements ICommand {
@@ -12,7 +12,7 @@ export class DownloadAllCommand implements ICommand {
 
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
-        @inject(TYPES.services.file) private fileService: IFileService,
+        @inject(TYPES.services.script) private scriptService: IScriptService,
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService
     ) {}
     
@@ -21,7 +21,7 @@ export class DownloadAllCommand implements ICommand {
         const scripts = await this.connectionService.downloadAllScripts();
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
 
-	    await this.fileService.saveAllToFile(scripts, workspaceFolder);
+	    await this.scriptService.saveAllToFile(scripts, workspaceFolder);
         
         message.dispose();
         window.setStatusBarMessage("ioBroker: Finished downloading all scripts", 10 * 1000);

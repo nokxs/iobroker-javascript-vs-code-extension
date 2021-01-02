@@ -1,8 +1,10 @@
 
 import { inject, injectable } from "inversify";
-import { Uri } from "vscode";
-import { Script, ScriptId } from "../../models/Script";
+import { win32 } from "path";
+import { Uri, window, WorkspaceFolder } from "vscode";
+import { Script, ScriptId, ScriptObject } from "../../models/Script";
 import TYPES from "../../Types";
+import { IFileService } from "../file/IFileService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { IScriptService } from "./IScriptService";
 
@@ -10,6 +12,7 @@ import { IScriptService } from "./IScriptService";
 export class ScriptService implements IScriptService {
     constructor(
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
+        @inject(TYPES.services.file) private fileService: IFileService,
     ) {}
 
     async getIoBrokerId(fileUri: Uri): Promise<ScriptId> {
@@ -34,6 +37,23 @@ export class ScriptService implements IScriptService {
         path = this.replaceAll(path, "_", " ");
         const extension = script.common.engineType === "Javascript/js" ? "js" : ""; // TODO support for different file formats
         return `${path}.${extension}`;
+    }
+
+    async saveToFile(script: Script, workspaceFolder: WorkspaceFolder): Promise<void> {
+        const relativeFilePath = this.getRelativeFilePath(script);
+        const uri = Uri.joinPath(workspaceFolder.uri, relativeFilePath);
+
+        if (script.common.source) {
+            await this.fileService.saveToFile(uri, script.common.source);            
+        } else {
+            throw new Error(`Cannot save script '${script._id}' to file, because it has no source set`);
+        }
+    }
+    
+    async saveAllToFile(scripts: ScriptObject[], workspaceFolder: WorkspaceFolder): Promise<void> {
+        for (const script of scripts) {
+            await this.saveToFile(script.value, workspaceFolder);
+        }
     }
 
     private replaceAll(s: string, searchValue: string, replaceValue: string): string {

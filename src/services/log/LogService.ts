@@ -50,6 +50,6 @@ export class LogService implements ILogService {
 
     private async isMessageForFile(logMessage: LogMessage, uri: Uri): Promise<boolean> {
         const fileId = await this.scriptService.getIoBrokerId(uri);
-        return logMessage.message.includes(fileId);
+        return logMessage.message.includes(<string>fileId);
     }
 }

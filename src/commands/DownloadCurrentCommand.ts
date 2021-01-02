@@ -5,6 +5,7 @@ import { IConnectionService } from "../services/connection/IConnectionService";
 import { IFileService } from "../services/file/IFileService";
 import { window } from "vscode";
 import { IWorkspaceService } from "../services/workspace/IWorkspaceService";
+import { IScriptService } from "../services/script/IScriptService";
 
 @injectable()
 export class DownloadCurrentCommand implements ICommand {
@@ -12,7 +13,7 @@ export class DownloadCurrentCommand implements ICommand {
 
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
-        @inject(TYPES.services.file) private fileService: IFileService,
+        @inject(TYPES.services.script) private scriptService: IScriptService,
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService
     ) {}
     
@@ -24,7 +25,7 @@ export class DownloadCurrentCommand implements ICommand {
             const script = await this.connectionService.downloadScriptWithUri(activeDocument.uri);
             const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
     
-            await this.fileService.saveToFile(script, workspaceFolder);
+            await this.scriptService.saveToFile(script, workspaceFolder);
             
             message.dispose();
             window.setStatusBarMessage(`ioBroker: Finished downloading script`, 10 * 1000);

@@ -15,7 +15,8 @@
 		"onCommand:iobroker-javascript.uploadCurrent",
 		"onCommand:iobroker-javascript.uploadAll",
 		"onCommand:iobroker-javascript.startCurrentScript",
-		"onCommand:iobroker-javascript.stopCurrentScript"
+		"onCommand:iobroker-javascript.stopCurrentScript",
+		"onCommand:iobroker-javascript.updateTypeDefinition"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -47,6 +48,10 @@
 			{
 				"command": "iobroker-javascript.stopCurrentScript",
 				"title": "iobroker: Stop current script"
+			},
+			{
+				"command": "iobroker-javascript.updateTypeDefinition",
+				"title": "iobroker: Update JS type definition from GitHub"
 			}
 		]
 	},
@@ -62,6 +67,7 @@
 		"test": "node ./out/test/runTest.js"
 	},
 	"dependencies": {
+		"axios": "^0.21.1",
 		"inversify": "^5.0.5",
 		"reflect-metadata": "^0.1.13",
 		"socket.io": "^2.3.0",
