@@ -17,5 +17,4 @@ export class UploadAllCommand implements ICommand {
 
     execute(...args: any[]) {
     }
-
 }
