@@ -14,8 +14,8 @@
 		"onCommand:iobroker-javascript.downloadAll",
 		"onCommand:iobroker-javascript.uploadCurrent",
 		"onCommand:iobroker-javascript.uploadAll",
-		"onCommand:iobroker-javascript.startScript",
-		"onCommand:iobroker-javascript.stopScript"
+		"onCommand:iobroker-javascript.startCurrentScript",
+		"onCommand:iobroker-javascript.stopCurrentScript"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {

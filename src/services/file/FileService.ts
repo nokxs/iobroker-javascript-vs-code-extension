@@ -17,7 +17,7 @@ export class FileService implements IFileService {
         const relativeFilePath = this.scriptService.getRelativeFilePath(script);
         const uri = Uri.joinPath(workspaceFolder.uri, relativeFilePath);
 
-        const content = Buffer.from(script.value.common.source, 'utf8');
+        const content = Buffer.from(script.value.common.source ?? "", 'utf8');
 
         await workspace.fs.writeFile(uri, content);
     }

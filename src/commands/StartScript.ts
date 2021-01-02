@@ -7,7 +7,7 @@ import { IScriptService } from "../services/script/IScriptService";
 
 @injectable()
 export class StartScriptCommand implements ICommand {
-    id: string = "onCommand:iobroker-javascript.startScript";
+    id: string = "iobroker-javascript.startCurrentScript";
     
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
@@ -18,14 +18,18 @@ export class StartScriptCommand implements ICommand {
         const activeDocument = window.activeTextEditor?.document;
 
         if (activeDocument) {
-            const ioBrokerId = await this.scriptService.getIoBrokerId(activeDocument.uri);
+            const scriptId = await this.scriptService.getIoBrokerId(activeDocument.uri);
 
-            if (ioBrokerId.length > 0) {
-                this.connectionService.startScript({ 
-                    _id: ioBrokerId,
-                    common: {}
-                });
+            if (scriptId.length > 0) {
+                try {
+                    await this.connectionService.startScript(scriptId);
+                    window.setStatusBarMessage(`ioBroker: Started script '${scriptId}' sucessfully`);
+                } catch (error) {
+                    window.showErrorMessage((<Error>error).message);
+                }
             }
+        } else {
+            window.showWarningMessage("ioBroker: Cannot start current script, because no script file is openend.");
         }
     }    
 }

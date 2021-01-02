@@ -2,7 +2,7 @@ import * as socketio from 'socket.io-client';
 
 import { IConnectionEventListener, IConnectionService } from "./IConnectionService";
 
-import { Script, ScriptObject } from "../../models/Script";
+import { Script, ScriptId, ScriptObject } from "../../models/Script";
 import { Uri, window } from "vscode";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
@@ -57,12 +57,15 @@ export class ConnectionService implements IConnectionService {
         });
     }
 
-    downloadScript(scriptUri: Uri): Promise<Script> {
+    async downloadScriptWithUri(scriptUri: Uri): Promise<Script> {
+        const scriptId = await this.scriptService.getIoBrokerId(scriptUri);
+        return await this.downloadScriptWithId(scriptId);
+    }
+
+    downloadScriptWithId(scriptId: ScriptId): Promise<Script> {
         return new Promise<Script>(async (resolve) => {
             if (this.client && this.isConnected) {
-                const ioBrokerId = await this.scriptService.getIoBrokerId(scriptUri);
-
-                this.client.emit("getObject", ioBrokerId, (err: any, script: Script) => {
+                this.client.emit("getObject", scriptId, (err: any, script: Script) => {
                     resolve(script);
                 });
             }
@@ -79,16 +82,16 @@ export class ConnectionService implements IConnectionService {
         });
     }
 
-    startScript(script: Script): Promise<void> {
-        throw new Error("Method not implemented.");
+    startScript(scriptId: ScriptId): Promise<void> {
+        return this.setScriptState(scriptId, true);
     }
 
-    stopScript(script: ScriptObject): Promise<void> {
-        throw new Error("Method not implemented.");
+    stopScript(scriptId: ScriptId): Promise<void> {
+        return this.setScriptState(scriptId, false);
     }
 
     registerForLogs(logAction: (logMessage: LogMessage) => void): Promise<void> {
-        return new Promise<void>(async (resolve, reject) => {
+        return new Promise<void>(async (resolve) => {
             if (this.client && this.isConnected) {
 
                 this.client.on("log", (message: LogMessage) => {
@@ -97,28 +100,26 @@ export class ConnectionService implements IConnectionService {
     
                 this.client.emit("requireLog", true, (err: any) => {
                     if (err) {
-                        window.showErrorMessage(err);
-                        reject();
-                    } else {
-                        resolve();
-                    }
+                        throw new Error(`Could not register for logs: ${err}`);
+                    } 
+                    
+                    resolve();
                 });
             }
         });
     }
 
     unregisterForLogs(): Promise<void> {
-        return new Promise<void>(async (resolve, reject) => {
+        return new Promise<void>(async (resolve) => {
             if (this.client && this.isConnected) {
 
                 this.client.off("log");    
                 this.client.emit("requireLog", false, (err: any) => {
                     if (err) {
-                        window.showErrorMessage(err);
-                        reject();
-                    } else {
-                        resolve();
-                    }
+                        throw new Error(`Could not unregister for logs: ${err}`);
+                    } 
+                    
+                    resolve();
                 });
             }
         });
@@ -136,5 +137,32 @@ export class ConnectionService implements IConnectionService {
                 this.eventListeners.forEach(listener => listener.onDisconnected());
             });
         }
+    }
+
+    private setScriptState(scriptId: ScriptId, isEnabled: boolean): Promise<void> {
+        return new Promise<void>(async (resolve, reject) => {
+            if (this.client && this.isConnected) {
+                const script: Script = {
+                    _id: scriptId,
+                    common: {
+                        enabled: isEnabled
+                    }
+                };
+
+                const existingScript = await this.downloadScriptWithId(scriptId);
+                if (existingScript) {
+                    this.client.emit("extendObject", scriptId, script, (err: any) => {
+                        if (err) {
+                            throw new Error(`Could set script state for '${scriptId}' to '${isEnabled}': ${err}`);
+                        }
+                        
+                        resolve();
+                    });
+                } else {
+                    reject(new Error(`Could set script state for '${scriptId}' to '${isEnabled}', because it is not known to ioBroker`));
+                    // throw new Error(`Could set script state for '${scriptId}' to '${isEnabled}', because it is not known to ioBroker`);
+                }
+            }
+        });
     }
 }

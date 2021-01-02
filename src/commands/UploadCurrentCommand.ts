@@ -21,7 +21,7 @@ export class UploadCurrentCommand implements ICommand {
             const scriptText = window.activeTextEditor.document.getText();
             const fileUri = window.activeTextEditor.document.uri;
 
-            const script = await this.connectionService.downloadScript(fileUri);
+            const script = await this.connectionService.downloadScriptWithUri(fileUri);
             
             if (script) {
                 script.common.source = scriptText;

@@ -1,4 +1,4 @@
-import { Script, ScriptObject } from "../../models/Script";
+import { Script, ScriptId, ScriptObject } from "../../models/Script";
 
 import { LogMessage } from "../../models/LogMessage";
 import { Uri } from "vscode";
@@ -17,11 +17,11 @@ export interface IConnectionService {
     registerEventListener(listener: IConnectionEventListener): void;
 
     downloadAllScripts(): Promise<ScriptObject[]>;
-    downloadScript(scriptPath: Uri): Promise<Script>;
+    downloadScriptWithUri(scriptPath: Uri): Promise<Script>;
     uploadScript(script: Script): Promise<void>;
     
-    startScript(script: Script): Promise<void>;
-    stopScript(script: ScriptObject): Promise<void>;
+    startScript(script: ScriptId): Promise<void>;
+    stopScript(scriptId: ScriptId): Promise<void>;
 
     registerForLogs(logAction: (logMessage: LogMessage) => void): Promise<void>;
     unregisterForLogs(): Promise<void>;

@@ -1,7 +1,7 @@
 
 import { inject, injectable } from "inversify";
 import { Uri } from "vscode";
-import { ScriptObject } from "../../models/Script";
+import { ScriptId, ScriptObject } from "../../models/Script";
 import TYPES from "../../Types";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { IScriptService } from "./IScriptService";
@@ -12,7 +12,7 @@ export class ScriptService implements IScriptService {
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
     ) {}
 
-    async getIoBrokerId(fileUri: Uri): Promise<string> {
+    async getIoBrokerId(fileUri: Uri): Promise<ScriptId> {
         if (fileUri.scheme !== "file") {
             return "";
         }
@@ -25,7 +25,7 @@ export class ScriptService implements IScriptService {
         path = this.replaceAll(path, "/", ".");
         path = this.replaceAll(path, " ", "_");
 
-        return `script.js${path}`;
+        return new ScriptId(`script.js${path}`);
     }
     
     getRelativeFilePath(script: ScriptObject): string {
