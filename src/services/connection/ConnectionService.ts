@@ -53,6 +53,8 @@ export class ConnectionService implements IConnectionService {
                 this.client.emit("getObjectView", "system","script",{"startkey":"script.js.","endkey":"script.js.\u9999"}, (err: any, doc: { rows: ScriptObject[]}) => {
                     resolve(doc.rows);
                 });
+            } else {
+                resolve([]);
             }
         });
     }
@@ -68,6 +70,8 @@ export class ConnectionService implements IConnectionService {
                 this.client.emit("getObject", scriptId, (err: any, script: Script) => {
                     resolve(script);
                 });
+            } else {
+                resolve({_id: "INVALID", common: {}}); // TODO: Add Type "InvalidScript"
             }
         });
     }

@@ -10,6 +10,9 @@ const TYPES = {
         log: Symbol.for("LogService"),
         typeDefinition: Symbol.for("TypeDefinitionService")
     },
+    views: {
+        scriptExplorer: Symbol.for("ScriptExplorerView")
+    },
     command: Symbol.for("Command"),
     startup: Symbol.for("Startup")
 };

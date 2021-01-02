@@ -1,5 +1,7 @@
 import 'reflect-metadata';
 
+import { IScriptExplorerProvider, ScriptExplorerProvider, ScriptItem } from './views/scriptExplorer/ScriptExplorerProvider';
+
 import { CommandService } from './services/command/CommandService';
 import { ConfigService } from './services/config/configService';
 import { ConnectionService } from './services/connection/connectionService';
@@ -49,5 +51,7 @@ container.bind<ICommand>(TYPES.command).to(UploadCurrentCommand);
 container.bind<ICommand>(TYPES.command).to(StartCurrentScriptCommand);
 container.bind<ICommand>(TYPES.command).to(StopCurrentScriptCommand);
 container.bind<ICommand>(TYPES.command).to(UpdateTypeDefinitionCommand);
+
+container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider);
 
 export default container;

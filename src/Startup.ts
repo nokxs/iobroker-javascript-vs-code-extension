@@ -9,6 +9,7 @@ import { Config, NoConfig } from "./models/Config";
 import { IConnectionService } from "./services/connection/IConnectionService";
 import { IWorkspaceService } from "./services/workspace/IWorkspaceService";
 import { ILogService } from "./services/log/ILogService";
+import { ScriptExplorerProvider } from "./views/scriptExplorer/ScriptExplorerProvider";
 
 @injectable()
 export class Startup implements IStartup {
@@ -17,11 +18,13 @@ export class Startup implements IStartup {
         @inject(TYPES.services.config) private configService: IConfigService,
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
-        @inject(TYPES.services.log) private logService: ILogService
+        @inject(TYPES.services.log) private logService: ILogService,
+        @inject(TYPES.views.scriptExplorer) private scriptExplorerProvider: ScriptExplorerProvider
     ) {}
 
     async init(context: ExtensionContext): Promise<void> {
         this.commandService.registerCommands(context);
+
 
         var workspaceFolder = await this.workspaceService.getWorkspaceToUse();
     
@@ -41,5 +44,7 @@ export class Startup implements IStartup {
         await this.connectionService.connect(Uri.parse(`${config.ioBrokerUrl}:${config.socketIoPort}`));
 
         await this.logService.startReceiving();
+        
+        window.registerTreeDataProvider("iobroker-javascript.script-explorer", this.scriptExplorerProvider);
     }
 }
