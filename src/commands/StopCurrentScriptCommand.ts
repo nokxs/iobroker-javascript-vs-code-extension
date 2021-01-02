@@ -6,8 +6,8 @@ import { window } from "vscode";
 import { IScriptService } from "../services/script/IScriptService";
 
 @injectable()
-export class StartScriptCommand implements ICommand {
-    id: string = "iobroker-javascript.startCurrentScript";
+export class StopCurrentScriptCommand implements ICommand {
+    id: string = "iobroker-javascript.stopCurrentScript";
     
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
@@ -22,14 +22,14 @@ export class StartScriptCommand implements ICommand {
 
             if (scriptId.length > 0) {
                 try {
-                    await this.connectionService.startScript(scriptId);
-                    window.setStatusBarMessage(`ioBroker: Started script '${scriptId}' sucessfully`);
+                    await this.connectionService.stopScript(scriptId);
+                    window.setStatusBarMessage(`ioBroker: Stoped script '${scriptId}' sucessfully`);
                 } catch (error) {
                     window.showErrorMessage((<Error>error).message);
                 }
             }
         } else {
-            window.showWarningMessage("ioBroker: Cannot start current script, because no script file is openend.");
+            window.showWarningMessage("ioBroker: Cannot stop current script, because no script file is openend.");
         }
     }    
 }
