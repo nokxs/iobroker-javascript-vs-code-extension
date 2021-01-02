@@ -1,7 +1,7 @@
 
 import { inject, injectable } from "inversify";
 import { Uri } from "vscode";
-import { ScriptId, ScriptObject } from "../../models/Script";
+import { Script, ScriptId } from "../../models/Script";
 import TYPES from "../../Types";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { IScriptService } from "./IScriptService";
@@ -28,11 +28,11 @@ export class ScriptService implements IScriptService {
         return new ScriptId(`script.js${path}`);
     }
     
-    getRelativeFilePath(script: ScriptObject): string {
-        var path = script.id.replace("script.js.", "");
+    getRelativeFilePath(script: Script): string {
+        var path = script._id.replace("script.js.", "");
         path = this.replaceAll(path, ".", "/");
         path = this.replaceAll(path, "_", " ");
-        const extension = script.value.common.engineType === "Javascript/js" ? "js" : ""; // TODO support for different file formats
+        const extension = script.common.engineType === "Javascript/js" ? "js" : ""; // TODO support for different file formats
         return `${path}.${extension}`;
     }
 

@@ -17,14 +17,14 @@ export class DownloadAllCommand implements ICommand {
     ) {}
     
     async execute(...args: any[]) {
-        const message = window.setStatusBarMessage("Downloading all scripts from iobroker...");
+        const message = window.setStatusBarMessage("ioBroker: Downloading all scripts...");
         const scripts = await this.connectionService.downloadAllScripts();
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
 
 	    await this.fileService.saveAllToFile(scripts, workspaceFolder);
         
         message.dispose();
-        window.setStatusBarMessage("Finished downloading all scripts from iobroker", 10 * 1000);
+        window.setStatusBarMessage("ioBroker: Finished downloading all scripts", 10 * 1000);
     }
 
 }
