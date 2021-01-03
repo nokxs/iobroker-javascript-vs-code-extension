@@ -7,9 +7,12 @@ import { ScriptObject } from "../../models/ScriptObject";
 import { IScriptExplorerProvider } from './IScriptExplorerProvider';
 import { ScriptDirectory } from './ScriptDirectory';
 import { ScriptItem } from './ScriptItem';
+import { IConnectionEventListener } from '../../services/connection/IConnectionEventListener';
+import { IScriptChangedEventListener } from '../../services/connection/IScriptChangedListener';
+import { Script } from '../../models/Script';
 
 @injectable()
-export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | ScriptDirectory>, IScriptExplorerProvider {
+export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | ScriptDirectory>, IScriptExplorerProvider, IScriptChangedEventListener {
 
     private scripts: undefined | ScriptObject[];
     private _onDidChangeTreeData: vscode.EventEmitter<ScriptItem | ScriptDirectory | undefined | null | void> = new vscode.EventEmitter<ScriptItem | ScriptDirectory | undefined | null | void>();
@@ -18,7 +21,9 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
 
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
-    ) {}
+    ) {
+        connectionService.registerScriptChangedEventListener(this);
+    }
     
     getTreeItem(element: ScriptItem | ScriptDirectory): vscode.TreeItem | Thenable<vscode.TreeItem> {
         return element;
@@ -40,7 +45,11 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
     refresh(): void {
         this._onDidChangeTreeData.fire();
     }
-
+    
+    onScriptChanged(id: string, script: Script): void {
+        this.refresh();
+    }
+    
     private convertToScriptItems(scriptOjbects: ScriptObject[]): ScriptItem[] {
         return scriptOjbects.map(this.convertToScriptItem);
     }

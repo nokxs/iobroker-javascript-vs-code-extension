@@ -1,13 +1,10 @@
+import { IConnectionEventListener } from "./IConnectionEventListener";
+import { IScriptChangedEventListener } from "./IScriptChangedListener";
 import { LogMessage } from "../../models/LogMessage";
 import { Script } from "../../models/Script";
 import { ScriptId } from "../../models/ScriptId";
 import { ScriptObject } from "../../models/ScriptObject";
 import { Uri } from "vscode";
-
-export interface IConnectionEventListener {
-    onConnected(): void;
-    onDisconnected(): void;
-}
 
 export interface IConnectionService {
     isConnected: Boolean;
@@ -15,7 +12,8 @@ export interface IConnectionService {
     connect(uri: Uri): Promise<void>;
     disconnect(): Promise<void>;
     
-    registerEventListener(listener: IConnectionEventListener): void;
+    registerConnectionEventListener(listener: IConnectionEventListener): void;
+    registerScriptChangedEventListener(listener: IScriptChangedEventListener): void;
 
     downloadAllScripts(): Promise<ScriptObject[]>;
     downloadScriptWithUri(scriptPath: Uri): Promise<Script>;

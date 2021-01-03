@@ -1,29 +1,36 @@
 import * as socketio from 'socket.io-client';
 
-import { IConnectionEventListener, IConnectionService } from "./IConnectionService";
+import { IConnectionService } from "./IConnectionService";
+import { IConnectionEventListener } from "./IConnectionEventListener";
 
 import { Script } from "../../models/Script";
 import { ScriptObject } from "../../models/ScriptObject";
 import { ScriptId } from "../../models/ScriptId";
-import { Uri, window } from "vscode";
+import { Uri } from "vscode";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { IScriptService } from '../script/IScriptService';
 import { LogMessage } from '../../models/LogMessage';
+import { IScriptChangedEventListener as IScriptChangedEventListener } from './IScriptChangedListener';
 
 @injectable()
 export class ConnectionService implements IConnectionService {
     public isConnected: Boolean = false;
 
-    private eventListeners: IConnectionEventListener[] = new Array();
+    private connectionEventListeners: Array<IConnectionEventListener> = new Array();
+    private scriptEventListeners: Array<IScriptChangedEventListener> = new Array();
     private client: SocketIOClient.Socket | undefined = undefined;
     
     constructor(
         @inject(TYPES.services.script) private scriptService: IScriptService,
     ) {}
 
-    registerEventListener(listener: IConnectionEventListener): void {
-        this.eventListeners.push(listener);
+    registerConnectionEventListener(listener: IConnectionEventListener): void {
+        this.connectionEventListeners.push(listener);
+    }
+    
+    registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
+        this.scriptEventListeners.push(listener);
     }
     
     async connect(uri: Uri): Promise<void> {
@@ -135,12 +142,17 @@ export class ConnectionService implements IConnectionService {
         if (this.client) {
             this.client.on("connect", () => {
                 this.isConnected = true;
-                this.eventListeners.forEach(listener => listener.onConnected());
+                this.connectionEventListeners.forEach(listener => listener.onConnected());
             });
             
             this.client.on("disconnect", () => {
                 this.isConnected = false;
-                this.eventListeners.forEach(listener => listener.onDisconnected());
+                this.connectionEventListeners.forEach(listener => listener.onDisconnected());
+            });
+
+            this.client.emit("subscribeObjects", "script.js.*");            
+            this.client.on("objectChange", (id: string, value: any) => {
+                this.scriptEventListeners.forEach(listener => listener.onScriptChanged(id, value));
             });
         }
     }
@@ -166,7 +178,6 @@ export class ConnectionService implements IConnectionService {
                     });
                 } else {
                     reject(new Error(`Could set script state for '${scriptId}' to '${isEnabled}', because it is not known to ioBroker`));
-                    // throw new Error(`Could set script state for '${scriptId}' to '${isEnabled}', because it is not known to ioBroker`);
                 }
             }
         });
