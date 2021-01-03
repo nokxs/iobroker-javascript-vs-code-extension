@@ -4,7 +4,7 @@ import TYPES from "./Types";
 import { ICommandService } from "./services/command/ICommandService";
 import { IConfigService } from "./services/config/IConfigService";
 import { NoWorkspaceFolder } from "./models/NoWorkspaceFolder";
-import { ExtensionContext, Uri, window } from "vscode";
+import { commands, ExtensionContext, Uri, window } from "vscode";
 import { Config, NoConfig } from "./models/Config";
 import { IConnectionService } from "./services/connection/IConnectionService";
 import { IWorkspaceService } from "./services/workspace/IWorkspaceService";
@@ -45,6 +45,10 @@ export class Startup implements IStartup {
 
         await this.logService.startReceiving();
         
+        // TODO: Move to own service
         window.registerTreeDataProvider("iobroker-javascript.script-explorer", this.scriptExplorerProvider);
+        commands.registerCommand("iobroker-javascript.view.scriptExplorer.refresh", () =>
+            this.scriptExplorerProvider.refresh()
+        );
     }
 }

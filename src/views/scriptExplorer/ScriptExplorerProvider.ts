@@ -12,28 +12,33 @@ import { ScriptItem } from './ScriptItem';
 export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | ScriptDirectory>, IScriptExplorerProvider {
 
     private scripts: undefined | ScriptObject[];
+    private _onDidChangeTreeData: vscode.EventEmitter<ScriptItem | ScriptDirectory | undefined | null | void> = new vscode.EventEmitter<ScriptItem | ScriptDirectory | undefined | null | void>();
+
+    onDidChangeTreeData?: vscode.Event<void | ScriptItem | ScriptDirectory | null | undefined> | undefined = this._onDidChangeTreeData.event;
 
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
     ) {}
-
-    onDidChangeTreeData?: vscode.Event<void | ScriptItem | ScriptDirectory | null | undefined> | undefined;
     
     getTreeItem(element: ScriptItem | ScriptDirectory): vscode.TreeItem | Thenable<vscode.TreeItem> {
         return element;
     }
 
     async getChildren(element?: ScriptItem | ScriptDirectory): Promise<Array<ScriptItem | ScriptDirectory>> {
-        if(!element && !this.scripts) {
+        if(!element) {
             this.scripts = await this.connectionService.downloadAllScripts();
             return this.getRootLevelItems(this.scripts);
         }
-       
+
         if (element && element instanceof ScriptDirectory && this.scripts) {
             return this.getChildItems(this.scripts, element.path);
         }
 
         return Promise.resolve([]);
+    }
+
+    refresh(): void {
+        this._onDidChangeTreeData.fire();
     }
 
     private convertToScriptItems(scriptOjbects: ScriptObject[]): ScriptItem[] {

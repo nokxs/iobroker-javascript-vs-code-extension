@@ -73,8 +73,22 @@
 			{
 				"command": "iobroker-javascript.updateTypeDefinition",
 				"title": "iobroker: Update JS type definition from GitHub"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.refresh",
+				"title": "Refresh",
+				"icon": "$(extensions-refresh)"
 			}
-		]
+		],
+		"menus": {
+			"view/title": [
+                {
+                    "command": "iobroker-javascript.view.scriptExplorer.refresh",
+                    "when": "view == iobroker-javascript.script-explorer",
+                    "group": "navigation"
+                }
+      		]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run package",
