@@ -1,6 +1,7 @@
-import { Script, ScriptId, ScriptObject } from "../../models/Script";
-
 import { LogMessage } from "../../models/LogMessage";
+import { Script } from "../../models/Script";
+import { ScriptId } from "../../models/ScriptId";
+import { ScriptObject } from "../../models/ScriptObject";
 import { Uri } from "vscode";
 
 export interface IConnectionEventListener {

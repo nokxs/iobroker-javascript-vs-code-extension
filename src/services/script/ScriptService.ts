@@ -2,7 +2,9 @@
 import { inject, injectable } from "inversify";
 import { win32 } from "path";
 import { Uri, window, WorkspaceFolder } from "vscode";
-import { Script, ScriptId, ScriptObject } from "../../models/Script";
+import { Script } from "../../models/Script";
+import { ScriptObject } from "../../models/ScriptObject";
+import { ScriptId } from "../../models/ScriptId";
 import TYPES from "../../Types";
 import { IFileService } from "../file/IFileService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";

@@ -1,7 +1,5 @@
 import 'reflect-metadata';
 
-import { IScriptExplorerProvider, ScriptExplorerProvider, ScriptItem } from './views/scriptExplorer/ScriptExplorerProvider';
-
 import { CommandService } from './services/command/CommandService';
 import { ConfigService } from './services/config/configService';
 import { ConnectionService } from './services/connection/connectionService';
@@ -15,12 +13,15 @@ import { IConfigService } from './services/config/IConfigService';
 import { IConnectionService } from './services/connection/IConnectionService';
 import { IFileService } from './services/file/IFileService';
 import { ILogService } from "./services/log/ILogService";
+import { IScriptExplorerProvider } from "./views/scriptExplorer/IScriptExplorerProvider";
 import { IScriptService } from './services/script/IScriptService';
 import { IStartup } from './IStartup';
 import { ITypeDefinitionService } from "./services/typeDefinition/ITypeDefinitionService";
 import { IWorkspaceService } from './services/workspace/IWorkspaceService';
 import { LogService } from './services/log/LogService';
 import { OpenFileCommand } from './commands/OpenFileCommand';
+import { ScriptExplorerProvider } from './views/scriptExplorer/ScriptExplorerProvider';
+import { ScriptItem } from "./views/scriptExplorer/ScriptItem";
 import { ScriptService } from './services/script/ScriptService';
 import { StartCurrentScriptCommand } from './commands/StartCurrentScriptCommand';
 import { Startup } from './Startup';
