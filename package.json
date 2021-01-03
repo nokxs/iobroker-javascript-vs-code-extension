@@ -29,7 +29,7 @@
 				{
 					"id": "iobroker",
 					"title": "ioBroker",
-					"icon": "images/iobroker-icon.svg"
+					"icon": "resources/iobroker-icon.svg"
 				}
 			]
 		},

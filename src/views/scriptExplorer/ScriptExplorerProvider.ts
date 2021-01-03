@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 
 import { inject, injectable } from 'inversify';
 import TYPES from '../../Types';
@@ -10,14 +11,37 @@ export interface IScriptExplorerProvider {
 }
 
 export class ScriptDirectory extends vscode.TreeItem {
+    iconPath = new vscode.ThemeIcon("folder-opened");
+
     constructor(public name: string, public path: string) {
         super(name, vscode.TreeItemCollapsibleState.Expanded);
     }
 }
 
 export class ScriptItem extends vscode.TreeItem {
+
     constructor(public script: Script) {
         super(script.common?.name ?? "INVALID NAME", vscode.TreeItemCollapsibleState.None);
+
+        if (script.common.engineType === "Javascript/js") {
+            this.iconPath = this.getJsIcon();
+        } else if (script.common.engineType === "TypeScript/ts") {
+            this.iconPath = this.getTsIcon();
+        } else if (script.common.engineType === "Blockly") {
+            this.iconPath = this.getBlocklyIcon();
+        }
+    }
+
+    private getJsIcon(): string {
+        return path.join(__filename, '..', '..', 'resources', 'javascript.svg');
+    }
+
+    private getTsIcon(): string {
+        return path.join(__filename, '..', '..', 'resources', 'typescript.svg');
+    }
+
+    private getBlocklyIcon(): string {
+        return path.join(__filename, '..', '..', 'resources', 'blockly.svg');
     }
 }
 
