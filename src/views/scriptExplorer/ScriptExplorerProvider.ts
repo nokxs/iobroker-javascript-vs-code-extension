@@ -10,7 +10,7 @@ export interface IScriptExplorerProvider {
 }
 
 export class ScriptDirectory extends vscode.TreeItem {
-    constructor(public name: string) {
+    constructor(public name: string, public path: string) {
         super(name, vscode.TreeItemCollapsibleState.Expanded);
     }
 }
@@ -41,6 +41,10 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
             this.scripts = await this.connectionService.downloadAllScripts();
             return this.getRootLevelItems(this.scripts);
         }
+       
+        if (element && element instanceof ScriptDirectory && this.scripts) {
+            return this.getChildItems(this.scripts, element.path);
+        }
 
         return Promise.resolve([]);
     }
@@ -60,8 +64,9 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
     private convertToScriptDirectory(scriptObject: ScriptObject, prefix: string): ScriptDirectory {
         const prefixParts = prefix.split(".").length;
         const name = scriptObject.value._id.split(".")[prefixParts - 1];
+        const directoryPath = `${prefix}${name}.`;
 
-        return new ScriptDirectory(name);
+        return new ScriptDirectory(name, directoryPath);
     }
 
     private getRootLevelItems(scripts: ScriptObject[]): Array<ScriptItem | ScriptDirectory> {
@@ -77,9 +82,14 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         const scriptItems = this.convertToScriptItems(currentLevelScripts);
 
         let items: Array<ScriptItem | ScriptDirectory> = new Array();
-        items = items.concat(scriptDirectories);
+        items = items.concat(scriptDirectories.filter(this.onlyUnique));
         items = items.concat(scriptItems);        
 
         return items;
     }
+
+    private onlyUnique(directory: ScriptDirectory, index: number, directories: ScriptDirectory[]): boolean {
+        const firstMatchingDirectory = directories.filter(dir => dir.path === directory.path)[0];
+        return directories.indexOf(firstMatchingDirectory) === index;
+      }
 }
