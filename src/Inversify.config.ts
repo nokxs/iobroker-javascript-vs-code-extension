@@ -20,6 +20,7 @@ import { IStartup } from './IStartup';
 import { ITypeDefinitionService } from "./services/typeDefinition/ITypeDefinitionService";
 import { IWorkspaceService } from './services/workspace/IWorkspaceService';
 import { LogService } from './services/log/LogService';
+import { OpenFileCommand } from './commands/OpenFileCommand';
 import { ScriptService } from './services/script/ScriptService';
 import { StartCurrentScriptCommand } from './commands/StartCurrentScriptCommand';
 import { Startup } from './Startup';
@@ -51,6 +52,7 @@ container.bind<ICommand>(TYPES.command).to(UploadCurrentCommand);
 container.bind<ICommand>(TYPES.command).to(StartCurrentScriptCommand);
 container.bind<ICommand>(TYPES.command).to(StopCurrentScriptCommand);
 container.bind<ICommand>(TYPES.command).to(UpdateTypeDefinitionCommand);
+container.bind<ICommand>(TYPES.command).to(OpenFileCommand);
 
 container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider);
 

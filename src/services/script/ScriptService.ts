@@ -35,7 +35,7 @@ export class ScriptService implements IScriptService {
         var path = script._id.replace("script.js.", "");
         path = this.replaceAll(path, ".", "/");
         path = this.replaceAll(path, "_", " ");
-        const extension = script.common.engineType === "Javascript/js" ? "js" : ""; // TODO support for different file formats
+        const extension = this.getFileExtension(script.common.engineType ?? "");
         return `${path}.${extension}`;
     }
 
@@ -43,11 +43,7 @@ export class ScriptService implements IScriptService {
         const relativeFilePath = this.getRelativeFilePath(script);
         const uri = Uri.joinPath(workspaceFolder.uri, relativeFilePath);
 
-        if (script.common.source) {
-            await this.fileService.saveToFile(uri, script.common.source);            
-        } else {
-            throw new Error(`Cannot save script '${script._id}' to file, because it has no source set`);
-        }
+        await this.fileService.saveToFile(uri, script.common.source ?? "");
     }
     
     async saveAllToFile(scripts: ScriptObject[], workspaceFolder: WorkspaceFolder): Promise<void> {
@@ -58,5 +54,19 @@ export class ScriptService implements IScriptService {
 
     private replaceAll(s: string, searchValue: string, replaceValue: string): string {
         return s.split(searchValue).join(replaceValue);
+    }
+
+    private getFileExtension(engineType: string): string {
+        switch (engineType) {
+            case "Javascript/js":
+                return "js";
+            case "TypeScript/ts":
+                return "ts";
+            case "Blockly":
+                return "block";
+        
+            default:
+                return "";
+        }
     }
 }

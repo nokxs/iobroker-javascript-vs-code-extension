@@ -30,6 +30,14 @@ export class ScriptItem extends vscode.TreeItem {
         } else if (script.common.engineType === "Blockly") {
             this.iconPath = this.getBlocklyIcon();
         }
+
+        this.command = {
+            title: "Open script",
+            command: "iobroker-javascript.openFile",
+            arguments: [
+                script
+            ]
+        };
     }
 
     private getJsIcon(): string {
