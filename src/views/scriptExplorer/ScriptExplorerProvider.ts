@@ -21,7 +21,8 @@ export class ScriptDirectory extends vscode.TreeItem {
 export class ScriptItem extends vscode.TreeItem {
 
     constructor(public script: Script) {
-        super(script.common?.name ?? "INVALID NAME", vscode.TreeItemCollapsibleState.None);
+        super("", vscode.TreeItemCollapsibleState.None);
+        this.label = this.getScriptName(script);
 
         if (script.common.engineType === "Javascript/js") {
             this.iconPath = this.getJsIcon();
@@ -38,6 +39,13 @@ export class ScriptItem extends vscode.TreeItem {
                 script
             ]
         };
+    }
+
+    private getScriptName(script: Script) {
+        const name = script.common?.name ?? "INVALID NAME";
+        const state = script.common.enabled ? "▶" : "❚❚";
+
+        return `${state} ${name}`;
     }
 
     private getJsIcon(): string {
