@@ -77,7 +77,27 @@
 			{
 				"command": "iobroker-javascript.view.scriptExplorer.refresh",
 				"title": "Refresh",
-				"icon": "$(extensions-refresh)"
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.download",
+				"title": "Download",
+				"icon": "$(arrow-down)"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.upload",
+				"title": "Upload",
+				"icon": "$(arrow-up)"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.start",
+				"title": "Start",
+				"icon": "$(debug-start)"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.pause",
+				"title": "Stop",
+				"icon": "$(debug-pause)"
 			}
 		],
 		"menus": {
@@ -87,7 +107,29 @@
                     "when": "view == iobroker-javascript.script-explorer",
                     "group": "navigation"
                 }
-      		]
+			],
+			"view/item/context": [
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.download",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem",
+					"group": "inline"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.upload",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem",
+					"group": "inline"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.start",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem",
+					"group": "inline"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.pause",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem",
+					"group": "inline"
+				}
+			]
 		}
 	},
 	"scripts": {

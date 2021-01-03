@@ -5,6 +5,8 @@ import { Script } from "../../models/Script";
 
 export class ScriptItem extends vscode.TreeItem {
 
+    contextValue = "scriptItem";
+
     constructor(public script: Script) {
         super("", vscode.TreeItemCollapsibleState.None);
         this.label = this.getScriptName(script);
