@@ -41,9 +41,9 @@ export class OpenFileCommand implements ICommand {
     private getScriptLanguage(script: Script): string {
         switch (script.common.engineType) {
             case "Javascript/js":
-                return "js";
+                return "javascript";
             case "TypeScript/ts":
-                return "ts";
+                return "typescript";
             case "Blockly":
                 return "blockly";
         
