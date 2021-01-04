@@ -12,6 +12,7 @@ import TYPES from '../../Types';
 import { IScriptService } from '../script/IScriptService';
 import { LogMessage } from '../../models/LogMessage';
 import { IScriptChangedEventListener as IScriptChangedEventListener } from './IScriptChangedListener';
+import { InvalidScript } from '../../models/InvalidScript';
 
 @injectable()
 export class ConnectionService implements IConnectionService {
@@ -80,7 +81,7 @@ export class ConnectionService implements IConnectionService {
                     resolve(script);
                 });
             } else {
-                resolve({_id: "INVALID", common: {}}); // TODO: Add Type "InvalidScript"
+                resolve(new InvalidScript());
             }
         });
     }

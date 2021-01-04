@@ -24,7 +24,7 @@ export class OpenFileCommand implements ICommand {
         }
 
         const script = args[0];
-        const relativeScriptPath = this.scriptService.getRelativeFilePath(script);
+        const relativeScriptPath = this.scriptService.getRelativeFilePathFromScript(script);
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
 
         const fileUri = Uri.joinPath(workspaceFolder.uri, relativeScriptPath);

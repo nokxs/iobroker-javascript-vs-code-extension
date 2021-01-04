@@ -33,16 +33,34 @@ export class ScriptService implements IScriptService {
         return new ScriptId(`script.js${path}`);
     }
     
-    getRelativeFilePath(script: Script): string {
+    getRelativeFilePathFromScript(script: Script): string {
         var path = script._id.replace("script.js.", "");
+        const engineType = script.common.engineType ?? "";
+        return this.getRelativeFilePath(path, engineType);
+    }
+    
+    getRelativeFilePath(scriptId: ScriptId, engineType: string): string {
+        var path = scriptId.replace("script.js.", "");
         path = this.replaceAll(path, ".", "/");
         path = this.replaceAll(path, "_", " ");
-        const extension = this.getFileExtension(script.common.engineType ?? "");
+        const extension = this.getFileExtension(engineType);
         return `${path}.${extension}`;
     }
 
+    async getFileContentOnDisk(scriptId: ScriptId, engineType: string): Promise<string | null> {
+        const workspace = await this.workspaceService.getWorkspaceToUse();
+        const relativeFilePath = this.getRelativeFilePath(scriptId, engineType);
+        const scriptUri = Uri.joinPath(workspace.uri, relativeFilePath);
+
+        if (this.fileService.fileExists(scriptUri)) {
+            return this.fileService.readFromFile(scriptUri);
+        }
+
+        return null;
+    }
+
     async saveToFile(script: Script, workspaceFolder: WorkspaceFolder): Promise<void> {
-        const relativeFilePath = this.getRelativeFilePath(script);
+        const relativeFilePath = this.getRelativeFilePathFromScript(script);
         const uri = Uri.joinPath(workspaceFolder.uri, relativeFilePath);
 
         await this.fileService.saveToFile(uri, script.common.source ?? "");

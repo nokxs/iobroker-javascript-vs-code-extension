@@ -30,7 +30,7 @@ import TYPES from './Types';
 import { TypeDefinitionService } from './services/typeDefinition/TypeDefinitionService';
 import { UpdateTypeDefinitionCommand } from './commands/UpdateTypeDefinitionCommand';
 import { UploadAllCommand } from './commands/UploadAllCommand';
-import { UploadCurrentCommand } from './commands/UploadCurrentCommand';
+import { UploadCommand } from './commands/UploadCommand';
 import { WorkspaceService } from './services/workspace/WorkspaceService';
 
 const container = new Container();
@@ -49,7 +49,7 @@ container.bind<ITypeDefinitionService>(TYPES.services.typeDefinition).to(TypeDef
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
 container.bind<ICommand>(TYPES.command).to(DownloadCommand);
 container.bind<ICommand>(TYPES.command).to(UploadAllCommand);
-container.bind<ICommand>(TYPES.command).to(UploadCurrentCommand);
+container.bind<ICommand>(TYPES.command).to(UploadCommand);
 container.bind<ICommand>(TYPES.command).to(StartCurrentScriptCommand);
 container.bind<ICommand>(TYPES.command).to(StopCurrentScriptCommand);
 container.bind<ICommand>(TYPES.command).to(UpdateTypeDefinitionCommand);

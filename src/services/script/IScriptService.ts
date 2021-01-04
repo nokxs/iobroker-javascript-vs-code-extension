@@ -6,7 +6,9 @@ import { ScriptObject } from "../../models/ScriptObject";
 
 export interface IScriptService {
     getIoBrokerId(fileUri: Uri): Promise<ScriptId>;
-    getRelativeFilePath(script: Script): string;
+    getRelativeFilePathFromScript(script: Script): string
+    getRelativeFilePath(scriptId: ScriptId, engineType: string): string
+    getFileContentOnDisk(scriptId: ScriptId, engineType: string): Promise<string | null>
     
     saveToFile(script: Script, workspaceFolder: WorkspaceFolder): Promise<void>
     saveAllToFile(scripts: ScriptObject[], workspaceFolder: WorkspaceFolder): Promise<void>
