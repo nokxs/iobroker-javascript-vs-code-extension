@@ -2,14 +2,15 @@ import { ICommand } from "./ICommand";
 import { inject, injectable } from "inversify";
 import TYPES from "../Types";
 import { IConnectionService } from "../services/connection/IConnectionService";
-import { IFileService } from "../services/file/IFileService";
 import { window } from "vscode";
 import { IWorkspaceService } from "../services/workspace/IWorkspaceService";
 import { IScriptService } from "../services/script/IScriptService";
+import { Script } from "../models/Script";
+import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 
 @injectable()
-export class DownloadCurrentCommand implements ICommand {
-    id: string = "iobroker-javascript.downloadCurrent";
+export class DownloadCommand implements ICommand {
+    id: string = "iobroker-javascript.download";
 
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
@@ -18,20 +19,30 @@ export class DownloadCurrentCommand implements ICommand {
     ) {}
     
     async execute(...args: any[]) {
-        const activeDocument = window.activeTextEditor?.document;
+        const script = await this.tryDownloadScript(args);
 
-        if (activeDocument) {
-            const message = window.setStatusBarMessage("ioBroker: Downloading script...");
-            const script = await this.connectionService.downloadScriptWithUri(activeDocument.uri);
+        if (script) {
             const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
     
             await this.scriptService.saveToFile(script, workspaceFolder);
             
-            message.dispose();
             window.setStatusBarMessage(`ioBroker: Finished downloading script`, 10 * 1000);
         } else {
-            window.showWarningMessage("ioBroker: Could not download current  script, because no script is active in editor.");
+            window.showWarningMessage("ioBroker: Could not download script.");
         }
     }
 
+    private async tryDownloadScript(...args: any[]): Promise<Script | null> {
+        if (args && args[0]) {
+            const scriptId = (<ScriptItem>args[0][0]).script._id;
+            return await this.connectionService.downloadScriptWithId(scriptId);
+        }
+        
+        const activeDocument = window.activeTextEditor?.document;
+        if (activeDocument) {
+            return await this.connectionService.downloadScriptWithUri(activeDocument.uri);
+        }
+
+        return null;
+    }
 }

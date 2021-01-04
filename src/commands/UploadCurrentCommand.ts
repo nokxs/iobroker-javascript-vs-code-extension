@@ -8,7 +8,7 @@ import { window } from "vscode";
 
 @injectable()
 export class UploadCurrentCommand implements ICommand {
-    id: string = "iobroker-javascript.uploadCurrent";
+    id: string = "iobroker-javascript.upload";
     
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,

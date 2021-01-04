@@ -5,7 +5,7 @@ import { ConfigService } from './services/config/configService';
 import { ConnectionService } from './services/connection/connectionService';
 import { Container } from 'inversify';
 import { DownloadAllCommand } from './commands/downloadAllCommand';
-import { DownloadCurrentCommand } from './commands/DownloadCurrentCommand';
+import { DownloadCommand } from './commands/DownloadCommand';
 import { FileService } from './services/file/FileService';
 import { ICommand } from './commands/ICommand';
 import { ICommandService } from './services/command/ICommandService';
@@ -47,7 +47,7 @@ container.bind<ILogService>(TYPES.services.log).to(LogService).inSingletonScope(
 container.bind<ITypeDefinitionService>(TYPES.services.typeDefinition).to(TypeDefinitionService).inSingletonScope();
 
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
-container.bind<ICommand>(TYPES.command).to(DownloadCurrentCommand);
+container.bind<ICommand>(TYPES.command).to(DownloadCommand);
 container.bind<ICommand>(TYPES.command).to(UploadAllCommand);
 container.bind<ICommand>(TYPES.command).to(UploadCurrentCommand);
 container.bind<ICommand>(TYPES.command).to(StartCurrentScriptCommand);

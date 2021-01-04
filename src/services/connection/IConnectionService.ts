@@ -9,19 +9,20 @@ import { Uri } from "vscode";
 export interface IConnectionService {
     isConnected: Boolean;
     
-    connect(uri: Uri): Promise<void>;
-    disconnect(): Promise<void>;
+    connect(uri: Uri): Promise<void>
+    disconnect(): Promise<void>
     
-    registerConnectionEventListener(listener: IConnectionEventListener): void;
-    registerScriptChangedEventListener(listener: IScriptChangedEventListener): void;
+    registerConnectionEventListener(listener: IConnectionEventListener): void
+    registerScriptChangedEventListener(listener: IScriptChangedEventListener): void
 
-    downloadAllScripts(): Promise<ScriptObject[]>;
-    downloadScriptWithUri(scriptPath: Uri): Promise<Script>;
-    uploadScript(script: Script): Promise<void>;
+    downloadAllScripts(): Promise<ScriptObject[]>
+    downloadScriptWithUri(scriptPath: Uri): Promise<Script>
+    downloadScriptWithId(scriptId: ScriptId): Promise<Script>
+    uploadScript(script: Script): Promise<void>
     
-    startScript(script: ScriptId): Promise<void>;
-    stopScript(scriptId: ScriptId): Promise<void>;
+    startScript(script: ScriptId): Promise<void>
+    stopScript(scriptId: ScriptId): Promise<void>
 
-    registerForLogs(logAction: (logMessage: LogMessage) => void): Promise<void>;
-    unregisterForLogs(): Promise<void>;
+    registerForLogs(logAction: (logMessage: LogMessage) => void): Promise<void>
+    unregisterForLogs(): Promise<void>
 }
