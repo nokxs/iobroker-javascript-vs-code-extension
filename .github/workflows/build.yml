@@ -12,11 +12,11 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: 12
-      - name: install packages
-        run: npm install
-      - name: build
+      - name: Install
+        run: npm ci
+      - name: Compile
         run: npm run compile
-      - name: lint
+      - name: Lint
         run: npm run lint
       - name: Test
         run: npm run test

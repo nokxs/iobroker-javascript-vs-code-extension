@@ -3,7 +3,10 @@
 	"displayName": "ioBroker.javascript",
 	"description": "Simplifies the development of JavaScript/TypeScript scripts for ioBroker",
 	"version": "0.0.1",
-	"author": {"name": "nokxs", "url": "https://github.com/nokxs"},
+	"author": {
+		"name": "nokxs",
+		"url": "https://github.com/nokxs"
+	},
 	"publisher": "nokxs",
 	"icon": "https://upload.wikimedia.org/wikipedia/commons/8/82/IoBroker_Logo.png",
 	"engines": {
@@ -81,11 +84,11 @@
 		],
 		"menus": {
 			"view/title": [
-                {
-                    "command": "iobroker-javascript.view.scriptExplorer.refresh",
-                    "when": "view == iobroker-javascript.script-explorer",
-                    "group": "navigation"
-                }
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.refresh",
+					"when": "view == iobroker-javascript.script-explorer",
+					"group": "navigation"
+				}
 			],
 			"view/item/context": [
 				{
