@@ -4,10 +4,12 @@ import TYPES from "../Types";
 import { IConnectionService } from "../services/connection/IConnectionService";
 import { window } from "vscode";
 import { IScriptService } from "../services/script/IScriptService";
+import { ScriptId } from "../models/ScriptId";
+import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 
 @injectable()
 export class StartCurrentScriptCommand implements ICommand {
-    id: string = "iobroker-javascript.startCurrentScript";
+    id: string = "iobroker-javascript.startScript";
     
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
@@ -15,21 +17,30 @@ export class StartCurrentScriptCommand implements ICommand {
     ) {}
     
     async execute(...args: any[]) {
-        const activeDocument = window.activeTextEditor?.document;
+        const scriptId = this.tryGetScriptId(args);
 
-        if (activeDocument) {
-            const scriptId = await this.scriptService.getIoBrokerId(activeDocument.uri);
-
-            if (scriptId.length > 0) {
-                try {
-                    await this.connectionService.startScript(scriptId);
-                    window.setStatusBarMessage(`ioBroker: Started script '${scriptId}' sucessfully`);
-                } catch (error) {
-                    window.showErrorMessage((<Error>error).message);
-                }
+        if (scriptId instanceof ScriptId && scriptId.length > 0) {
+            try {
+                await this.connectionService.startScript(scriptId);
+                window.setStatusBarMessage(`ioBroker: Started script '${scriptId}' sucessfully`, 10 * 1000);
+            } catch (error) {
+                window.showErrorMessage((<Error>error).message);
             }
         } else {
-            window.showWarningMessage("ioBroker: Cannot start current script, because no script file is openend.");
+            window.showWarningMessage("ioBroker: Cannot start current script.");
         }
-    }    
+    }
+
+    private async tryGetScriptId(...args: any[]): Promise<ScriptId | null> {
+        if (args && args[0]) {
+            return (<ScriptItem>args[0][0]).script._id;
+        }
+        
+        const activeDocument = window.activeTextEditor?.document;
+        if (activeDocument) {
+            return await this.scriptService.getIoBrokerId(activeDocument.uri);
+        }
+
+        return null;
+    }
 }

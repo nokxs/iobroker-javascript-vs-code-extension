@@ -14,12 +14,11 @@
 	],
 	"activationEvents": [
 		"onView:iobroker-javascript.script-explorer",
-		"onCommand:iobroker-javascript.downloadCurrent",
+		"onCommand:iobroker-javascript.download",
 		"onCommand:iobroker-javascript.downloadAll",
-		"onCommand:iobroker-javascript.uploadCurrent",
-		"onCommand:iobroker-javascript.uploadAll",
-		"onCommand:iobroker-javascript.startCurrentScript",
-		"onCommand:iobroker-javascript.stopCurrentScript",
+		"onCommand:iobroker-javascript.upload",
+		"onCommand:iobroker-javascript.startScript",
+		"onCommand:iobroker-javascript.stopScript",
 		"onCommand:iobroker-javascript.updateTypeDefinition"
 	],
 	"main": "./dist/extension.js",
@@ -61,16 +60,14 @@
 				"icon": "$(arrow-up)"
 			},
 			{
-				"command": "iobroker-javascript.uploadAll",
-				"title": "iobroker: Upload all scripts"
+				"command": "iobroker-javascript.startScript",
+				"title": "iobroker: Start script",
+				"icon": "$(debug-start)"
 			},
 			{
-				"command": "iobroker-javascript.startCurrentScript",
-				"title": "iobroker: Start current script"
-			},
-			{
-				"command": "iobroker-javascript.stopCurrentScript",
-				"title": "iobroker: Stop current script"
+				"command": "iobroker-javascript.stopScript",
+				"title": "iobroker: Stop script",
+				"icon": "$(debug-pause)"
 			},
 			{
 				"command": "iobroker-javascript.updateTypeDefinition",
@@ -80,26 +77,6 @@
 				"command": "iobroker-javascript.view.scriptExplorer.refresh",
 				"title": "Refresh",
 				"icon": "$(refresh)"
-			},
-			{
-				"command": "iobroker-javascript.view.scriptExplorer.download",
-				"title": "Download",
-				"icon": "$(arrow-down)"
-			},
-			{
-				"command": "iobroker-javascript.view.scriptExplorer.upload",
-				"title": "Upload",
-				"icon": "$(arrow-up)"
-			},
-			{
-				"command": "iobroker-javascript.view.scriptExplorer.start",
-				"title": "Start",
-				"icon": "$(debug-start)"
-			},
-			{
-				"command": "iobroker-javascript.view.scriptExplorer.pause",
-				"title": "Stop",
-				"icon": "$(debug-pause)"
 			}
 		],
 		"menus": {
@@ -122,12 +99,12 @@
 					"group": "inline"
 				},
 				{
-					"command": "iobroker-javascript.view.scriptExplorer.start",
+					"command": "iobroker-javascript.startScript",
 					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem",
 					"group": "inline"
 				},
 				{
-					"command": "iobroker-javascript.view.scriptExplorer.pause",
+					"command": "iobroker-javascript.stopScript",
 					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem",
 					"group": "inline"
 				}
