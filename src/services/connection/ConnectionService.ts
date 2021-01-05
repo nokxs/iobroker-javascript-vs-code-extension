@@ -18,6 +18,8 @@ import { InvalidScript } from '../../models/InvalidScript';
 export class ConnectionService implements IConnectionService {
     public isConnected: Boolean = false;
 
+    private connectionTimeout = 10 * 1000;
+
     private connectionEventListeners: Array<IConnectionEventListener> = new Array();
     private scriptEventListeners: Array<IScriptChangedEventListener> = new Array();
     private client: SocketIOClient.Socket | undefined = undefined;
@@ -35,13 +37,19 @@ export class ConnectionService implements IConnectionService {
     }
     
     async connect(uri: Uri): Promise<void> {
-        this.client = await new Promise<SocketIOClient.Socket>((resolve) => {
+        this.client = await new Promise<SocketIOClient.Socket>((resolve, reject) => {
             const localClient = socketio(uri.toString());
 
             localClient.on("connect", () => {
                 this.isConnected = true;
                 resolve(localClient);
             });
+
+            setTimeout(() => {
+                if (!this.isConnected) {
+                    reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
+                }
+            }, this.connectionTimeout);
         });
 
         this.registerSocketEvents();
