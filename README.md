@@ -27,6 +27,8 @@ the configured iobroker server.
 
 Click on script to show its contents. If the script is not downloaded yet, only a preview is openend. 
 
+Every time a script object is changed, the script explorer refreshes its view.
+
 ### Download scripts
 Either download only one script (`iobroker: Download script`) or all scripts at once (`iobroker: Download all scripts`).
 To download a single script you have to following options:
@@ -68,9 +70,6 @@ After the first activation a `.iobroker-config.json` file is created in the root
 If you got any problems, please open a GitHub issue.
 
 ## Release Notes
-
-Users appreciate release notes as you update your extension.
-
 ### 0.5.0
 
 Initial release of ioBroker.javascript.
