@@ -45,17 +45,13 @@
 		},
 		"commands": [
 			{
+				"command": "iobroker-javascript.downloadAll",
+				"title": "iobroker: Download all scripts"
+			},
+			{
 				"command": "iobroker-javascript.download",
 				"title": "iobroker: Download script",
 				"icon": "$(arrow-down)"
-			},
-			{
-				"command": "iobroker-javascript.showAllLog",
-				"title": "iobroker: Show all log output"
-			},
-			{
-				"command": "iobroker-javascript.downloadAll",
-				"title": "iobroker: Download all scripts"
 			},
 			{
 				"command": "iobroker-javascript.upload",

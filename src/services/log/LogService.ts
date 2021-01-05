@@ -16,16 +16,16 @@ export class LogService implements ILogService {
 
     async startReceiving(): Promise<void> {
         const allOutputChannel = window.createOutputChannel("ioBroker (all)");
-        const currentScriptOutputChannel = window.createOutputChannel("ioBroker (current script)");
+        // const currentScriptOutputChannel = window.createOutputChannel("ioBroker (current script)"); // TODO: Make this work
 
         await this.connectionService.registerForLogs(async (logMessage: LogMessage) => {
             if (logMessage.from.startsWith("javascript.")) {
                 this.logMessageToChannel(logMessage, allOutputChannel);
 
                 // TODO: this does not work yet. It returns all messages.
-                if (await this.isRelevantMessage(logMessage)) {
-                    this.logMessageToChannel(logMessage, currentScriptOutputChannel);
-                }
+                // if (await this.isRelevantMessage(logMessage)) {
+                //     this.logMessageToChannel(logMessage, currentScriptOutputChannel);
+                // }
             }
         });
     }

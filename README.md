@@ -1,65 +1,76 @@
-# iobroker-javascript README
+# VS Code extension for ioBroker javascript adapter
 
-This is the README for your extension "iobroker-javascript". After writing up a brief description, we recommend including the following sections.
+[ioBroker](https://www.iobroker.net/) is a mighty IoT platform and enables you to write custom scripts with its [JavaScript adapter](https://github.com/ioBroker/ioBroker.javascript). 
+
+This extension for [Visual Studio Code](https://code.visualstudio.com/) enables you to develop the scripts completely in Visual Studio Code, without the need of the web interface. 
+
+![Script Explorer](doc/script-explorer.gif)
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+Open the command pallet (<kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> OR <kbd>F1</kbd>) and type `iobroker: ` to see all available commands.
 
-For example if there is an image subfolder under your extension project workspace:
+After the extension is invoked the first time, the extension has to be configured interactively. You can see the process
+in the gif above.
 
-\!\[feature X\]\(images/feature-x.png\)
+> Current limitation: ioBroker instances with a password are not supported yet!
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+### Type definitions
 
-## Requirements
+If you choose to configure ioBroker type definitions, the current defintions are downloaded from [GitHub](https://github.com/ioBroker/ioBroker.javascript/blob/master/lib/javascript.d.ts). Additionaly a `tsconfig.json` is created
+(if it does not exist yet) and the definition is added as `typeRoot`. This enables Visual Studio Code to know
+the [ioBroker specific javascript functions](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/javascript.md).
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+### Script explorer
+The script explorer can be found in the activity bar behind the ioBroker logo. It shows all scripts, which are on
+the configured iobroker server.
+
+Click on script to show its contents. If the script is not downloaded yet, only a preview is openend. 
+
+### Download scripts
+Either download only one script (`iobroker: Download script`) or all scripts at once (`iobroker: Download all scripts`).
+To download a single script you have to following options:
+
+* Go to the script explorer and press the download button
+* Use the command `iobroker: Download script`. This command is only for updating an existing script as it downloads 
+the script in the active text editor.
+
+### Upload scripts
+To upload a single script you have the following options:
+
+* Go to the script explorer and press the upload button. This will only work, if the script resides on your disk.
+* Use the command `iobroker: Upload script`. This command uploads the script in the active text editor.
+
+> Current limition: It is not possible to create a new script and upload it. This feature will be added in a future release.
+### Start/Stop scripts
+To start/stop a single script you have the following options:
+
+* Go to the script explorer and press the start or stop button.
+* Use the command `iobroker: Start script`, respectively `iobroker: Stop script`. This command starts/stops the script in the active text editor.
+
+### Show script logging
+Press <kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>U</kbd> to open the "Output" view. Open the drop down and select `ioBroker (all)`.
+
+As long as a connection to ioBroker exists, this will show the output of all scripts.
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+After the first activation a `.iobroker-config.json` file is created in the root directory of your workspace. It contains all settings. The idea is to use a SCM tool like git and check this in.
 
-For example:
+### Available settings
 
-This extension contributes the following settings:
-
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
+* `ioBrokerUrl`: The url has to be prefixed with http/https. Specify no port here
+* `socketIoPort`: Use the port of the admin adapter (usually 8081). Do not use the port of the socket.io Adapter (usually 8084) as this will not work, because of missing permissions.
+* `workspaceSubPath`: Not supported yet
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+If you got any problems, please open a GitHub issue.
 
 ## Release Notes
 
 Users appreciate release notes as you update your extension.
 
-### 1.0.0
+### 0.5.0
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
------------------------------------------------------------------------------------------------------------
-
-## Working with Markdown
-
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (macOS) to see a list of Markdown snippets
-
-### For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Initial release of ioBroker.javascript.
