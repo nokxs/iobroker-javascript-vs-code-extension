@@ -1,10 +1,10 @@
 import 'reflect-metadata';
 
 import { CommandService } from './services/command/CommandService';
-import { ConfigService } from './services/config/configService';
-import { ConnectionService } from './services/connection/connectionService';
+import { ConfigService } from './services/config/ConfigService';
+import { ConnectionService } from './services/connection/ConnectionService';
 import { Container } from 'inversify';
-import { DownloadAllCommand } from './commands/downloadAllCommand';
+import { DownloadAllCommand } from './commands/DownloadAllCommand';
 import { DownloadCommand } from './commands/DownloadCommand';
 import { FileService } from './services/file/FileService';
 import { ICommand } from './commands/ICommand';
