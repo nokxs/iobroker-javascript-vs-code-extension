@@ -55,8 +55,8 @@ export class ConnectionService implements IConnectionService {
         this.registerSocketEvents();
     }
 
-    async disconnect(): Promise<void> {
-        await new Promise<void>((resolve) => {
+    disconnect(): Promise<void> {
+        return new Promise<void>((resolve) => {
             this.client?.disconnect();
 
             this.client?.on("disconnect", () => {
