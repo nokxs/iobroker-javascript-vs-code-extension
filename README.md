@@ -69,6 +69,16 @@ After the first activation a `.iobroker-config.json` file is created in the root
 
 If you got any problems, please open a GitHub issue.
 
+## Planned features
+
+Support (not in the listed order)
+* password protected ioBroker installations
+* the setting `workspaceSubPath` to place scripts not in the root directory of the workspace
+* renaming of scripts
+* creating of new scripts
+* deleting of scripts
+* multiple js-Adapter instances
+
 ## Release Notes
 ### 0.5.0
 
