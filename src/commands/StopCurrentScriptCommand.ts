@@ -17,9 +17,9 @@ export class StopCurrentScriptCommand implements ICommand {
     ) {}
     
     async execute(...args: any[]) {
-        const scriptId = this.tryGetScriptId(args);
+        const scriptId = await this.tryGetScriptId(args);
 
-        if (scriptId instanceof ScriptId && scriptId.length > 0) {
+        if (scriptId && scriptId.length > 0) {
             try {
                 await this.connectionService.stopScript(scriptId);
                 window.setStatusBarMessage(`ioBroker: Stoped script '${scriptId}' sucessfully`, 10 * 1000);
@@ -27,7 +27,7 @@ export class StopCurrentScriptCommand implements ICommand {
                 window.showErrorMessage((<Error>error).message);
             }
         } else {
-            window.showWarningMessage("ioBroker: Cannot start current script.");
+            window.showWarningMessage("ioBroker: Cannot stop current script.");
         }
     }
 

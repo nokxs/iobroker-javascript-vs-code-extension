@@ -17,9 +17,9 @@ export class StartCurrentScriptCommand implements ICommand {
     ) {}
     
     async execute(...args: any[]) {
-        const scriptId = this.tryGetScriptId(args);
+        const scriptId = await this.tryGetScriptId(args);
 
-        if (scriptId instanceof ScriptId && scriptId.length > 0) {
+        if (scriptId && scriptId.length > 0) {
             try {
                 await this.connectionService.startScript(scriptId);
                 window.setStatusBarMessage(`ioBroker: Started script '${scriptId}' sucessfully`, 10 * 1000);
