@@ -15,6 +15,8 @@ in the gif above.
 
 > Current limitation: ioBroker instances with a password are not supported yet!
 
+> Current limitation: If the connection to ioBroker fails, VS Code has to be reopened again (to load the extension again).
+
 ### Type definitions
 
 If you choose to configure ioBroker type definitions, the current defintions are downloaded from [GitHub](https://github.com/ioBroker/ioBroker.javascript/blob/master/lib/javascript.d.ts). Additionaly a `tsconfig.json` is created
@@ -78,6 +80,7 @@ Support (not in the listed order)
 * creating of new scripts
 * deleting of scripts
 * multiple js-Adapter instances
+* syncing of workspace with remote scripts (correclty, delete and remove scirpts)
 
 ## Release Notes
 ### 0.5.0
