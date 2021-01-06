@@ -3,12 +3,13 @@
 	"displayName": "ioBroker.javascript",
 	"description": "Simplifies the development of JavaScript/TypeScript scripts for ioBroker",
 	"version": "0.0.1",
+	"repository": {"url": "https://github.com/nokxs/iobroker-javascript-vs-code-extension"},
 	"author": {
 		"name": "nokxs",
 		"url": "https://github.com/nokxs"
 	},
 	"publisher": "nokxs",
-	"icon": "https://upload.wikimedia.org/wikipedia/commons/8/82/IoBroker_Logo.png",
+	"icon": "resources/iobroker-logo.png",
 	"engines": {
 		"vscode": "^1.52.0"
 	},

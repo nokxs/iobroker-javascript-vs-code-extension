@@ -4,7 +4,7 @@
 
 This extension for [Visual Studio Code](https://code.visualstudio.com/) enables you to develop the scripts completely in Visual Studio Code, without the need of the web interface. 
 
-![Script Explorer](doc/script-explorer.gif)
+![Script Explorer](https://media.githubusercontent.com/media/nokxs/iobroker-javascript-vs-code-extension/main/doc/script-explorer.gif)
 
 ## Features
 
