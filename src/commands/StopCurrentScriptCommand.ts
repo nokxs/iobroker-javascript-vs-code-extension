@@ -33,7 +33,7 @@ export class StopCurrentScriptCommand implements ICommand {
     }
 
     private async tryGetScriptId(...args: any[]): Promise<ScriptId | null> {
-        if (args && args[0]) {
+        if (args && args[0] && args[0].length > 0) {
             return (<ScriptItem>args[0][0]).script._id;
         }
         

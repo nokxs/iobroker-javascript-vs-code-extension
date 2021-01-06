@@ -34,7 +34,7 @@ export class DownloadCommand implements ICommand {
     }
 
     private async tryDownloadScript(...args: any[]): Promise<Script | null> {
-        if (args && args[0]) {
+        if (args && args[0] && args[0].length > 0) {
             const scriptId = (<ScriptItem>args[0][0]).script._id;
             return await this.connectionService.downloadScriptWithId(scriptId);
         }

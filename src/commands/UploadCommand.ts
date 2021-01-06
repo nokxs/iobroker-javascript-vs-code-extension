@@ -31,7 +31,7 @@ export class UploadCommand implements ICommand {
     }
 
     private async getScriptData(...args: any[]): Promise<{ scriptText: string, existingScript: Script} | null> {
-        if (args && args[0]) {
+        if (args && args[0] && args[0].length > 0) {
             const script = (<ScriptItem>args[0][0]).script;
             const scriptId = script._id;
             const engineType = script.common.engineType;
