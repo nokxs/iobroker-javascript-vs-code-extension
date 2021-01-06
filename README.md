@@ -83,6 +83,10 @@ Support (not in the listed order)
 * syncing of workspace with remote scripts (correclty, delete and remove scirpts)
 
 ## Release Notes
-### 0.5.0
+### v0.5.0
 
 Initial release of ioBroker.javascript.
+
+### v0.5.1
+#### Bugfixes
+- Invoking the start/stop/upload/download command over the command pallet does not throw an exception anymore
