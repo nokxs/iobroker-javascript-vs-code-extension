@@ -7,9 +7,7 @@ import { ScriptObject } from "../../models/ScriptObject";
 import { IScriptExplorerProvider } from './IScriptExplorerProvider';
 import { ScriptDirectory } from './ScriptDirectory';
 import { ScriptItem } from './ScriptItem';
-import { IConnectionEventListener } from '../../services/connection/IConnectionEventListener';
 import { IScriptChangedEventListener } from '../../services/connection/IScriptChangedListener';
-import { Script } from '../../models/Script';
 
 @injectable()
 export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | ScriptDirectory>, IScriptExplorerProvider, IScriptChangedEventListener {
@@ -46,7 +44,7 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         this._onDidChangeTreeData.fire();
     }
     
-    onScriptChanged(id: string, script: Script): void {
+    onScriptChanged(): void {
         this.refresh();
     }
     

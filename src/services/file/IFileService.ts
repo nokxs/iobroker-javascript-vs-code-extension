@@ -1,4 +1,4 @@
-import { Uri, WorkspaceFolder } from "vscode";
+import { Uri } from "vscode";
 
 export interface IFileService {
     saveToFile(uri: Uri, content: string): Promise<void>

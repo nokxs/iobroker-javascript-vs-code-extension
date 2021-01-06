@@ -16,15 +16,14 @@ export class DownloadAllCommand implements ICommand {
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService
     ) {}
     
-    async execute(...args: any[]) {
+    async execute() {
         const message = window.setStatusBarMessage("ioBroker: Downloading all scripts...");
         const scripts = await this.connectionService.downloadAllScripts();
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
 
-	    await this.scriptService.saveAllToFile(scripts, workspaceFolder);
+        await this.scriptService.saveAllToFile(scripts, workspaceFolder);
         
         message.dispose();
         window.setStatusBarMessage("ioBroker: Finished downloading all scripts", 10 * 1000);
     }
-
 }

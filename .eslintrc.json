@@ -15,5 +15,14 @@
         "eqeqeq": "warn",
         "no-throw-literal": "warn",
         "semi": "off"
-    }
+    },
+    "extends": "eslint:recommended",
+    "overrides": [
+        {
+            "files":["*.ts"],
+            "rules": {
+                "no-undef": "off"
+            }
+        }
+    ]
 }

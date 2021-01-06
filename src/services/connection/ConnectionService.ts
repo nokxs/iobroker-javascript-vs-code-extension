@@ -83,10 +83,14 @@ export class ConnectionService implements IConnectionService {
     }
 
     downloadScriptWithId(scriptId: ScriptId): Promise<Script> {
-        return new Promise<Script>(async (resolve) => {
+        return new Promise<Script>((resolve, reject) => {
             if (this.client && this.isConnected) {
                 this.client.emit("getObject", scriptId, (err: any, script: Script) => {
-                    resolve(script);
+                    if (err) {
+                        reject(new Error(`Could not downlaod script with id '${scriptId}': ${err}`));
+                    } else {
+                        resolve(script);
+                    }
                 });
             } else {
                 resolve(new InvalidScript());
@@ -95,10 +99,14 @@ export class ConnectionService implements IConnectionService {
     }
 
     uploadScript(script: Script): Promise<void> {
-        return new Promise<void>(async (resolve) => {
+        return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
                 this.client.emit("setObject", script._id, script, (err: any) => {
-                    resolve();
+                    if (err) {
+                        reject(new Error(`Could not upload script with id '${script._id}': ${err}`));
+                    } else {
+                        resolve();
+                    }
                 });
             }
         });
@@ -113,7 +121,7 @@ export class ConnectionService implements IConnectionService {
     }
 
     registerForLogs(logAction: (logMessage: LogMessage) => void): Promise<void> {
-        return new Promise<void>(async (resolve) => {
+        return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
 
                 this.client.on("log", (message: LogMessage) => {
@@ -122,26 +130,26 @@ export class ConnectionService implements IConnectionService {
     
                 this.client.emit("requireLog", true, (err: any) => {
                     if (err) {
-                        throw new Error(`Could not register for logs: ${err}`);
-                    } 
-                    
-                    resolve();
+                        reject(new Error(`Could not register for logs: ${err}`));
+                    } else {
+                        resolve();
+                    }                    
                 });
             }
         });
     }
 
     unregisterForLogs(): Promise<void> {
-        return new Promise<void>(async (resolve) => {
+        return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
 
                 this.client.off("log");    
                 this.client.emit("requireLog", false, (err: any) => {
                     if (err) {
-                        throw new Error(`Could not unregister for logs: ${err}`);
-                    } 
-                    
-                    resolve();
+                        reject(new Error(`Could not unregister for logs: ${err}`));
+                    } else {
+                        resolve();
+                    }
                 });
             }
         });
@@ -166,29 +174,25 @@ export class ConnectionService implements IConnectionService {
         }
     }
 
-    private setScriptState(scriptId: ScriptId, isEnabled: boolean): Promise<void> {
-        return new Promise<void>(async (resolve, reject) => {
-            if (this.client && this.isConnected) {
-                const script: Script = {
-                    _id: scriptId,
-                    common: {
-                        enabled: isEnabled
-                    }
-                };
-
-                const existingScript = await this.downloadScriptWithId(scriptId);
-                if (existingScript) {
-                    this.client.emit("extendObject", scriptId, script, (err: any) => {
-                        if (err) {
-                            throw new Error(`Could set script state for '${scriptId}' to '${isEnabled}': ${err}`);
-                        }
-                        
-                        resolve();
-                    });
-                } else {
-                    reject(new Error(`Could set script state for '${scriptId}' to '${isEnabled}', because it is not known to ioBroker`));
+    private async setScriptState(scriptId: ScriptId, isEnabled: boolean): Promise<void> {
+        if (this.client && this.isConnected) {
+            const script: Script = {
+                _id: scriptId,
+                common: {
+                    enabled: isEnabled
                 }
+            };
+
+            const existingScript = await this.downloadScriptWithId(scriptId);
+            if (existingScript) {
+                this.client.emit("extendObject", scriptId, script, (err: any) => {
+                    if (err) {
+                        throw new Error(`Could set script state for '${scriptId}' to '${isEnabled}': ${err}`);
+                    }
+                });
+            } else {
+                throw new Error(`Could set script state for '${scriptId}' to '${isEnabled}', because it is not known to ioBroker`);
             }
-        });
+        }
     }
 }

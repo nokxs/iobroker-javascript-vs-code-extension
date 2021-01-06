@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 
 import { Config, NoConfig } from "../../models/Config";
-import { Uri, WorkspaceFolder, window, workspace, QuickInputButtons } from "vscode";
+import { Uri, WorkspaceFolder, window, workspace } from "vscode";
 
 import { IConfigService } from "./IConfigService";
 import { inject, injectable } from "inversify";

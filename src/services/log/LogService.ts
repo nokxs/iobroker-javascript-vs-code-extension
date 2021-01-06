@@ -1,5 +1,5 @@
 import { inject, injectable } from "inversify";
-import { OutputChannel, Uri, window, workspace } from "vscode";
+import { OutputChannel, Uri, window } from "vscode";
 import { LogMessage } from "../../models/LogMessage";
 import TYPES from "../../Types";
 import { IConnectionService } from "../connection/IConnectionService";

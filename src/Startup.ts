@@ -48,9 +48,5 @@ export class Startup implements IStartup {
         // TODO: Move to own service
         window.registerTreeDataProvider("iobroker-javascript.script-explorer", this.scriptExplorerProvider);
         commands.registerCommand("iobroker-javascript.view.scriptExplorer.refresh", () => this.scriptExplorerProvider.refresh());
-        commands.registerCommand("iobroker-javascript.view.scriptExplorer.download", () => console.log("download"));
-        commands.registerCommand("iobroker-javascript.view.scriptExplorer.upload", () => console.log("upload"));
-        commands.registerCommand("iobroker-javascript.view.scriptExplorer.start", () => console.log("start"));
-        commands.registerCommand("iobroker-javascript.view.scriptExplorer.pause", () => console.log("pause"));
     }
 }
