@@ -8,4 +8,3 @@ export interface Script {
     user?: string;
     _id: ScriptId;
 }
-

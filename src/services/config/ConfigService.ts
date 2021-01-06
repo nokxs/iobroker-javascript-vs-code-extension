@@ -1,5 +1,3 @@
-import * as fs from 'fs';
-
 import { Config, NoConfig } from "../../models/Config";
 import { Uri, WorkspaceFolder, window, workspace } from "vscode";
 
@@ -7,18 +5,20 @@ import { IConfigService } from "./IConfigService";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { ITypeDefinitionService } from '../typeDefinition/ITypeDefinitionService';
+import { IFileService } from '../file/IFileService';
 
 @injectable()
 export class ConfigService implements IConfigService {
     
     constructor(
         @inject(TYPES.services.typeDefinition) private typeDefinitionService: ITypeDefinitionService,
+        @inject(TYPES.services.file) private fileService: IFileService,
     ) {}
 
     async read(workspaceFolder: WorkspaceFolder): Promise<Config> {
         
         const expectedConfigFilePath = this.getConfigPath(workspaceFolder.uri);
-        const configFileExists = fs.existsSync(expectedConfigFilePath.fsPath);
+        const configFileExists = this.fileService.fileExists(expectedConfigFilePath);
         
         if (configFileExists) {
             const configFileContent = await workspace.fs.readFile(expectedConfigFilePath);

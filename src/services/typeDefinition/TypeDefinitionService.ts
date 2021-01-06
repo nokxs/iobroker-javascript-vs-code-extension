@@ -1,5 +1,3 @@
-import * as fs from 'fs';
-
 import { ITypeDefinitionService } from "./ITypeDefinitionService";
 import axios from "axios";
 import { inject, injectable } from "inversify";
@@ -7,6 +5,13 @@ import TYPES from "../../Types";
 import { IFileService } from "../file/IFileService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { Uri, workspace, WorkspaceFolder } from "vscode";
+
+interface MinimalTsConfig {
+    include?: string[]
+    compilerOptions?: {
+        typeRoots?: string[]
+    }
+}
 
 @injectable()
 export class TypeDefinitionService implements ITypeDefinitionService {
@@ -47,7 +52,7 @@ export class TypeDefinitionService implements ITypeDefinitionService {
     }
 
     private async getTsConfig(uri: Uri): Promise<MinimalTsConfig> {
-        if (fs.existsSync(uri.fsPath)) {
+        if (this.fileService.fileExists(uri)) {
             const tsConfigString = await workspace.fs.readFile(uri);
             const tsConfig = <MinimalTsConfig>JSON.parse(tsConfigString.toString());
 
@@ -77,12 +82,5 @@ export class TypeDefinitionService implements ITypeDefinitionService {
                 "typeRoots" : ["./.iobroker/types"]
             }
         };
-    }
-}
-
-export interface MinimalTsConfig {
-    include?: string[]
-    compilerOptions?: {
-        typeRoots?: string[]
     }
 }
