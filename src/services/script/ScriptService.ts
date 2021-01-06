@@ -8,6 +8,7 @@ import TYPES from "../../Types";
 import { IFileService } from "../file/IFileService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { IScriptService } from "./IScriptService";
+import { EngineType } from "../../models/EngineType";
 
 @injectable()
 export class ScriptService implements IScriptService {
@@ -77,11 +78,11 @@ export class ScriptService implements IScriptService {
 
     private getFileExtension(engineType: string): string {
         switch (engineType) {
-            case "Javascript/js":
+            case EngineType.javascript:
                 return "js";
-            case "TypeScript/ts":
+            case EngineType.typescript:
                 return "ts";
-            case "Blockly":
+            case EngineType.blockly:
                 return "block";
         
             default:

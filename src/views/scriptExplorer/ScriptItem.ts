@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
+import { EngineType } from '../../models/EngineType';
 import { Script } from "../../models/Script";
 
 export class ScriptItem extends vscode.TreeItem {
@@ -9,16 +10,9 @@ export class ScriptItem extends vscode.TreeItem {
 
     constructor(public script: Script) {
         super("", vscode.TreeItemCollapsibleState.None);
+        
         this.label = this.getScriptName(script);
-
-        if (script.common.engineType === "Javascript/js") {
-            this.iconPath = this.getJsIcon();
-        } else if (script.common.engineType === "TypeScript/ts") {
-            this.iconPath = this.getTsIcon();
-        } else if (script.common.engineType === "Blockly") {
-            this.iconPath = this.getBlocklyIcon();
-        }
-
+        this.iconPath = this.getIconPath(script);
         this.command = {
             title: "Open script",
             command: "iobroker-javascript.openFile",
@@ -26,6 +20,19 @@ export class ScriptItem extends vscode.TreeItem {
                 script
             ]
         };
+    }
+
+    private getIconPath(script: Script): string | undefined {
+        switch (script.common.engineType) {
+            case EngineType.javascript:
+                return this.getJsIcon();
+            case EngineType.typescript:
+                return this.getTsIcon();
+            case EngineType.blockly:
+                return this.getBlocklyIcon();
+            default:
+                return undefined;
+        }
     }
 
     private getScriptName(script: Script) {

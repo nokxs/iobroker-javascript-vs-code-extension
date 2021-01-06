@@ -1,5 +1,3 @@
-import * as fs from 'fs';
-
 import { ICommand } from "./ICommand";
 import { Script } from "../models/Script";
 import { inject, injectable } from "inversify";
@@ -7,6 +5,8 @@ import TYPES from "../Types";
 import { IScriptService } from "../services/script/IScriptService";
 import { IWorkspaceService } from "../services/workspace/IWorkspaceService";
 import { TextDocument, Uri, window, workspace } from "vscode";
+import { IFileService } from '../services/file/IFileService';
+import { EngineType } from '../models/EngineType';
 
 @injectable()
 export class OpenFileCommand implements ICommand {
@@ -16,10 +16,11 @@ export class OpenFileCommand implements ICommand {
     constructor(
         @inject(TYPES.services.script) private scriptService: IScriptService,
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
+        @inject(TYPES.services.file) private fileService: IFileService,
     ) {}
     
     async execute(...args: Script[]) {
-        if (args.length !== 1) {
+        if (args && args.length !== 1) {
             return;
         }
 
@@ -33,18 +34,18 @@ export class OpenFileCommand implements ICommand {
     }
 
     private async openDocument(fileUri: Uri, script: Script): Promise<TextDocument> {
-        return fs.existsSync(fileUri.fsPath) ? 
+        return this.fileService.fileExists(fileUri) ? 
             await workspace.openTextDocument(fileUri) : 
             await workspace.openTextDocument({language: this.getScriptLanguage(script), content: script.common.source});
     }
 
     private getScriptLanguage(script: Script): string {
         switch (script.common.engineType) {
-            case "Javascript/js":
+            case EngineType.javascript:
                 return "javascript";
-            case "TypeScript/ts":
+            case EngineType.typescript:
                 return "typescript";
-            case "Blockly":
+            case EngineType.blockly:
                 return "blockly";
         
             default:
@@ -52,3 +53,4 @@ export class OpenFileCommand implements ICommand {
         }
     }
 }
+

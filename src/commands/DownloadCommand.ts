@@ -7,6 +7,7 @@ import { IWorkspaceService } from "../services/workspace/IWorkspaceService";
 import { IScriptService } from "../services/script/IScriptService";
 import { Script } from "../models/Script";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
+import CONSTANTS from "../Constants";
 
 @injectable()
 export class DownloadCommand implements ICommand {
@@ -26,7 +27,7 @@ export class DownloadCommand implements ICommand {
     
             await this.scriptService.saveToFile(script, workspaceFolder);
             
-            window.setStatusBarMessage(`ioBroker: Finished downloading script`, 10 * 1000);
+            window.setStatusBarMessage(`ioBroker: Finished downloading script`, CONSTANTS.StatusBarMessageTime);
         } else {
             window.showWarningMessage("ioBroker: Could not download script.");
         }

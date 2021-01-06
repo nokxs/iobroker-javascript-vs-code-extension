@@ -5,6 +5,7 @@ import { IConnectionService } from "../services/connection/IConnectionService";
 import { window } from "vscode";
 import { IWorkspaceService } from "../services/workspace/IWorkspaceService";
 import { IScriptService } from "../services/script/IScriptService";
+import CONSTANTS from "../Constants";
 
 @injectable()
 export class DownloadAllCommand implements ICommand {
@@ -24,6 +25,6 @@ export class DownloadAllCommand implements ICommand {
         await this.scriptService.saveAllToFile(scripts, workspaceFolder);
         
         message.dispose();
-        window.setStatusBarMessage("ioBroker: Finished downloading all scripts", 10 * 1000);
+        window.setStatusBarMessage("ioBroker: Finished downloading all scripts", CONSTANTS.StatusBarMessageTime);
     }
 }

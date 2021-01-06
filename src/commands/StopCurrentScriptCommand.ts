@@ -6,6 +6,7 @@ import { window } from "vscode";
 import { IScriptService } from "../services/script/IScriptService";
 import { ScriptId } from "../models/ScriptId";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
+import CONSTANTS from "../Constants";
 
 @injectable()
 export class StopCurrentScriptCommand implements ICommand {
@@ -22,7 +23,7 @@ export class StopCurrentScriptCommand implements ICommand {
         if (scriptId && scriptId.length > 0) {
             try {
                 await this.connectionService.stopScript(scriptId);
-                window.setStatusBarMessage(`ioBroker: Stoped script '${scriptId}' sucessfully`, 10 * 1000);
+                window.setStatusBarMessage(`ioBroker: Stoped script '${scriptId}' sucessfully`, CONSTANTS.StatusBarMessageTime);
             } catch (error) {
                 window.showErrorMessage((<Error>error).message);
             }
