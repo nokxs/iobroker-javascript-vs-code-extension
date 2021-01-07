@@ -17,13 +17,13 @@ export class Startup implements IStartup {
     ) {}
 
     async init(context: ExtensionContext): Promise<void> {
-        this.commandService.registerCommands(context);#
+        this.commandService.registerCommands(context);
         
         const workspacesWithConfig = await this.workSpaceService.getWorkspacesWithConfig();
         if (workspacesWithConfig.length === 1) {
             this.iobrokerConnectionService.connect();
         } else {
-            window.setStatusBarMessage("ioBroker: No auto connect possible. Multiple 'iobroker-config.json' found.")
+            window.setStatusBarMessage("ioBroker: No auto connect possible. Multiple 'iobroker-config.json' found.");
         }
         
         // TODO: Move to own service
