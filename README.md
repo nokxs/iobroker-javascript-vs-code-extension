@@ -11,17 +11,17 @@ This extension for [Visual Studio Code](https://code.visualstudio.com/) enables 
 Open the command pallet (<kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> OR <kbd>F1</kbd>) and type `iobroker: ` to see all available commands.
 
 After the extension is invoked the first time, the extension has to be configured interactively. You can see the process
-in the gif above.
+in the gif above. If your connection fails, check the created file `iobroker-config.json` and run the command `iobroker: Connect to ioBroker` for another connection attempt.
 
 > Current limitation: ioBroker instances with a password are not supported yet!
-
-> Current limitation: If the connection to ioBroker fails, VS Code has to be reopened again (to load the extension again).
 
 ### Type definitions
 
 If you choose to configure ioBroker type definitions, the current defintions are downloaded from [GitHub](https://github.com/ioBroker/ioBroker.javascript/blob/master/lib/javascript.d.ts). Additionaly a `tsconfig.json` is created
 (if it does not exist yet) and the definition is added as `typeRoot`. This enables Visual Studio Code to know
 the [ioBroker specific javascript functions](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/javascript.md).
+
+> This does not work well yet and will be improved in the future
 
 ### Script explorer
 The script explorer can be found in the activity bar behind the ioBroker logo. It shows all scripts, which are on
@@ -81,6 +81,9 @@ Support (not in the listed order)
 * deleting of scripts
 * multiple js-Adapter instances
 * syncing of workspace with remote scripts (correclty, delete and remove scirpts)
+* upload multiple changed scripts with an `upload all` command
+* reordering of scripts in the script explorer
+* script output only for the currently selected script
 
 ## Release Notes
 
