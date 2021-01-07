@@ -1,9 +1,3 @@
 # Change Log
 
-All notable changes to the "iobroker-javascript" extension will be documented in this file.
-
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
-## [Unreleased]
-
-- Initial release
+See the section [Releases on Github](https://github.com/nokxs/iobroker-javascript-vs-code-extension/releases) for release notes.
