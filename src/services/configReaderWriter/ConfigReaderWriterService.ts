@@ -3,7 +3,6 @@ import { Uri, WorkspaceFolder, window, workspace } from "vscode";
 
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
-import { ITypeDefinitionService } from '../typeDefinition/ITypeDefinitionService';
 import { IFileService } from '../file/IFileService';
 import { IConfigReaderWriterService } from "./IConfigReaderWriterService";
 
@@ -11,7 +10,6 @@ import { IConfigReaderWriterService } from "./IConfigReaderWriterService";
 export class ConfigReaderWriterService implements IConfigReaderWriterService {
     
     constructor(
-        @inject(TYPES.services.typeDefinition) private typeDefinitionService: ITypeDefinitionService,
         @inject(TYPES.services.file) private fileService: IFileService,
     ) {}
 

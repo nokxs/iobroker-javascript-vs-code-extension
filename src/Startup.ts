@@ -22,7 +22,7 @@ export class Startup implements IStartup {
         const workspacesWithConfig = await this.workSpaceService.getWorkspacesWithConfig();
         if (workspacesWithConfig.length === 1) {
             this.iobrokerConnectionService.connect();
-        } else {
+        } else if (workspacesWithConfig.length > 1) {
             window.setStatusBarMessage("ioBroker: No auto connect possible. Multiple 'iobroker-config.json' found.");
         }
         
