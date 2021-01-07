@@ -6,7 +6,7 @@ import { IConnectionEventListener } from "./IConnectionEventListener";
 import { Script } from "../../models/Script";
 import { ScriptObject } from "../../models/ScriptObject";
 import { ScriptId } from "../../models/ScriptId";
-import { Uri } from "vscode";
+import { Uri, window } from "vscode";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { IScriptService } from '../script/IScriptService';
@@ -37,16 +37,24 @@ export class ConnectionService implements IConnectionService {
     }
     
     async connect(uri: Uri): Promise<void> {
+        const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
+
+        if (this.client && this.client.connected) {
+            this.client.disconnect();
+        }
+
         this.client = await new Promise<SocketIOClient.Socket>((resolve, reject) => {
             const localClient = socketio(uri.toString());
 
             localClient.on("connect", () => {
                 this.isConnected = true;
+                message.dispose();
                 resolve(localClient);
             });
 
             setTimeout(() => {
                 if (!this.isConnected) {
+                    message.dispose();
                     reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
                 }
             }, this.connectionTimeout);

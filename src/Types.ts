@@ -8,7 +8,8 @@ const TYPES = {
         workspace: Symbol.for("WorkspaceService"),
         script: Symbol.for("ScriptService"),
         log: Symbol.for("LogService"),
-        typeDefinition: Symbol.for("TypeDefinitionService")
+        typeDefinition: Symbol.for("TypeDefinitionService"),
+        iobrokerConnection: Symbol.for("IobrokerConnection")
     },
     views: {
         scriptExplorer: Symbol.for("ScriptExplorerView")

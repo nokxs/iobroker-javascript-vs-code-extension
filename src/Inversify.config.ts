@@ -13,12 +13,14 @@ import { ICommandService } from './services/command/ICommandService';
 import { IConfigService } from './services/config/IConfigService';
 import { IConnectionService } from './services/connection/IConnectionService';
 import { IFileService } from './services/file/IFileService';
+import { IIobrokerConnectionService } from './services/iobrokerConnection/IIobrokerConnectionService';
 import { ILogService } from "./services/log/ILogService";
 import { IScriptExplorerProvider } from "./views/scriptExplorer/IScriptExplorerProvider";
 import { IScriptService } from './services/script/IScriptService';
 import { IStartup } from './IStartup';
 import { ITypeDefinitionService } from "./services/typeDefinition/ITypeDefinitionService";
 import { IWorkspaceService } from './services/workspace/IWorkspaceService';
+import { IobrokerConnectionService } from './services/iobrokerConnection/IobrokerConnectionService';
 import { LogService } from './services/log/LogService';
 import { OpenFileCommand } from './commands/OpenFileCommand';
 import { ScriptExplorerProvider } from './views/scriptExplorer/ScriptExplorerProvider';
@@ -44,6 +46,7 @@ container.bind<ICommandService>(TYPES.services.command).to(CommandService).inSin
 container.bind<IScriptService>(TYPES.services.script).to(ScriptService).inSingletonScope();
 container.bind<ILogService>(TYPES.services.log).to(LogService).inSingletonScope();
 container.bind<ITypeDefinitionService>(TYPES.services.typeDefinition).to(TypeDefinitionService).inSingletonScope();
+container.bind<IIobrokerConnectionService>(TYPES.services.iobrokerConnection).to(IobrokerConnectionService).inSingletonScope();
 
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
 container.bind<ICommand>(TYPES.command).to(DownloadCommand);
