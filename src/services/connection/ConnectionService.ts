@@ -43,13 +43,14 @@ export class ConnectionService implements IConnectionService {
             this.client.disconnect();
         }
 
-        this.client = await new Promise<SocketIOClient.Socket>((resolve, reject) => {
-            const localClient = socketio(uri.toString());
+        return new Promise<void>((resolve, reject) => {
+            this.client = socketio(uri.toString());
+            this.registerSocketEvents();
 
-            localClient.on("connect", () => {
+            this.client.on("connect", () => {
                 this.isConnected = true;
                 message.dispose();
-                resolve(localClient);
+                resolve();
             });
 
             setTimeout(() => {
@@ -59,8 +60,6 @@ export class ConnectionService implements IConnectionService {
                 }
             }, this.connectionTimeout);
         });
-
-        this.registerSocketEvents();
     }
 
     disconnect(): Promise<void> {
