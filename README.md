@@ -84,6 +84,7 @@ Support (not in the listed order)
 * upload multiple changed scripts with an `upload all` command
 * reordering of scripts in the script explorer
 * script output only for the currently selected script
+* the functions defined in global scripts
 
 ## Release Notes
 
