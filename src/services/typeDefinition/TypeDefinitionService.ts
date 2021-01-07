@@ -30,7 +30,7 @@ export class TypeDefinitionService implements ITypeDefinitionService {
         const response = await axios.get("https://raw.githubusercontent.com/ioBroker/ioBroker.javascript/master/lib/javascript.d.ts");
         if (response.status === 200) {
             const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
-            const uri = Uri.joinPath(workspaceFolder.uri, ".iobroker/types/javascript.d.ts");
+            const uri = Uri.joinPath(workspaceFolder.uri, "index.d.ts");
 
             await this.fileService.saveToFile(uri, response.data);
         } else {
@@ -40,9 +40,9 @@ export class TypeDefinitionService implements ITypeDefinitionService {
     
     async createConfig(): Promise<void> {
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
-        await this.createVsCodeConfig(workspaceFolder);
+        // await this.createVsCodeConfig(workspaceFolder);
         await this.createTsConfig(workspaceFolder);
-        await this.createDummyTs(workspaceFolder);
+        // await this.createDummyTs(workspaceFolder);
     }
 
     private async createDummyTs(workspaceFolder: WorkspaceFolder): Promise<void> {
@@ -107,10 +107,7 @@ export class TypeDefinitionService implements ITypeDefinitionService {
         }
 
         return {
-            "include": ["**/*", ".iobroker/dummy.ts"],
-            "compilerOptions": {
-                "typeRoots" : ["./.iobroker/types"]
-            },
+            "include": ["**/*"],
             "allowJs": true
         };
     }
