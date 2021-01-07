@@ -30,6 +30,7 @@
 		"onCommand:iobroker-javascript.upload",
 		"onCommand:iobroker-javascript.startScript",
 		"onCommand:iobroker-javascript.stopScript",
+		"onCommand:iobroker-javascript.connect",
 		"onCommand:iobroker-javascript.updateTypeDefinition"
 	],
 	"main": "./dist/extension.js",
@@ -75,6 +76,10 @@
 				"command": "iobroker-javascript.stopScript",
 				"title": "iobroker: Stop script",
 				"icon": "$(debug-pause)"
+			},
+			{
+				"command": "iobroker-javascript.connect",
+				"title": "iobroker: Connect to ioBroker"
 			},
 			{
 				"command": "iobroker-javascript.updateTypeDefinition",

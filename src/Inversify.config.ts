@@ -2,6 +2,7 @@ import 'reflect-metadata';
 
 import { CommandService } from './services/command/CommandService';
 import { ConfigService } from './services/config/ConfigService';
+import { ConnectCommand } from './commands/ConnectCommand';
 import { ConnectionService } from './services/connection/ConnectionService';
 import { Container } from 'inversify';
 import { DownloadAllCommand } from './commands/DownloadAllCommand';
@@ -51,6 +52,7 @@ container.bind<ICommand>(TYPES.command).to(StartCurrentScriptCommand);
 container.bind<ICommand>(TYPES.command).to(StopCurrentScriptCommand);
 container.bind<ICommand>(TYPES.command).to(UpdateTypeDefinitionCommand);
 container.bind<ICommand>(TYPES.command).to(OpenFileCommand);
+container.bind<ICommand>(TYPES.command).to(ConnectCommand);
 
 container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider);
 
