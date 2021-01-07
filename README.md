@@ -10,8 +10,8 @@ This extension for [Visual Studio Code](https://code.visualstudio.com/) enables 
 
 Open the command pallet (<kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> OR <kbd>F1</kbd>) and type `iobroker: ` to see all available commands.
 
-After the extension is invoked the first time, the extension has to be configured interactively. You can see the process
-in the gif above. If your connection fails, check the created file `iobroker-config.json` and run the command `iobroker: Connect to ioBroker` for another connection attempt.
+To connect to your ioBroker instance, you have to invoke `iobroker: Connect to ioBroker`. You can see the process
+in the gif above. If your connection fails, check the created file `iobroker-config.json` and re-run the command `iobroker: Connect to ioBroker` for another connection attempt.
 
 If an existing `iobroker-config.json` is found, the extension automatically starts an connection attempt.
 
