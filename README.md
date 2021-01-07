@@ -13,6 +13,8 @@ Open the command pallet (<kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> OR <k
 After the extension is invoked the first time, the extension has to be configured interactively. You can see the process
 in the gif above. If your connection fails, check the created file `iobroker-config.json` and run the command `iobroker: Connect to ioBroker` for another connection attempt.
 
+If an existing `iobroker-config.json` is found, the extension automatically starts an connection attempt.
+
 > Current limitation: ioBroker instances with a password are not supported yet!
 
 ### Type definitions
