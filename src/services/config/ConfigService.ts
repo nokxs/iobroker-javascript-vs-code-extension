@@ -1,4 +1,4 @@
-import { Config } from "../../models/Config";
+import { Config, NoConfig } from "../../models/Config";
 import { window } from "vscode";
 
 import { IConfigService } from "./IConfigService";
@@ -15,20 +15,30 @@ export class ConfigService implements IConfigService {
 
     async createConfigInteractivly(): Promise<Config> {
         const ioBrokerUrl = await window.showInputBox({prompt: "The URL to your ioBroker installation", value: "http://localhost"});
+        if (!ioBrokerUrl) {
+            return new NoConfig();
+        }
+
         const port = await window.showInputBox({prompt: "The port of the socket.io Adapter", value: "8081"});
+        if (!port) {
+            return new NoConfig();
+        }
+
         const scriptPath = await window.showInputBox({prompt: "The relative path in your workspace to the scripts", value: "/"});
+        if (!scriptPath) {
+            return new NoConfig();
+        }
+
         const shouldCreateTypeDefinitionConfig = await window.showQuickPick(["Yes", "No"], {canPickMany: false, placeHolder: "Configure ioBroker type defintions?"});
+        if (!shouldCreateTypeDefinitionConfig) {
+            return new NoConfig();
+        }
         
         if (shouldCreateTypeDefinitionConfig && shouldCreateTypeDefinitionConfig === "Yes") {
             await this.typeDefinitionService.downloadFromGithubAndSave();
             await this.typeDefinitionService.createConfig();
         }
 
-        if (ioBrokerUrl && port && scriptPath) {
-            return new Config(ioBrokerUrl, Number.parseInt(port), scriptPath);            
-        }
-
-        window.showWarningMessage("The given information for the configuration was invalid. Creating default configuration");
-        return new Config("http://localhost", 8081, "/");
+        return new Config(ioBrokerUrl, Number.parseInt(port), scriptPath);            
     }
 }

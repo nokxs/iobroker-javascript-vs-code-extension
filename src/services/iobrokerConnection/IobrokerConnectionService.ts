@@ -51,7 +51,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
         if (config instanceof NoConfig) {
             config = await this.configService.createConfigInteractivly();
             if (config instanceof NoConfig) {
-              window.showWarningMessage("ioBroker: Invalid config is not saved. Execute command 'iobroker: Connect to ioBroker' to start another connection attempt.");
+              window.showWarningMessage("ioBroker: Config not saved. Execute command 'iobroker: Connect to ioBroker' to start another connection attempt.");
               return;
             }
             else {
