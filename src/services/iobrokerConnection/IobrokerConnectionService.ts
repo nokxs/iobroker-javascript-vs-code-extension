@@ -11,6 +11,7 @@ import { IWorkspaceService } from '../workspace/IWorkspaceService';
 import { IIobrokerConnectionService } from "./IIobrokerConnectionService";
 import { IConnectionEventListener } from "../connection/IConnectionEventListener";
 import { IConfigReaderWriterService } from "../configReaderWriter/IConfigReaderWriterService";
+import CONSTANTS from "../../Constants";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
@@ -49,8 +50,13 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
         var config: Config = await this.configReaderWriterService.read(workspaceFolder);
         if (config instanceof NoConfig) {
             config = await this.configService.createConfigInteractivly();
-            if (config) {
+            if (config instanceof NoConfig) {
+              window.showWarningMessage("ioBroker: Invalid config is not saved. Execute command 'iobroker: Connect to ioBroker' to start another connection attempt.");
+              return;
+            }
+            else {
                 await this.configReaderWriterService.write(config, workspaceFolder);
+                window.setStatusBarMessage("ioBroker: Created new 'iobroker-config.json' in root directory", CONSTANTS.StatusBarMessageTime);
             }
         }
 
