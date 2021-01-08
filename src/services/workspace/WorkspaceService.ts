@@ -9,7 +9,7 @@ import TYPES from "../../Types";
 
 @injectable()
 export class WorkspaceService implements IWorkspaceService {
-    private workspaceToUse: WorkspaceFolder = new NoWorkspaceFolder();
+    workspaceToUse: WorkspaceFolder = new NoWorkspaceFolder();
     
     constructor(
         @inject(TYPES.services.configReaderWriter) private configReaderWriterService: IConfigReaderWriterService,

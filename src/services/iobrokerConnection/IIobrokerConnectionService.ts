@@ -1,4 +1,6 @@
+import { Config } from "../../models/Config";
 
 export interface IIobrokerConnectionService {
-  connect(): Promise<void>;
+  config: Config
+  connect(): Promise<void>
 }

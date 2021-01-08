@@ -8,6 +8,8 @@ import { IScriptExplorerProvider } from './IScriptExplorerProvider';
 import { ScriptDirectory } from './ScriptDirectory';
 import { ScriptItem } from './ScriptItem';
 import { IScriptChangedEventListener } from '../../services/connection/IScriptChangedListener';
+import { IIobrokerConnectionService } from '../../services/iobrokerConnection/IIobrokerConnectionService';
+import { NoConfig } from '../../models/Config';
 
 @injectable()
 export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | ScriptDirectory>, IScriptExplorerProvider, IScriptChangedEventListener {
@@ -19,6 +21,7 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
 
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
+        @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
     ) {
         connectionService.registerScriptChangedEventListener(this);
     }
@@ -56,28 +59,29 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         return new ScriptItem(scriptObject.value);
     }
 
-    private convertToScriptDirectories(scriptOjbects: ScriptObject[], prefix: string): ScriptDirectory[] {
-        return scriptOjbects.map(scriptObject => this.convertToScriptDirectory(scriptObject, prefix));
+    private convertToScriptDirectories(scriptOjbects: ScriptObject[], prefix: string, collapse: boolean): ScriptDirectory[] {
+        return scriptOjbects.map((scriptObject) => this.convertToScriptDirectory(scriptObject, prefix, collapse));
     }
 
-    private convertToScriptDirectory(scriptObject: ScriptObject, prefix: string): ScriptDirectory {
+    private convertToScriptDirectory(scriptObject: ScriptObject, prefix: string, collapse: boolean): ScriptDirectory {
         const prefixParts = prefix.split(".").length;
         const name = scriptObject.value._id.split(".")[prefixParts - 1];
         const directoryPath = `${prefix}${name}.`;
 
-        return new ScriptDirectory(name, directoryPath);
+        return new ScriptDirectory(name, directoryPath, collapse);
     }
 
-    private getRootLevelItems(scripts: ScriptObject[]): Array<ScriptItem | ScriptDirectory> {
-        return this.getChildItems(scripts, "script.js.");
+    private async getRootLevelItems(scripts: ScriptObject[]): Promise<Array<ScriptItem | ScriptDirectory>> {
+        return await this.getChildItems(scripts, "script.js.");
     }
 
-    private getChildItems(scripts: ScriptObject[], prefix: string): Array<ScriptItem | ScriptDirectory> {
+    private async getChildItems(scripts: ScriptObject[], prefix: string): Promise<Array<ScriptItem | ScriptDirectory>> {
         const prefixDirectoryCount = prefix.split(".").length;
         const currentLevelDirectories = scripts.filter(script => script.value._id.startsWith(prefix) && prefixDirectoryCount < script.value._id.split(".").length);
         const currentLevelScripts = scripts.filter(script => script.value._id.startsWith(prefix) && prefixDirectoryCount === script.value._id.split(".").length);
+        const collapseDirectories = this.shouldDirectoriesBeCollapsed();
 
-        const scriptDirectories = this.convertToScriptDirectories(currentLevelDirectories, prefix);
+        const scriptDirectories = await this.convertToScriptDirectories(currentLevelDirectories, prefix, collapseDirectories);
         const scriptItems = this.convertToScriptItems(currentLevelScripts);
 
         let items: Array<ScriptItem | ScriptDirectory> = new Array();
@@ -90,5 +94,14 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
     private onlyUnique(directory: ScriptDirectory, index: number, directories: ScriptDirectory[]): boolean {
         const firstMatchingDirectory = directories.filter(dir => dir.path === directory.path)[0];
         return directories.indexOf(firstMatchingDirectory) === index;
-      }
+    }
+
+    private shouldDirectoriesBeCollapsed(): boolean {
+        const config = this.iobrokerConnectionService.config;
+        if (!(config instanceof NoConfig)) {
+            return config.scriptExplorer?.expandDirectoriesOnStartup ?? true;
+        }
+
+        return true;
+    }
 }

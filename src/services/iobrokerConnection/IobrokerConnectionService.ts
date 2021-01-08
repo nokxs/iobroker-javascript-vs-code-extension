@@ -16,6 +16,8 @@ import CONSTANTS from "../../Constants";
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
 
+  config: Config = new NoConfig();
+
   private statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 250);
 
   constructor(
@@ -47,20 +49,20 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
             return;
         }
     
-        var config: Config = await this.configReaderWriterService.read(workspaceFolder);
-        if (config instanceof NoConfig) {
-            config = await this.configService.createConfigInteractivly();
-            if (config instanceof NoConfig) {
-              window.showWarningMessage("ioBroker: Config not saved. Execute command 'iobroker: Connect to ioBroker' to start another connection attempt.");
-              return;
-            }
-            else {
-                await this.configReaderWriterService.write(config, workspaceFolder);
-                window.setStatusBarMessage("ioBroker: Created new 'iobroker-config.json' in root directory", CONSTANTS.StatusBarMessageTime);
-            }
+        this.config = await this.configReaderWriterService.read(workspaceFolder);
+        if (this.config instanceof NoConfig) {
+          this.config = await this.configService.createConfigInteractivly();
+          if (this.config instanceof NoConfig) {
+            window.showWarningMessage("ioBroker: Config not saved. Execute command 'iobroker: Connect to ioBroker' to start another connection attempt.");
+            return;
+          }
+          else {
+              await this.configReaderWriterService.write(this.config, workspaceFolder);
+              window.setStatusBarMessage("ioBroker: Created new 'iobroker-config.json' in root directory", CONSTANTS.StatusBarMessageTime);
+          }
         }
 
-        await this.connectionService.connect(Uri.parse(`${config.ioBrokerUrl}:${config.socketIoPort}`));
+        await this.connectionService.connect(Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`));
         await this.logService.startReceiving();
     } catch (error) {
         window.showErrorMessage(`Could not connect to ioBroker. Check your '.iobroker-config.json' for wrong configuration: ${error}`);
