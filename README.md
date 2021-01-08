@@ -65,9 +65,18 @@ After the first activation a `.iobroker-config.json` file is created in the root
 
 ### Available settings
 
-* `ioBrokerUrl`: The url has to be prefixed with http/https. Specify no port here
-* `socketIoPort`: Use the port of the admin adapter (usually 8081). Do not use the port of the socket.io Adapter (usually 8084) as this will not work, because of missing permissions.
-* `workspaceSubPath`: Not supported yet
+```json
+{
+  "ioBrokerUrl": "http://localhost", // ★ The url has to be prefixed with http/https. Specify no port here
+  "socketIoPort": 8081, // ★ Use the port of the admin adapter (usually 8081). Do not use the port of the socket.io Adapter (usually 8084) as this will not work, because of missing permissions.
+  "workspaceSubPath": "/", // ★ Not supported yet
+  "scriptExplorer": { // Configuration for script explorer
+    "expandDirectoriesOnStartup": false // Should the directories in the script explorer be expanded on startup
+  }
+}
+```
+
+★ = Mandatory
 
 ## Known Issues
 
