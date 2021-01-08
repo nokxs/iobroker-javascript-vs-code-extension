@@ -10,6 +10,8 @@ import { ILogService } from '../log/ILogService';
 import { IWorkspaceService } from '../workspace/IWorkspaceService';
 import { IIobrokerConnectionService } from "./IIobrokerConnectionService";
 import { IConnectionEventListener } from "../connection/IConnectionEventListener";
+import { IConfigReaderWriterService } from "../configReaderWriter/IConfigReaderWriterService";
+import CONSTANTS from "../../Constants";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
@@ -18,6 +20,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
 
   constructor(
       @inject(TYPES.services.config) private configService: IConfigService,
+      @inject(TYPES.services.configReaderWriter) private configReaderWriterService: IConfigReaderWriterService,
       @inject(TYPES.services.connection) private connectionService: IConnectionService,
       @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
       @inject(TYPES.services.log) private logService: ILogService
@@ -44,11 +47,16 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
             return;
         }
     
-        var config: Config = await this.configService.read(workspaceFolder);
+        var config: Config = await this.configReaderWriterService.read(workspaceFolder);
         if (config instanceof NoConfig) {
             config = await this.configService.createConfigInteractivly();
-            if (config) {
-                await this.configService.write(config, workspaceFolder);
+            if (config instanceof NoConfig) {
+              window.showWarningMessage("ioBroker: Config not saved. Execute command 'iobroker: Connect to ioBroker' to start another connection attempt.");
+              return;
+            }
+            else {
+                await this.configReaderWriterService.write(config, workspaceFolder);
+                window.setStatusBarMessage("ioBroker: Created new 'iobroker-config.json' in root directory", CONSTANTS.StatusBarMessageTime);
             }
         }
 

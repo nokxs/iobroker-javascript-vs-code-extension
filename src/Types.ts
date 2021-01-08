@@ -2,6 +2,7 @@
 const TYPES = {
     services: {
         config: Symbol.for("ConfigService"),
+        configReaderWriter: Symbol.for("ConfigReaderWriterService"),
         connection: Symbol.for("ConnectionService"),
         file: Symbol.for("FileService"),
         command: Symbol.for("CommandService"),
