@@ -72,7 +72,8 @@
 			},
 			{
 				"command": "iobroker-javascript.connect",
-				"title": "iobroker: Connect to ioBroker"
+				"title": "iobroker: Connect to ioBroker",
+				"icon": "$(debug-disconnect)"
 			},
 			{
 				"command": "iobroker-javascript.updateTypeDefinition",
@@ -90,6 +91,14 @@
 					"command": "iobroker-javascript.view.scriptExplorer.refresh",
 					"when": "view == iobroker-javascript.script-explorer",
 					"group": "navigation"
+				},
+				{
+					"command": "iobroker-javascript.connect",
+					"when": "view == iobroker-javascript.script-explorer"
+				},
+				{
+					"command": "iobroker-javascript.downloadAll",
+					"when": "view == iobroker-javascript.script-explorer"
 				}
 			],
 			"view/item/context": [

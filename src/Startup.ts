@@ -30,6 +30,4 @@ export class Startup implements IStartup {
         window.registerTreeDataProvider("iobroker-javascript.script-explorer", this.scriptExplorerProvider);
         commands.registerCommand("iobroker-javascript.view.scriptExplorer.refresh", () => this.scriptExplorerProvider.refresh());
     }
-
-    
 }
