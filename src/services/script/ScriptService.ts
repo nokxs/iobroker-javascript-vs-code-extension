@@ -77,7 +77,7 @@ export class ScriptService implements IScriptService {
     }
 
     private getFileExtension(engineType: string): string {
-        switch (engineType) {
+        switch (engineType?.toLowerCase()) {
             case EngineType.javascript:
                 return "js";
             case EngineType.typescript:

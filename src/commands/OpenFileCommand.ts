@@ -40,7 +40,7 @@ export class OpenFileCommand implements ICommand {
     }
 
     private getScriptLanguage(script: Script): string {
-        switch (script.common.engineType) {
+        switch (script.common.engineType?.toLowerCase()) {
             case EngineType.javascript:
                 return "javascript";
             case EngineType.typescript:
