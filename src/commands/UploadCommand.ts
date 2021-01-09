@@ -7,6 +7,7 @@ import { IScriptService } from "../services/script/IScriptService";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import { Script } from "../models/Script";
 import { InvalidScript } from "../models/InvalidScript";
+import { EngineType } from "../models/EngineType";
 
 @injectable()
 export class UploadCommand implements ICommand {
@@ -34,8 +35,8 @@ export class UploadCommand implements ICommand {
         if (args && args[0] && args[0].length > 0) {
             const script = (<ScriptItem>args[0][0]).script;
             const scriptId = script._id;
-            const engineType = script.common.engineType;
-            const scriptText = await this.scriptService.getFileContentOnDisk(scriptId, engineType ?? "");
+            const engineType = <EngineType>script.common.engineType;
+            const scriptText = await this.scriptService.getFileContentOnDisk(scriptId, engineType ?? EngineType.unkown);
             const existingScript = await this.connectionService.downloadScriptWithId(scriptId);
             
             if (scriptText) {

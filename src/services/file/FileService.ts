@@ -13,10 +13,18 @@ export class FileService implements IFileService {
     }
 
     async readFromFile(uri: Uri): Promise<string> {
-      return (await workspace.fs.readFile(uri)).toString();
+        return (await workspace.fs.readFile(uri)).toString();
     }
-    
+
     fileExists(uri: Uri): boolean {
-      return fs.existsSync(uri.fsPath);
+        return fs.existsSync(uri.fsPath);
+    }
+
+    rename(oldFile: Uri, newFile: Uri): Promise<void> {
+        return new Promise((resolve) => {
+            fs.rename(oldFile.fsPath, newFile.fsPath, () => {
+                resolve();
+            });
+        });
     }
 }

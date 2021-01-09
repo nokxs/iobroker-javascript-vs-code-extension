@@ -147,8 +147,12 @@ export class ConnectionService implements IConnectionService {
     }
 
     rename(scriptId: ScriptId, name: string): Promise<void> {
-        return this.updateScript({
-            _id: scriptId,
+        const splittedId = scriptId.split(".");
+        splittedId.splice(-1,1);
+        splittedId.push(name.replace(" ", "_").replace(".", "_"));
+
+        return this.updateScript(scriptId, {
+            _id: splittedId.join("."),
             common: {
                 name: name
             }
@@ -171,9 +175,8 @@ export class ConnectionService implements IConnectionService {
         });
     }
 
-    async updateScript(script: Script): Promise<void> {
+    async updateScript(scriptId: ScriptId, script: Script): Promise<void> {
         if (this.client && this.isConnected) {
-            const scriptId = script._id;
             const existingScript = await this.downloadScriptWithId(scriptId);
             if (existingScript) {
                 this.client.emit("extendObject", scriptId, script, (err: any) => {
@@ -214,6 +217,6 @@ export class ConnectionService implements IConnectionService {
             }
         };
 
-        this.updateScript(script);
+        this.updateScript(scriptId, script);
     }
 }

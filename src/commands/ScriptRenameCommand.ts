@@ -1,10 +1,13 @@
-import { window } from "vscode";
+import { Uri, window } from "vscode";
 
 import { ICommand } from "./ICommand";
 import { inject, injectable } from "inversify";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import TYPES from "../Types";
 import { IConnectionService } from "../services/connection/IConnectionService";
+import { IFileService } from "../services/file/IFileService";
+import { IScriptService } from "../services/script/IScriptService";
+import { EngineType } from "../models/EngineType";
 
 @injectable()
 export class ScriptRenameCommand implements ICommand {
@@ -12,18 +15,30 @@ export class ScriptRenameCommand implements ICommand {
     
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
+        @inject(TYPES.services.file) private fileService: IFileService,
+        @inject(TYPES.services.script) private scriptService: IScriptService,
     ) {}
 
     async execute(...args: any[]) {
         if (args && args[0]) {
-            const scriptName = (<ScriptItem>args[0]).script.common.name;
-            const scriptId = (<ScriptItem>args[0]).script._id;
+            const script = (<ScriptItem>args[0]).script;
+            const scriptName = script.common.name;
+            const scriptId = script._id;
 
             const newScriptName = await window.showInputBox({prompt: "The new name of the script.", value: scriptName});
 
             if (newScriptName) {
                 await this.connectionService.rename(scriptId, newScriptName);
-                // TODO: Change file name
+                
+                const oldPath = await this.scriptService.getFileUri(script);
+                
+                const fileExtension = this.scriptService.getFileExtension(<EngineType>script.common.engineType ?? EngineType.unkown);
+                const splittedPath = oldPath.path.split("/");
+                splittedPath.splice(-1,1);
+                splittedPath.push(`${newScriptName}.${fileExtension}`);
+                const newPath = Uri.file(splittedPath.join("/"));
+
+                await this.fileService.rename(oldPath, newPath);
             }
         } else {
             window.showInformationMessage("This command can only be invoked over the script explorer!");

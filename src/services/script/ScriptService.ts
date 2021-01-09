@@ -21,11 +21,11 @@ export class ScriptService implements IScriptService {
     
     getRelativeFilePathFromScript(script: Script): string {
         let path = script._id.replace("script.js.", "");
-        const engineType = script.common.engineType ?? "";
+        const engineType = <EngineType>script.common.engineType ?? EngineType.unkown;
         return this.getRelativeFilePath(path, engineType);
     }
     
-    getRelativeFilePath(scriptId: ScriptId, engineType: string): string {
+    getRelativeFilePath(scriptId: ScriptId, engineType: EngineType): string {
         let path = scriptId.replace("script.js.", "");
         path = this.replaceAll(path, ".", "/");
         path = this.replaceAll(path, "_", " ");
@@ -37,7 +37,28 @@ export class ScriptService implements IScriptService {
         return `${scriptRoot}${path}.${extension}`;
     }
     
-    async getFileContentOnDisk(scriptId: ScriptId, engineType: string): Promise<string | null> {
+    getFileExtension(engineType: EngineType): string {
+        switch (engineType?.toLowerCase()) {
+            case EngineType.javascript:
+                return "js";
+            case EngineType.typescript:
+                return "ts";
+            case EngineType.blockly:
+                return "block";
+        
+            default:
+                return "";
+        }
+    }
+
+    async getFileUri(script: Script): Promise<Uri> {
+        const relativeScriptPath = this.getRelativeFilePathFromScript(script);
+        const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
+
+        return Uri.joinPath(workspaceFolder.uri, relativeScriptPath);
+    }
+    
+    async getFileContentOnDisk(scriptId: ScriptId, engineType: EngineType): Promise<string | null> {
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
         const relativeFilePath = this.getRelativeFilePath(scriptId, engineType);
         const scriptUri = this.getScriptUri(workspaceFolder, relativeFilePath);
@@ -69,19 +90,5 @@ export class ScriptService implements IScriptService {
     
     private replaceAll(s: string, searchValue: string, replaceValue: string): string {
         return s.split(searchValue).join(replaceValue);
-    }
-
-    private getFileExtension(engineType: string): string {
-        switch (engineType?.toLowerCase()) {
-            case EngineType.javascript:
-                return "js";
-            case EngineType.typescript:
-                return "ts";
-            case EngineType.blockly:
-                return "block";
-        
-            default:
-                return "";
-        }
     }
 }

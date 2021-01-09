@@ -26,6 +26,6 @@ export interface IConnectionService {
     registerForLogs(logAction: (logMessage: LogMessage) => void): Promise<void>
     unregisterForLogs(): Promise<void>
 
-    updateScript(script: Script): Promise<void>    
+    updateScript(scriptId: ScriptId, script: Script): Promise<void>    
     rename(scriptId: ScriptId, name: string): Promise<void>
 }

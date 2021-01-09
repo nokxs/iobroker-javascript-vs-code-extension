@@ -2,7 +2,6 @@ import { ICommand } from "./ICommand";
 import { Script } from "../models/Script";
 import { inject, injectable } from "inversify";
 import TYPES from "../Types";
-import { IWorkspaceService } from "../services/workspace/IWorkspaceService";
 import { TextDocument, Uri, window, workspace } from "vscode";
 import { IFileService } from '../services/file/IFileService';
 import { EngineType } from '../models/EngineType';
@@ -15,7 +14,6 @@ export class OpenFileCommand implements ICommand {
     
     constructor(
         @inject(TYPES.services.script) private scriptService: IScriptService,
-        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
         @inject(TYPES.services.file) private fileService: IFileService,
     ) {}
     
@@ -25,10 +23,8 @@ export class OpenFileCommand implements ICommand {
         }
 
         const script = args[0];
-        const relativeScriptPath = this.scriptService.getRelativeFilePathFromScript(script);
-        const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
 
-        const fileUri = Uri.joinPath(workspaceFolder.uri, relativeScriptPath);
+        const fileUri = await this.scriptService.getFileUri(script);
         const document = await this.openDocument(fileUri, script);
         await window.showTextDocument(document);
     }
