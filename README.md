@@ -69,10 +69,12 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 
 | Key           | Description           | Mandatory | Default |
 |---------------|-----------------------|-----------|---------|
-| `ioBrokerUrl` | The url has to be prefixed with http/https. Specify no port here. | Yes |  |
-| `socketIoPort` | Use the port of the admin adapter (usually 8081). Do not use the port of the socket.io Adapter (usually 8084) as this will not work, because of missing permissions. | Yes |  |
-| `workspaceSubPath` | Not supported yet. | No | "/" |
+| `ioBrokerUrl` | The url has to be prefixed with http/https. Specify no port here. | Yes | http://localhost |
+| `socketIoPort` | Use the port of the admin adapter (usually 8081). Do not use the port of the socket.io Adapter (usually 8084) as this will not work, because of missing permissions. | Yes | 8081 |
+| `scriptRoot` | Relative directory path, which is used as root of ioBroker scripts. | Yes | "/" |
 | `scriptExplorer.collapseDirectoriesOnStartup` | Should the directories in the script explorer be collapsed on startup. | No | true |
+
+> Caution: The json above is invalid as it contains comments. Remove comments if intend to copy it.
 
 ## Known Issues
 
@@ -82,7 +84,6 @@ If you got any problems, please open a GitHub issue.
 
 Support (not in the listed order)
 * password protected ioBroker installations
-* the setting `workspaceSubPath` to place scripts not in the root directory of the workspace
 * renaming of scripts
 * creating of new scripts
 * deleting of scripts

@@ -4,14 +4,14 @@ import { inject, injectable } from "inversify";
 import { Config, NoConfig } from '../../models/Config';
 import { NoWorkspaceFolder } from '../../models/NoWorkspaceFolder';
 import TYPES from '../../Types';
-import { IConfigService } from '../config/IConfigService';
 import { IConnectionService } from '../connection/IConnectionService';
 import { ILogService } from '../log/ILogService';
 import { IWorkspaceService } from '../workspace/IWorkspaceService';
 import { IIobrokerConnectionService } from "./IIobrokerConnectionService";
 import { IConnectionEventListener } from "../connection/IConnectionEventListener";
-import { IConfigReaderWriterService } from "../configReaderWriter/IConfigReaderWriterService";
+import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import CONSTANTS from "../../Constants";
+import { IConfigCreationService } from "../configCreation/IConfigCreationService";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
@@ -21,8 +21,8 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
   private statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 250);
 
   constructor(
-      @inject(TYPES.services.config) private configService: IConfigService,
-      @inject(TYPES.services.configReaderWriter) private configReaderWriterService: IConfigReaderWriterService,
+      @inject(TYPES.services.configCreation) private configCreationService: IConfigCreationService,
+      @inject(TYPES.services.configRepository) private configReaderWriterService: IConfigRepositoryService,
       @inject(TYPES.services.connection) private connectionService: IConnectionService,
       @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
       @inject(TYPES.services.log) private logService: ILogService
@@ -51,7 +51,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
     
         this.config = await this.configReaderWriterService.read(workspaceFolder);
         if (this.config instanceof NoConfig) {
-          this.config = await this.configService.createConfigInteractivly();
+          this.config = await this.configCreationService.createConfigInteractivly();
           if (this.config instanceof NoConfig) {
             window.showWarningMessage("ioBroker: Config not saved. Execute command 'iobroker: Connect to ioBroker' to start another connection attempt.");
             return;

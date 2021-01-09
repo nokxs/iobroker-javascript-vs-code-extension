@@ -9,12 +9,14 @@ import { IFileService } from "../file/IFileService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { IScriptService } from "./IScriptService";
 import { EngineType } from "../../models/EngineType";
+import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 
 @injectable()
 export class ScriptService implements IScriptService {
     constructor(
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
         @inject(TYPES.services.file) private fileService: IFileService,
+        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService
     ) {}
 
     async getIoBrokerId(fileUri: Uri): Promise<ScriptId> {
@@ -26,7 +28,7 @@ export class ScriptService implements IScriptService {
         const idSuffixPath = fileUri.path.substr(workspace.uri.path.length);
         const suffixLength = idSuffixPath.lastIndexOf(".");
 
-        var path = idSuffixPath.substring(0, suffixLength);
+        let path = idSuffixPath.substring(0, suffixLength);
         path = this.replaceAll(path, "/", ".");
         path = this.replaceAll(path, " ", "_");
 
@@ -34,23 +36,27 @@ export class ScriptService implements IScriptService {
     }
     
     getRelativeFilePathFromScript(script: Script): string {
-        var path = script._id.replace("script.js.", "");
+        let path = script._id.replace("script.js.", "");
         const engineType = script.common.engineType ?? "";
         return this.getRelativeFilePath(path, engineType);
     }
     
     getRelativeFilePath(scriptId: ScriptId, engineType: string): string {
-        var path = scriptId.replace("script.js.", "");
+        let path = scriptId.replace("script.js.", "");
         path = this.replaceAll(path, ".", "/");
         path = this.replaceAll(path, "_", " ");
+
+        let scriptRoot = this.configRepositoryService.config.scriptRoot;
+        scriptRoot = scriptRoot.endsWith("/") ? scriptRoot : `${scriptRoot}/`;
+
         const extension = this.getFileExtension(engineType);
-        return `${path}.${extension}`;
+        return `${scriptRoot}${path}.${extension}`;
     }
 
     async getFileContentOnDisk(scriptId: ScriptId, engineType: string): Promise<string | null> {
-        const workspace = await this.workspaceService.getWorkspaceToUse();
+        const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
         const relativeFilePath = this.getRelativeFilePath(scriptId, engineType);
-        const scriptUri = Uri.joinPath(workspace.uri, relativeFilePath);
+        const scriptUri = this.getScriptUri(workspaceFolder, relativeFilePath);
 
         if (this.fileService.fileExists(scriptUri)) {
             return this.fileService.readFromFile(scriptUri);
@@ -59,16 +65,17 @@ export class ScriptService implements IScriptService {
         return null;
     }
 
-    async saveToFile(script: Script, workspaceFolder: WorkspaceFolder): Promise<void> {
+    async saveToFile(script: Script): Promise<void> {
+        const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
         const relativeFilePath = this.getRelativeFilePathFromScript(script);
-        const uri = Uri.joinPath(workspaceFolder.uri, relativeFilePath);
+        const scriptUri = this.getScriptUri(workspaceFolder, relativeFilePath);
 
-        await this.fileService.saveToFile(uri, script.common.source ?? "");
+        await this.fileService.saveToFile(scriptUri, script.common.source ?? "");
     }
     
-    async saveAllToFile(scripts: ScriptObject[], workspaceFolder: WorkspaceFolder): Promise<void> {
+    async saveAllToFile(scripts: ScriptObject[]): Promise<void> {
         for (const script of scripts) {
-            await this.saveToFile(script.value, workspaceFolder);
+            await this.saveToFile(script.value);
         }
     }
 
@@ -77,7 +84,7 @@ export class ScriptService implements IScriptService {
     }
 
     private getFileExtension(engineType: string): string {
-        switch (engineType) {
+        switch (engineType?.toLowerCase()) {
             case EngineType.javascript:
                 return "js";
             case EngineType.typescript:
@@ -88,5 +95,9 @@ export class ScriptService implements IScriptService {
             default:
                 return "";
         }
+    }
+
+    private getScriptUri(workspaceFolder: WorkspaceFolder, relativeFilePath: string): Uri {
+        return Uri.joinPath(workspaceFolder.uri, relativeFilePath);
     }
 }

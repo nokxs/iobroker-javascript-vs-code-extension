@@ -1,8 +1,8 @@
 export class Config {
     constructor(
-        readonly ioBrokerUrl: String, 
-        readonly socketIoPort: Number, 
-        readonly workspaceSubPath?: String,
+        readonly ioBrokerUrl: string, 
+        readonly socketIoPort: number, 
+        readonly scriptRoot: string,
         readonly scriptExplorer?: ScriptExplorerConfig) {}
 }
 
@@ -14,6 +14,6 @@ export class ScriptExplorerConfig {
 
 export class NoConfig extends Config {
     constructor() {
-        super("invalid", -1);
+        super("invalid", -1, "/");
     }
 }

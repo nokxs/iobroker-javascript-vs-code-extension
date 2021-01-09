@@ -3,7 +3,7 @@ import { WorkspaceFolder, window, workspace } from "vscode";
 import { IWorkspaceService } from "./IWorkspaceService";
 import { NoWorkspaceFolder } from "../../models/NoWorkspaceFolder";
 import { inject, injectable } from "inversify";
-import { IConfigReaderWriterService } from "../configReaderWriter/IConfigReaderWriterService";
+import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { NoConfig } from "../../models/Config";
 import TYPES from "../../Types";
 
@@ -12,7 +12,7 @@ export class WorkspaceService implements IWorkspaceService {
     workspaceToUse: WorkspaceFolder = new NoWorkspaceFolder();
     
     constructor(
-        @inject(TYPES.services.configReaderWriter) private configReaderWriterService: IConfigReaderWriterService,
+        @inject(TYPES.services.configRepository) private configReaderWriterService: IConfigRepositoryService,
     ) {}
 
     async getWorkspaceToUse(): Promise<WorkspaceFolder> {

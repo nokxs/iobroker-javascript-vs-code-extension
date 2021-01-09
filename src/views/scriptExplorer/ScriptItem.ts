@@ -23,7 +23,7 @@ export class ScriptItem extends vscode.TreeItem {
     }
 
     private getIconPath(script: Script): string | undefined {
-        switch (script.common.engineType) {
+        switch (script.common.engineType?.toLowerCase()) {
             case EngineType.javascript:
                 return this.getJsIcon();
             case EngineType.typescript:
