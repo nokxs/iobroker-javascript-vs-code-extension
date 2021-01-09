@@ -84,7 +84,6 @@ If you got any problems, please open a GitHub issue.
 
 Support (not in the listed order)
 * password protected ioBroker installations
-* renaming of scripts
 * creating of new scripts
 * deleting of scripts
 * multiple js-Adapter instances

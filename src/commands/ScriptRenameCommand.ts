@@ -38,7 +38,7 @@ export class ScriptRenameCommand implements ICommand {
                 splittedPath.push(`${newScriptName}.${fileExtension}`);
                 const newPath = Uri.file(splittedPath.join("/"));
 
-                await this.fileService.rename(oldPath, newPath);
+                await this.fileService.re   name(oldPath, newPath);
             }
         } else {
             window.showInformationMessage("This command can only be invoked over the script explorer!");
