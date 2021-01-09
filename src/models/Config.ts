@@ -2,18 +2,18 @@ export class Config {
     constructor(
         readonly ioBrokerUrl: String, 
         readonly socketIoPort: Number, 
-        readonly workspaceSubPath: String,
+        readonly workspaceSubPath?: String,
         readonly scriptExplorer?: ScriptExplorerConfig) {}
 }
 
 export class ScriptExplorerConfig {
     constructor(
-        readonly expandDirectoriesOnStartup?: boolean
+        readonly collapseDirectoriesOnStartup?: boolean
     ) {}
 }
 
 export class NoConfig extends Config {
     constructor() {
-        super("invalid", -1, "/");
+        super("invalid", -1);
     }
 }

@@ -65,14 +65,14 @@ After the first activation a `.iobroker-config.json` file is created in the root
 
 ### Available settings
 
+An example with all available settings can be found [here](./doc/.iobroker-config.json).
+
 | Key           | Description           | Mandatory | Default |
 |---------------|-----------------------|-----------|---------|
 | `ioBrokerUrl` | The url has to be prefixed with http/https. Specify no port here. | Yes |  |
 | `socketIoPort` | Use the port of the admin adapter (usually 8081). Do not use the port of the socket.io Adapter (usually 8084) as this will not work, because of missing permissions. | Yes |  |
-| `workspaceSubPath` | TNot supported yet. | No | "/" |
+| `workspaceSubPath` | Not supported yet. | No | "/" |
 | `scriptExplorer.collapseDirectoriesOnStartup` | Should the directories in the script explorer be collapsed on startup. | No | true |
-
-An example with all available settings can be found [here](./doc/.iobroker-config.json).
 
 ## Known Issues
 
