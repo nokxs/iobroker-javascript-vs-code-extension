@@ -4,7 +4,6 @@ import { inject, injectable } from "inversify";
 import { Config, NoConfig } from '../../models/Config';
 import { NoWorkspaceFolder } from '../../models/NoWorkspaceFolder';
 import TYPES from '../../Types';
-import { IConfigService as IConfigCreationService } from '../configCreation/IConfigCreationService';
 import { IConnectionService } from '../connection/IConnectionService';
 import { ILogService } from '../log/ILogService';
 import { IWorkspaceService } from '../workspace/IWorkspaceService';
@@ -12,6 +11,7 @@ import { IIobrokerConnectionService } from "./IIobrokerConnectionService";
 import { IConnectionEventListener } from "../connection/IConnectionEventListener";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import CONSTANTS from "../../Constants";
+import { IConfigCreationService } from "../configCreation/IConfigCreationService";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {

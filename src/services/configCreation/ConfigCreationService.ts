@@ -1,10 +1,10 @@
 import { Config, NoConfig } from "../../models/Config";
 import { window } from "vscode";
 
-import { IConfigService as IConfigCreationService } from "./IConfigCreationService";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { ITypeDefinitionService } from '../typeDefinition/ITypeDefinitionService';
+import { IConfigCreationService } from "./IConfigCreationService";
 
 @injectable()
 export class ConfigCreationService implements IConfigCreationService {

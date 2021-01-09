@@ -11,8 +11,8 @@ import { DownloadCommand } from './commands/DownloadCommand';
 import { FileService } from './services/file/FileService';
 import { ICommand } from './commands/ICommand';
 import { ICommandService } from './services/command/ICommandService';
+import { IConfigCreationService } from './services/configCreation/IConfigCreationService';
 import { IConfigRepositoryService } from './services/configRepository/IConfigRepositoryService';
-import { IConfigService } from './services/configCreation/IConfigCreationService';
 import { IConnectionService } from './services/connection/IConnectionService';
 import { IFileService } from './services/file/IFileService';
 import { IIobrokerConnectionService } from './services/iobrokerConnection/IIobrokerConnectionService';
@@ -41,7 +41,7 @@ const container = new Container();
 container.bind<IStartup>(TYPES.startup).to(Startup).inSingletonScope();
 
 container.bind<IWorkspaceService>(TYPES.services.workspace).to(WorkspaceService).inSingletonScope();
-container.bind<IConfigService>(TYPES.services.configCreation).to(ConfigCreationService).inSingletonScope();
+container.bind<IConfigCreationService>(TYPES.services.configCreation).to(ConfigCreationService).inSingletonScope();
 container.bind<IConnectionService>(TYPES.services.connection).to(ConnectionService).inSingletonScope();
 container.bind<IFileService>(TYPES.services.file).to(FileService).inSingletonScope();
 container.bind<ICommandService>(TYPES.services.command).to(CommandService).inSingletonScope();

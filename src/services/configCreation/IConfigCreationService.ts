@@ -1,5 +1,5 @@
 import { Config } from "../../models/Config";
 
-export interface IConfigService {
+export interface IConfigCreationService {
     createConfigInteractivly(): Promise<Config>
 }
