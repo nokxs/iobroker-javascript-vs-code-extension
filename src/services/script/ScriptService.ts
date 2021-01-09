@@ -9,13 +9,14 @@ import { IFileService } from "../file/IFileService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { IScriptService } from "./IScriptService";
 import { EngineType } from "../../models/EngineType";
+import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 
 @injectable()
 export class ScriptService implements IScriptService {
     constructor(
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
         @inject(TYPES.services.file) private fileService: IFileService,
-        
+        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService
     ) {}
 
     async getIoBrokerId(fileUri: Uri): Promise<ScriptId> {
@@ -93,7 +94,7 @@ export class ScriptService implements IScriptService {
     }
 
     private getScriptUri(workspaceFolder: WorkspaceFolder, relativeFilePath: string): Uri {
-        const workspaceSubPath = this.iobrokerConnectionService.config.workspaceSubPath;
+        const workspaceSubPath = this.configRepositoryService.config.workspaceSubPath;
         return Uri.joinPath(workspaceFolder.uri, workspaceSubPath, relativeFilePath);
     }
 }

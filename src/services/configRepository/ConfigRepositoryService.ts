@@ -4,11 +4,13 @@ import { Uri, WorkspaceFolder, window, workspace } from "vscode";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { IFileService } from '../file/IFileService';
-import { IConfigReaderWriterService } from "./IConfigReaderWriterService";
+import { IConfigRepositoryService as IConfigRepositoryService } from "./IConfigRepositoryService";
 
 @injectable()
-export class ConfigReaderWriterService implements IConfigReaderWriterService {
+export class ConfigRepositoryService implements IConfigRepositoryService {
     
+    config: Config = new NoConfig();
+
     constructor(
         @inject(TYPES.services.file) private fileService: IFileService,
     ) {}
@@ -20,11 +22,12 @@ export class ConfigReaderWriterService implements IConfigReaderWriterService {
         
         if (configFileExists) {
             const configFileContent = await workspace.fs.readFile(expectedConfigFilePath);
-            const config = JSON.parse(configFileContent.toString());
-            return config;
+            this.config = JSON.parse(configFileContent.toString());
+        } else {
+            this.config = new NoConfig();
         }
 
-        return new NoConfig();
+        return this.config;
     }
 
     async write(config: Config, workspaceFolder: WorkspaceFolder): Promise<void> {

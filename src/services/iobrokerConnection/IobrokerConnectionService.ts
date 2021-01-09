@@ -10,7 +10,7 @@ import { ILogService } from '../log/ILogService';
 import { IWorkspaceService } from '../workspace/IWorkspaceService';
 import { IIobrokerConnectionService } from "./IIobrokerConnectionService";
 import { IConnectionEventListener } from "../connection/IConnectionEventListener";
-import { IConfigReaderWriterService } from "../configReaderWriter/IConfigReaderWriterService";
+import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import CONSTANTS from "../../Constants";
 
 @injectable()
@@ -22,7 +22,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
 
   constructor(
       @inject(TYPES.services.configCreation) private configCreationService: IConfigCreationService,
-      @inject(TYPES.services.configReaderWriter) private configReaderWriterService: IConfigReaderWriterService,
+      @inject(TYPES.services.configRepository) private configReaderWriterService: IConfigRepositoryService,
       @inject(TYPES.services.connection) private connectionService: IConnectionService,
       @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
       @inject(TYPES.services.log) private logService: ILogService

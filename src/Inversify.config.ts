@@ -2,7 +2,7 @@ import 'reflect-metadata';
 
 import { CommandService } from './services/command/CommandService';
 import { ConfigCreationService } from './services/configCreation/ConfigCreationService';
-import { ConfigReaderWriterService } from './services/configReaderWriter/ConfigReaderWriterService';
+import { ConfigRepositoryService } from './services/configRepository/ConfigRepositoryService';
 import { ConnectCommand } from './commands/ConnectCommand';
 import { ConnectionService } from './services/connection/ConnectionService';
 import { Container } from 'inversify';
@@ -11,7 +11,7 @@ import { DownloadCommand } from './commands/DownloadCommand';
 import { FileService } from './services/file/FileService';
 import { ICommand } from './commands/ICommand';
 import { ICommandService } from './services/command/ICommandService';
-import { IConfigReaderWriterService } from './services/configReaderWriter/IConfigReaderWriterService';
+import { IConfigRepositoryService } from './services/configRepository/IConfigRepositoryService';
 import { IConfigService } from './services/configCreation/IConfigCreationService';
 import { IConnectionService } from './services/connection/IConnectionService';
 import { IFileService } from './services/file/IFileService';
@@ -49,7 +49,7 @@ container.bind<IScriptService>(TYPES.services.script).to(ScriptService).inSingle
 container.bind<ILogService>(TYPES.services.log).to(LogService).inSingletonScope();
 container.bind<ITypeDefinitionService>(TYPES.services.typeDefinition).to(TypeDefinitionService).inSingletonScope();
 container.bind<IIobrokerConnectionService>(TYPES.services.iobrokerConnection).to(IobrokerConnectionService).inSingletonScope();
-container.bind<IConfigReaderWriterService>(TYPES.services.configReaderWriter).to(ConfigReaderWriterService).inSingletonScope();
+container.bind<IConfigRepositoryService>(TYPES.services.configRepository).to(ConfigRepositoryService).inSingletonScope();
 
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
 container.bind<ICommand>(TYPES.command).to(DownloadCommand);
