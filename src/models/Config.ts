@@ -8,7 +8,7 @@ export class Config {
 
 export class ScriptExplorerConfig {
     constructor(
-        readonly expandDirectoriesOnStartup?: boolean
+        readonly collapseDirectoriesOnStartup?: boolean
     ) {}
 }
 
