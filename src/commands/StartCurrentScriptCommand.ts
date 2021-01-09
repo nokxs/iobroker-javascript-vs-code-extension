@@ -3,10 +3,10 @@ import { inject, injectable } from "inversify";
 import TYPES from "../Types";
 import { IConnectionService } from "../services/connection/IConnectionService";
 import { window } from "vscode";
-import { IScriptService } from "../services/script/IScriptService";
 import { ScriptId } from "../models/ScriptId";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import CONSTANTS from "../Constants";
+import { IScriptIdService } from "../services/scriptId/IScriptIdService";
 
 @injectable()
 export class StartCurrentScriptCommand implements ICommand {
@@ -14,7 +14,7 @@ export class StartCurrentScriptCommand implements ICommand {
     
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
-        @inject(TYPES.services.script) private scriptService: IScriptService,
+        @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
     ) {}
     
     async execute(...args: any[]) {
@@ -39,7 +39,7 @@ export class StartCurrentScriptCommand implements ICommand {
         
         const activeDocument = window.activeTextEditor?.document;
         if (activeDocument) {
-            return await this.scriptService.getIoBrokerId(activeDocument.uri);
+            return await this.scriptIdService.getIoBrokerId(activeDocument.uri);
         }
 
         return null;

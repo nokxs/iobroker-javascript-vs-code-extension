@@ -9,10 +9,10 @@ import { ScriptId } from "../../models/ScriptId";
 import { Uri, window } from "vscode";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
-import { IScriptService } from '../script/IScriptService';
 import { LogMessage } from '../../models/LogMessage';
 import { IScriptChangedEventListener as IScriptChangedEventListener } from './IScriptChangedListener';
 import { InvalidScript } from '../../models/InvalidScript';
+import { IScriptIdService } from '../scriptId/IScriptIdService';
 
 @injectable()
 export class ConnectionService implements IConnectionService {
@@ -25,7 +25,7 @@ export class ConnectionService implements IConnectionService {
     private client: SocketIOClient.Socket | undefined = undefined;
     
     constructor(
-        @inject(TYPES.services.script) private scriptService: IScriptService,
+        @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
     ) {}
 
     registerConnectionEventListener(listener: IConnectionEventListener): void {
@@ -85,7 +85,7 @@ export class ConnectionService implements IConnectionService {
     }
 
     async downloadScriptWithUri(scriptUri: Uri): Promise<Script> {
-        const scriptId = await this.scriptService.getIoBrokerId(scriptUri);
+        const scriptId = await this.scriptIdService.getIoBrokerId(scriptUri);
         return await this.downloadScriptWithId(scriptId);
     }
 
@@ -146,6 +146,19 @@ export class ConnectionService implements IConnectionService {
         });
     }
 
+    rename(scriptId: ScriptId, name: string): Promise<void> {
+        const splittedId = scriptId.split(".");
+        splittedId.splice(-1,1);
+        splittedId.push(name.replace(" ", "_").replace(".", "_"));
+
+        return this.updateScript(scriptId, {
+            _id: splittedId.join("."),
+            common: {
+                name: name
+            }
+        });
+    }
+
     unregisterForLogs(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
@@ -160,6 +173,21 @@ export class ConnectionService implements IConnectionService {
                 });
             }
         });
+    }
+
+    async updateScript(scriptId: ScriptId, script: Script): Promise<void> {
+        if (this.client && this.isConnected) {
+            const existingScript = await this.downloadScriptWithId(scriptId);
+            if (existingScript) {
+                this.client.emit("extendObject", scriptId, script, (err: any) => {
+                    if (err) {
+                        throw new Error(`Could not update script '${scriptId}' to '${JSON.stringify(script)}': ${err}`);
+                    }
+                });
+            } else {
+                throw new Error(`Could not update script '${scriptId}', because it is not known to ioBroker`);
+            }
+        }
     }
 
     private registerSocketEvents(): void {
@@ -182,24 +210,13 @@ export class ConnectionService implements IConnectionService {
     }
 
     private async setScriptState(scriptId: ScriptId, isEnabled: boolean): Promise<void> {
-        if (this.client && this.isConnected) {
-            const script: Script = {
-                _id: scriptId,
-                common: {
-                    enabled: isEnabled
-                }
-            };
-
-            const existingScript = await this.downloadScriptWithId(scriptId);
-            if (existingScript) {
-                this.client.emit("extendObject", scriptId, script, (err: any) => {
-                    if (err) {
-                        throw new Error(`Could set script state for '${scriptId}' to '${isEnabled}': ${err}`);
-                    }
-                });
-            } else {
-                throw new Error(`Could set script state for '${scriptId}' to '${isEnabled}', because it is not known to ioBroker`);
+        const script: Script = {
+            _id: scriptId,
+            common: {
+                enabled: isEnabled
             }
-        }
+        };
+
+        this.updateScript(scriptId, script);
     }
 }

@@ -18,30 +18,14 @@ export class ScriptService implements IScriptService {
         @inject(TYPES.services.file) private fileService: IFileService,
         @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService
     ) {}
-
-    async getIoBrokerId(fileUri: Uri): Promise<ScriptId> {
-        if (fileUri.scheme !== "file") {
-            return "";
-        }
-        
-        const workspace = await this.workspaceService.getWorkspaceToUse();
-        const idSuffixPath = fileUri.path.substr(workspace.uri.path.length);
-        const suffixLength = idSuffixPath.lastIndexOf(".");
-
-        let path = idSuffixPath.substring(0, suffixLength);
-        path = this.replaceAll(path, "/", ".");
-        path = this.replaceAll(path, " ", "_");
-
-        return new ScriptId(`script.js${path}`);
-    }
     
     getRelativeFilePathFromScript(script: Script): string {
         let path = script._id.replace("script.js.", "");
-        const engineType = script.common.engineType ?? "";
+        const engineType = <EngineType>script.common.engineType ?? EngineType.unkown;
         return this.getRelativeFilePath(path, engineType);
     }
     
-    getRelativeFilePath(scriptId: ScriptId, engineType: string): string {
+    getRelativeFilePath(scriptId: ScriptId, engineType: EngineType): string {
         let path = scriptId.replace("script.js.", "");
         path = this.replaceAll(path, ".", "/");
         path = this.replaceAll(path, "_", " ");
@@ -52,8 +36,29 @@ export class ScriptService implements IScriptService {
         const extension = this.getFileExtension(engineType);
         return `${scriptRoot}${path}.${extension}`;
     }
+    
+    getFileExtension(engineType: EngineType): string {
+        switch (engineType?.toLowerCase()) {
+            case EngineType.javascript:
+                return "js";
+            case EngineType.typescript:
+                return "ts";
+            case EngineType.blockly:
+                return "block";
+        
+            default:
+                return "";
+        }
+    }
 
-    async getFileContentOnDisk(scriptId: ScriptId, engineType: string): Promise<string | null> {
+    async getFileUri(script: Script): Promise<Uri> {
+        const relativeScriptPath = this.getRelativeFilePathFromScript(script);
+        const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
+
+        return Uri.joinPath(workspaceFolder.uri, relativeScriptPath);
+    }
+    
+    async getFileContentOnDisk(scriptId: ScriptId, engineType: EngineType): Promise<string | null> {
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
         const relativeFilePath = this.getRelativeFilePath(scriptId, engineType);
         const scriptUri = this.getScriptUri(workspaceFolder, relativeFilePath);
@@ -79,25 +84,11 @@ export class ScriptService implements IScriptService {
         }
     }
 
-    private replaceAll(s: string, searchValue: string, replaceValue: string): string {
-        return s.split(searchValue).join(replaceValue);
-    }
-
-    private getFileExtension(engineType: string): string {
-        switch (engineType?.toLowerCase()) {
-            case EngineType.javascript:
-                return "js";
-            case EngineType.typescript:
-                return "ts";
-            case EngineType.blockly:
-                return "block";
-        
-            default:
-                return "";
-        }
-    }
-
     private getScriptUri(workspaceFolder: WorkspaceFolder, relativeFilePath: string): Uri {
         return Uri.joinPath(workspaceFolder.uri, relativeFilePath);
+    }    
+    
+    private replaceAll(s: string, searchValue: string, replaceValue: string): string {
+        return s.split(searchValue).join(replaceValue);
     }
 }

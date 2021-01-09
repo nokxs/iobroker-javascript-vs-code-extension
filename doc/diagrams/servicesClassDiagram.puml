@@ -1,0 +1,30 @@
+@startuml Services
+class ConfigCreationService
+class ConfigRepositoryService
+class ConnectionService
+class IobrokerConnectionService
+class LogService
+class TypeDefinitionService
+class WorkspaceService
+class FileService
+class ScriptService
+class ScriptIdService
+
+ConfigCreationService --> TypeDefinitionService
+ConfigRepositoryService --> FileService
+ConnectionService --> ScriptIdService
+IobrokerConnectionService --> ConfigCreationService
+IobrokerConnectionService --> ConfigRepositoryService
+IobrokerConnectionService --> ConnectionService
+IobrokerConnectionService --> WorkspaceService
+IobrokerConnectionService --> LogService
+LogService --> ConnectionService
+LogService --> ScriptService
+TypeDefinitionService --> FileService
+TypeDefinitionService --> WorkspaceService
+WorkspaceService --> ConfigRepositoryService
+ScriptService --> WorkspaceService
+ScriptService --> FileService
+ScriptService --> ConfigRepositoryService
+ScriptIdService --> WorkspaceService
+@enduml

@@ -12,7 +12,7 @@ export class WorkspaceService implements IWorkspaceService {
     workspaceToUse: WorkspaceFolder = new NoWorkspaceFolder();
     
     constructor(
-        @inject(TYPES.services.configRepository) private configReaderWriterService: IConfigRepositoryService,
+        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
     ) {}
 
     async getWorkspaceToUse(): Promise<WorkspaceFolder> {
@@ -28,7 +28,7 @@ export class WorkspaceService implements IWorkspaceService {
         
         if (workspace.workspaceFolders) {
             for (const wsf of workspace.workspaceFolders) {
-                const config = await this.configReaderWriterService.read(wsf);
+                const config = await this.configRepositoryService.read(wsf);
                 
                 if (!(config instanceof NoConfig)) {
                     workspaceFolders.push(wsf);

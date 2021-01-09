@@ -8,6 +8,7 @@ const TYPES = {
         command: Symbol.for("CommandService"),
         workspace: Symbol.for("WorkspaceService"),
         script: Symbol.for("ScriptService"),
+        scriptId: Symbol.for("ScriptIdService"),
         log: Symbol.for("LogService"),
         typeDefinition: Symbol.for("TypeDefinitionService"),
         iobrokerConnection: Symbol.for("IobrokerConnection")
