@@ -1,0 +1,8 @@
+{
+  "ioBrokerUrl": "http://localhost",
+  "socketIoPort": 8081,
+  "workspaceSubPath": "/",
+  "scriptExplorer": {
+    "collapseDirectoriesOnStartup": true
+  }
+}

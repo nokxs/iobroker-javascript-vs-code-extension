@@ -65,20 +65,14 @@ After the first activation a `.iobroker-config.json` file is created in the root
 
 ### Available settings
 
-*The values for optional settings are the default values*
+An example with all available settings can be found [here](./doc/.iobroker-config.json).
 
-```
-{
-  "ioBrokerUrl": "http://localhost", // ★ The url has to be prefixed with http/https. Specify no port here
-  "socketIoPort": 8081, // ★ Use the port of the admin adapter (usually 8081). Do not use the port of the socket.io Adapter (usually 8084) as this will not work, because of missing permissions.
-  "scriptRoot": "/", // ★ A relative directory, which is used as root of ioBroker scripts
-  "scriptExplorer": { // Configuration for script explorer
-    "expandDirectoriesOnStartup": true // Should the directories in the script explorer be expanded on startup
-  }
-}
-```
-
-★ = Mandatory
+| Key           | Description           | Mandatory | Default |
+|---------------|-----------------------|-----------|---------|
+| `ioBrokerUrl` | The url has to be prefixed with http/https. Specify no port here. | Yes | http://localhost |
+| `socketIoPort` | Use the port of the admin adapter (usually 8081). Do not use the port of the socket.io Adapter (usually 8084) as this will not work, because of missing permissions. | Yes | 8081 |
+| `scriptRoot` | Relative directory path, which is used as root of ioBroker scripts. | Yes | "/" |
+| `scriptExplorer.collapseDirectoriesOnStartup` | Should the directories in the script explorer be collapsed on startup. | No | true |
 
 > Caution: The json above is invalid as it contains comments. Remove comments if intend to copy it.
 

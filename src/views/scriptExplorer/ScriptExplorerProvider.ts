@@ -99,7 +99,7 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
     private shouldDirectoriesBeCollapsed(): boolean {
         const config = this.iobrokerConnectionService.config;
         if (!(config instanceof NoConfig)) {
-            return config.scriptExplorer?.expandDirectoriesOnStartup ?? true;
+            return config.scriptExplorer?.collapseDirectoriesOnStartup ?? true;
         }
 
         return true;
