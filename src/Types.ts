@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 const TYPES = {
     services: {
-        config: Symbol.for("ConfigService"),
+        configCreation: Symbol.for("ConfigCreationService"),
         configReaderWriter: Symbol.for("ConfigReaderWriterService"),
         connection: Symbol.for("ConnectionService"),
         file: Symbol.for("FileService"),

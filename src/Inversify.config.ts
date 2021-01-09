@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 
 import { CommandService } from './services/command/CommandService';
+import { ConfigCreationService } from './services/configCreation/ConfigCreationService';
 import { ConfigReaderWriterService } from './services/configReaderWriter/ConfigReaderWriterService';
-import { ConfigService } from './services/config/ConfigService';
 import { ConnectCommand } from './commands/ConnectCommand';
 import { ConnectionService } from './services/connection/ConnectionService';
 import { Container } from 'inversify';
@@ -12,7 +12,7 @@ import { FileService } from './services/file/FileService';
 import { ICommand } from './commands/ICommand';
 import { ICommandService } from './services/command/ICommandService';
 import { IConfigReaderWriterService } from './services/configReaderWriter/IConfigReaderWriterService';
-import { IConfigService } from './services/config/IConfigService';
+import { IConfigService } from './services/configCreation/IConfigCreationService';
 import { IConnectionService } from './services/connection/IConnectionService';
 import { IFileService } from './services/file/IFileService';
 import { IIobrokerConnectionService } from './services/iobrokerConnection/IIobrokerConnectionService';
@@ -41,7 +41,7 @@ const container = new Container();
 container.bind<IStartup>(TYPES.startup).to(Startup).inSingletonScope();
 
 container.bind<IWorkspaceService>(TYPES.services.workspace).to(WorkspaceService).inSingletonScope();
-container.bind<IConfigService>(TYPES.services.config).to(ConfigService).inSingletonScope();
+container.bind<IConfigService>(TYPES.services.configCreation).to(ConfigCreationService).inSingletonScope();
 container.bind<IConnectionService>(TYPES.services.connection).to(ConnectionService).inSingletonScope();
 container.bind<IFileService>(TYPES.services.file).to(FileService).inSingletonScope();
 container.bind<ICommandService>(TYPES.services.command).to(CommandService).inSingletonScope();

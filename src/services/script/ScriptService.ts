@@ -15,6 +15,7 @@ export class ScriptService implements IScriptService {
     constructor(
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
         @inject(TYPES.services.file) private fileService: IFileService,
+        
     ) {}
 
     async getIoBrokerId(fileUri: Uri): Promise<ScriptId> {
@@ -48,9 +49,9 @@ export class ScriptService implements IScriptService {
     }
 
     async getFileContentOnDisk(scriptId: ScriptId, engineType: string): Promise<string | null> {
-        const workspace = await this.workspaceService.getWorkspaceToUse();
+        const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
         const relativeFilePath = this.getRelativeFilePath(scriptId, engineType);
-        const scriptUri = Uri.joinPath(workspace.uri, relativeFilePath);
+        const scriptUri = this.getScriptUri(workspaceFolder, relativeFilePath);
 
         if (this.fileService.fileExists(scriptUri)) {
             return this.fileService.readFromFile(scriptUri);
@@ -59,16 +60,17 @@ export class ScriptService implements IScriptService {
         return null;
     }
 
-    async saveToFile(script: Script, workspaceFolder: WorkspaceFolder): Promise<void> {
+    async saveToFile(script: Script): Promise<void> {
+        const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
         const relativeFilePath = this.getRelativeFilePathFromScript(script);
-        const uri = Uri.joinPath(workspaceFolder.uri, relativeFilePath);
+        const scriptUri = this.getScriptUri(workspaceFolder, relativeFilePath);
 
-        await this.fileService.saveToFile(uri, script.common.source ?? "");
+        await this.fileService.saveToFile(scriptUri, script.common.source ?? "");
     }
     
-    async saveAllToFile(scripts: ScriptObject[], workspaceFolder: WorkspaceFolder): Promise<void> {
+    async saveAllToFile(scripts: ScriptObject[]): Promise<void> {
         for (const script of scripts) {
-            await this.saveToFile(script.value, workspaceFolder);
+            await this.saveToFile(script.value);
         }
     }
 
@@ -88,5 +90,10 @@ export class ScriptService implements IScriptService {
             default:
                 return "";
         }
+    }
+
+    private getScriptUri(workspaceFolder: WorkspaceFolder, relativeFilePath: string): Uri {
+        const workspaceSubPath = this.iobrokerConnectionService.config.workspaceSubPath;
+        return Uri.joinPath(workspaceFolder.uri, workspaceSubPath, relativeFilePath);
     }
 }
