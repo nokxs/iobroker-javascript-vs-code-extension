@@ -18,6 +18,7 @@ import { IFileService } from './services/file/IFileService';
 import { IIobrokerConnectionService } from './services/iobrokerConnection/IIobrokerConnectionService';
 import { ILogService } from "./services/log/ILogService";
 import { IScriptExplorerProvider } from "./views/scriptExplorer/IScriptExplorerProvider";
+import { IScriptIdService } from './services/scriptId/IScriptIdService';
 import { IScriptService } from './services/script/IScriptService';
 import { IStartup } from './IStartup';
 import { ITypeDefinitionService } from "./services/typeDefinition/ITypeDefinitionService";
@@ -26,6 +27,7 @@ import { IobrokerConnectionService } from './services/iobrokerConnection/Iobroke
 import { LogService } from './services/log/LogService';
 import { OpenFileCommand } from './commands/OpenFileCommand';
 import { ScriptExplorerProvider } from './views/scriptExplorer/ScriptExplorerProvider';
+import { ScriptIdService } from './services/scriptId/ScriptIdService';
 import { ScriptRenameCommand } from './commands/ScriptRenameCommand';
 import { ScriptService } from './services/script/ScriptService';
 import { StartCurrentScriptCommand } from './commands/StartCurrentScriptCommand';
@@ -47,6 +49,7 @@ container.bind<IConnectionService>(TYPES.services.connection).to(ConnectionServi
 container.bind<IFileService>(TYPES.services.file).to(FileService).inSingletonScope();
 container.bind<ICommandService>(TYPES.services.command).to(CommandService).inSingletonScope();
 container.bind<IScriptService>(TYPES.services.script).to(ScriptService).inSingletonScope();
+container.bind<IScriptIdService>(TYPES.services.scriptId).to(ScriptIdService).inSingletonScope();
 container.bind<ILogService>(TYPES.services.log).to(LogService).inSingletonScope();
 container.bind<ITypeDefinitionService>(TYPES.services.typeDefinition).to(TypeDefinitionService).inSingletonScope();
 container.bind<IIobrokerConnectionService>(TYPES.services.iobrokerConnection).to(IobrokerConnectionService).inSingletonScope();

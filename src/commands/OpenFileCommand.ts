@@ -2,11 +2,11 @@ import { ICommand } from "./ICommand";
 import { Script } from "../models/Script";
 import { inject, injectable } from "inversify";
 import TYPES from "../Types";
-import { IScriptService } from "../services/script/IScriptService";
 import { IWorkspaceService } from "../services/workspace/IWorkspaceService";
 import { TextDocument, Uri, window, workspace } from "vscode";
 import { IFileService } from '../services/file/IFileService';
 import { EngineType } from '../models/EngineType';
+import { IScriptService } from "../services/script/IScriptService";
 
 @injectable()
 export class OpenFileCommand implements ICommand {

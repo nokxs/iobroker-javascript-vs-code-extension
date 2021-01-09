@@ -9,10 +9,10 @@ import { ScriptId } from "../../models/ScriptId";
 import { Uri, window } from "vscode";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
-import { IScriptService } from '../script/IScriptService';
 import { LogMessage } from '../../models/LogMessage';
 import { IScriptChangedEventListener as IScriptChangedEventListener } from './IScriptChangedListener';
 import { InvalidScript } from '../../models/InvalidScript';
+import { IScriptIdService } from '../scriptId/IScriptIdService';
 
 @injectable()
 export class ConnectionService implements IConnectionService {
@@ -25,7 +25,7 @@ export class ConnectionService implements IConnectionService {
     private client: SocketIOClient.Socket | undefined = undefined;
     
     constructor(
-        @inject(TYPES.services.script) private scriptService: IScriptService,
+        @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
     ) {}
 
     registerConnectionEventListener(listener: IConnectionEventListener): void {
@@ -85,7 +85,7 @@ export class ConnectionService implements IConnectionService {
     }
 
     async downloadScriptWithUri(scriptUri: Uri): Promise<Script> {
-        const scriptId = await this.scriptService.getIoBrokerId(scriptUri);
+        const scriptId = await this.scriptIdService.getIoBrokerId(scriptUri);
         return await this.downloadScriptWithId(scriptId);
     }
 

@@ -3,7 +3,7 @@ import { OutputChannel, Uri, window } from "vscode";
 import { LogMessage } from "../../models/LogMessage";
 import TYPES from "../../Types";
 import { IConnectionService } from "../connection/IConnectionService";
-import { IScriptService } from "../script/IScriptService";
+import { IScriptIdService } from "../scriptId/IScriptIdService";
 import { ILogService } from "./ILogService";
 
 @injectable()
@@ -11,7 +11,7 @@ export class LogService implements ILogService {
        
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
-        @inject(TYPES.services.script) private scriptService: IScriptService,
+        @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
     ) {}
 
     async startReceiving(): Promise<void> {
@@ -49,7 +49,7 @@ export class LogService implements ILogService {
     }
 
     private async isMessageForFile(logMessage: LogMessage, uri: Uri): Promise<boolean> {
-        const fileId = await this.scriptService.getIoBrokerId(uri);
+        const fileId = await this.scriptIdService.getIoBrokerId(uri);
         return logMessage.message.includes(<string>fileId);
     }
 }

@@ -18,22 +18,6 @@ export class ScriptService implements IScriptService {
         @inject(TYPES.services.file) private fileService: IFileService,
         @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService
     ) {}
-
-    async getIoBrokerId(fileUri: Uri): Promise<ScriptId> {
-        if (fileUri.scheme !== "file") {
-            return "";
-        }
-        
-        const workspace = await this.workspaceService.getWorkspaceToUse();
-        const idSuffixPath = fileUri.path.substr(workspace.uri.path.length);
-        const suffixLength = idSuffixPath.lastIndexOf(".");
-
-        let path = idSuffixPath.substring(0, suffixLength);
-        path = this.replaceAll(path, "/", ".");
-        path = this.replaceAll(path, " ", "_");
-
-        return new ScriptId(`script.js${path}`);
-    }
     
     getRelativeFilePathFromScript(script: Script): string {
         let path = script._id.replace("script.js.", "");
@@ -52,7 +36,7 @@ export class ScriptService implements IScriptService {
         const extension = this.getFileExtension(engineType);
         return `${scriptRoot}${path}.${extension}`;
     }
-
+    
     async getFileContentOnDisk(scriptId: ScriptId, engineType: string): Promise<string | null> {
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
         const relativeFilePath = this.getRelativeFilePath(scriptId, engineType);
@@ -79,6 +63,10 @@ export class ScriptService implements IScriptService {
         }
     }
 
+    private getScriptUri(workspaceFolder: WorkspaceFolder, relativeFilePath: string): Uri {
+        return Uri.joinPath(workspaceFolder.uri, relativeFilePath);
+    }    
+    
     private replaceAll(s: string, searchValue: string, replaceValue: string): string {
         return s.split(searchValue).join(replaceValue);
     }
@@ -95,9 +83,5 @@ export class ScriptService implements IScriptService {
             default:
                 return "";
         }
-    }
-
-    private getScriptUri(workspaceFolder: WorkspaceFolder, relativeFilePath: string): Uri {
-        return Uri.joinPath(workspaceFolder.uri, relativeFilePath);
     }
 }
