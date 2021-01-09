@@ -16,7 +16,6 @@ export class ConfigRepositoryService implements IConfigRepositoryService {
     ) {}
 
     async read(workspaceFolder: WorkspaceFolder): Promise<Config> {
-        
         const expectedConfigFilePath = this.getConfigPath(workspaceFolder.uri);
         const configFileExists = this.fileService.fileExists(expectedConfigFilePath);
         
@@ -33,8 +32,8 @@ export class ConfigRepositoryService implements IConfigRepositoryService {
     async write(config: Config, workspaceFolder: WorkspaceFolder): Promise<void> {
         if (workspace.workspaceFolders) {            
             const configPath = this.getConfigPath(workspaceFolder.uri);
-            const writeData = Buffer.from(JSON.stringify(config, null, 2), 'utf8');
-            workspace.fs.writeFile(configPath, writeData);
+            this.fileService.saveToFile(configPath, JSON.stringify(config, null, 2));
+            this.config = config;
         } else {
             window.showWarningMessage("Cannot save config. No workspace available. Please open a directory to start with iobroker-javascript.");
         }

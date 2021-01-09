@@ -28,7 +28,7 @@ export class ScriptService implements IScriptService {
         const idSuffixPath = fileUri.path.substr(workspace.uri.path.length);
         const suffixLength = idSuffixPath.lastIndexOf(".");
 
-        var path = idSuffixPath.substring(0, suffixLength);
+        let path = idSuffixPath.substring(0, suffixLength);
         path = this.replaceAll(path, "/", ".");
         path = this.replaceAll(path, " ", "_");
 
@@ -36,17 +36,21 @@ export class ScriptService implements IScriptService {
     }
     
     getRelativeFilePathFromScript(script: Script): string {
-        var path = script._id.replace("script.js.", "");
+        let path = script._id.replace("script.js.", "");
         const engineType = script.common.engineType ?? "";
         return this.getRelativeFilePath(path, engineType);
     }
     
     getRelativeFilePath(scriptId: ScriptId, engineType: string): string {
-        var path = scriptId.replace("script.js.", "");
+        let path = scriptId.replace("script.js.", "");
         path = this.replaceAll(path, ".", "/");
         path = this.replaceAll(path, "_", " ");
+
+        let scriptRoot = this.configRepositoryService.config.scriptRoot;
+        scriptRoot = scriptRoot.endsWith("/") ? scriptRoot : `${scriptRoot}/`;
+
         const extension = this.getFileExtension(engineType);
-        return `${path}.${extension}`;
+        return `${scriptRoot}${path}.${extension}`;
     }
 
     async getFileContentOnDisk(scriptId: ScriptId, engineType: string): Promise<string | null> {
@@ -94,7 +98,6 @@ export class ScriptService implements IScriptService {
     }
 
     private getScriptUri(workspaceFolder: WorkspaceFolder, relativeFilePath: string): Uri {
-        const workspaceSubPath = this.configRepositoryService.config.workspaceSubPath;
-        return Uri.joinPath(workspaceFolder.uri, workspaceSubPath, relativeFilePath);
+        return Uri.joinPath(workspaceFolder.uri, relativeFilePath);
     }
 }

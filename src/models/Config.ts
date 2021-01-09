@@ -2,7 +2,7 @@ export class Config {
     constructor(
         readonly ioBrokerUrl: string, 
         readonly socketIoPort: number, 
-        readonly workspaceSubPath: string,
+        readonly scriptRoot: string,
         readonly scriptExplorer?: ScriptExplorerConfig) {}
 }
 
