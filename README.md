@@ -80,6 +80,8 @@ After the first activation a `.iobroker-config.json` file is created in the root
 
 ★ = Mandatory
 
+> Caution: The json above is invalid as it contains comments. Remove comments if intend to copy it.
+
 ## Known Issues
 
 If you got any problems, please open a GitHub issue.
