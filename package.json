@@ -83,6 +83,11 @@
 				"command": "iobroker-javascript.view.scriptExplorer.refresh",
 				"title": "Refresh",
 				"icon": "$(refresh)"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.rename",
+				"title": "Rename",
+				"enablement": "view == iobroker-javascript.script-explorer"
 			}
 		],
 		"menus": {
@@ -121,6 +126,10 @@
 					"command": "iobroker-javascript.stopScript",
 					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem",
 					"group": "inline"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.rename",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem"
 				}
 			]
 		}

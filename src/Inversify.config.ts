@@ -26,6 +26,7 @@ import { IobrokerConnectionService } from './services/iobrokerConnection/Iobroke
 import { LogService } from './services/log/LogService';
 import { OpenFileCommand } from './commands/OpenFileCommand';
 import { ScriptExplorerProvider } from './views/scriptExplorer/ScriptExplorerProvider';
+import { ScriptRenameCommand } from './commands/ScriptRenameCommand';
 import { ScriptService } from './services/script/ScriptService';
 import { StartCurrentScriptCommand } from './commands/StartCurrentScriptCommand';
 import { Startup } from './Startup';
@@ -59,6 +60,7 @@ container.bind<ICommand>(TYPES.command).to(StopCurrentScriptCommand);
 container.bind<ICommand>(TYPES.command).to(UpdateTypeDefinitionCommand);
 container.bind<ICommand>(TYPES.command).to(OpenFileCommand);
 container.bind<ICommand>(TYPES.command).to(ConnectCommand);
+container.bind<ICommand>(TYPES.command).to(ScriptRenameCommand);
 
 container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider);
 

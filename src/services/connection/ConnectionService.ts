@@ -146,6 +146,15 @@ export class ConnectionService implements IConnectionService {
         });
     }
 
+    rename(scriptId: ScriptId, name: string): Promise<void> {
+        return this.updateScript({
+            _id: scriptId,
+            common: {
+                name: name
+            }
+        });
+    }
+
     unregisterForLogs(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
@@ -160,6 +169,22 @@ export class ConnectionService implements IConnectionService {
                 });
             }
         });
+    }
+
+    async updateScript(script: Script): Promise<void> {
+        if (this.client && this.isConnected) {
+            const scriptId = script._id;
+            const existingScript = await this.downloadScriptWithId(scriptId);
+            if (existingScript) {
+                this.client.emit("extendObject", scriptId, script, (err: any) => {
+                    if (err) {
+                        throw new Error(`Could not update script '${scriptId}' to '${JSON.stringify(script)}': ${err}`);
+                    }
+                });
+            } else {
+                throw new Error(`Could not update script '${scriptId}', because it is not known to ioBroker`);
+            }
+        }
     }
 
     private registerSocketEvents(): void {
@@ -182,24 +207,13 @@ export class ConnectionService implements IConnectionService {
     }
 
     private async setScriptState(scriptId: ScriptId, isEnabled: boolean): Promise<void> {
-        if (this.client && this.isConnected) {
-            const script: Script = {
-                _id: scriptId,
-                common: {
-                    enabled: isEnabled
-                }
-            };
-
-            const existingScript = await this.downloadScriptWithId(scriptId);
-            if (existingScript) {
-                this.client.emit("extendObject", scriptId, script, (err: any) => {
-                    if (err) {
-                        throw new Error(`Could set script state for '${scriptId}' to '${isEnabled}': ${err}`);
-                    }
-                });
-            } else {
-                throw new Error(`Could set script state for '${scriptId}' to '${isEnabled}', because it is not known to ioBroker`);
+        const script: Script = {
+            _id: scriptId,
+            common: {
+                enabled: isEnabled
             }
-        }
+        };
+
+        this.updateScript(script);
     }
 }
