@@ -1,13 +1,13 @@
 import { Config, NoConfig } from "../../models/Config";
 import { window } from "vscode";
 
-import { IConfigService } from "./IConfigService";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { ITypeDefinitionService } from '../typeDefinition/ITypeDefinitionService';
+import { IConfigCreationService } from "./IConfigCreationService";
 
 @injectable()
-export class ConfigService implements IConfigService {
+export class ConfigCreationService implements IConfigCreationService {
     
     constructor(
         @inject(TYPES.services.typeDefinition) private typeDefinitionService: ITypeDefinitionService

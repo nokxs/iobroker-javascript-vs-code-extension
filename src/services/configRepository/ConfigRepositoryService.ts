@@ -4,34 +4,36 @@ import { Uri, WorkspaceFolder, window, workspace } from "vscode";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { IFileService } from '../file/IFileService';
-import { IConfigReaderWriterService } from "./IConfigReaderWriterService";
+import { IConfigRepositoryService as IConfigRepositoryService } from "./IConfigRepositoryService";
 
 @injectable()
-export class ConfigReaderWriterService implements IConfigReaderWriterService {
+export class ConfigRepositoryService implements IConfigRepositoryService {
     
+    config: Config = new NoConfig();
+
     constructor(
         @inject(TYPES.services.file) private fileService: IFileService,
     ) {}
 
     async read(workspaceFolder: WorkspaceFolder): Promise<Config> {
-        
         const expectedConfigFilePath = this.getConfigPath(workspaceFolder.uri);
         const configFileExists = this.fileService.fileExists(expectedConfigFilePath);
         
         if (configFileExists) {
             const configFileContent = await workspace.fs.readFile(expectedConfigFilePath);
-            const config = JSON.parse(configFileContent.toString());
-            return config;
+            this.config = JSON.parse(configFileContent.toString());
+        } else {
+            this.config = new NoConfig();
         }
 
-        return new NoConfig();
+        return this.config;
     }
 
     async write(config: Config, workspaceFolder: WorkspaceFolder): Promise<void> {
         if (workspace.workspaceFolders) {            
             const configPath = this.getConfigPath(workspaceFolder.uri);
-            const writeData = Buffer.from(JSON.stringify(config, null, 2), 'utf8');
-            workspace.fs.writeFile(configPath, writeData);
+            this.fileService.saveToFile(configPath, JSON.stringify(config, null, 2));
+            this.config = config;
         } else {
             window.showWarningMessage("Cannot save config. No workspace available. Please open a directory to start with iobroker-javascript.");
         }

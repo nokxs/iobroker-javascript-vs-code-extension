@@ -3,7 +3,6 @@ import { inject, injectable } from "inversify";
 import TYPES from "../Types";
 import { IConnectionService } from "../services/connection/IConnectionService";
 import { window } from "vscode";
-import { IWorkspaceService } from "../services/workspace/IWorkspaceService";
 import { IScriptService } from "../services/script/IScriptService";
 import { Script } from "../models/Script";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
@@ -15,17 +14,14 @@ export class DownloadCommand implements ICommand {
 
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
-        @inject(TYPES.services.script) private scriptService: IScriptService,
-        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService
+        @inject(TYPES.services.script) private scriptService: IScriptService
     ) {}
     
     async execute(...args: any[]) {
         const script = await this.tryDownloadScript(args);
 
         if (script) {
-            const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
-    
-            await this.scriptService.saveToFile(script, workspaceFolder);
+            await this.scriptService.saveToFile(script);
             
             window.setStatusBarMessage(`ioBroker: Finished downloading script`, CONSTANTS.StatusBarMessageTime);
         } else {
