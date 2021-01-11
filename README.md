@@ -92,6 +92,7 @@ Support (not in the listed order)
 * reordering of scripts in the script explorer
 * script output only for the currently selected script
 * the functions defined in global scripts
+* showing which scripts were updated and need to be uploaded
 
 ## Release Notes
 
