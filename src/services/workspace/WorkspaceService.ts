@@ -40,6 +40,18 @@ export class WorkspaceService implements IWorkspaceService {
     }
 
     private async getWorkspaceToUseInternal(): Promise<WorkspaceFolder> {
+        const workspacesWithConfig = await this.getWorkspacesWithConfig();
+        if (workspacesWithConfig.length === 1) {
+            return workspacesWithConfig[0];
+        } else if (workspacesWithConfig.length > 1) {
+            const result = await window.showQuickPick(workspacesWithConfig.map(ws => ws.name), {placeHolder: "Found multiple .iobroker-config.json. Which to use?"});
+            if (result) {
+                return workspacesWithConfig.filter(ws => ws.name === result)[0];
+            }
+
+            return new NoWorkspaceFolder();
+        }
+
         if (workspace.workspaceFolders && workspace.workspaceFolders.length > 0) {            
             if (workspace.workspaceFolders.length >= 2) {
                 const pickedWorkspace = await window.showWorkspaceFolderPick({ placeHolder: "Select workspace to save .iobroker-config.json to" });
