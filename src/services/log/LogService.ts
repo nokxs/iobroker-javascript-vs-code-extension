@@ -48,7 +48,7 @@ export class LogService implements ILogService {
     }
 
     private isMessageForFile(logMessage: LogMessage, uri: Uri): boolean {
-        const scriptId = this.scriptIdService.getIoBrokerId(uri);
-        return logMessage.message.includes(<string>scriptId);
+        const scriptId = <string>this.scriptIdService.getIoBrokerId(uri);
+        return logMessage.message.includes(scriptId);
     }
 }
