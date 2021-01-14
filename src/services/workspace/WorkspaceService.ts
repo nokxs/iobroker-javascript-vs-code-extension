@@ -40,6 +40,10 @@ export class WorkspaceService implements IWorkspaceService {
     }
 
     private async getWorkspaceToUseInternal(): Promise<WorkspaceFolder> {
+        return await this.getWorkspceFromExisting() ?? await this.getNewWorkspace();
+    }
+
+    private async getWorkspceFromExisting(): Promise<WorkspaceFolder | undefined> {
         const workspacesWithConfig = await this.getWorkspacesWithConfig();
         if (workspacesWithConfig.length === 1) {
             return workspacesWithConfig[0];
@@ -51,7 +55,9 @@ export class WorkspaceService implements IWorkspaceService {
 
             return new NoWorkspaceFolder();
         }
+    }
 
+    private async getNewWorkspace(): Promise<WorkspaceFolder> {
         if (workspace.workspaceFolders && workspace.workspaceFolders.length > 0) {            
             if (workspace.workspaceFolders.length >= 2) {
                 const pickedWorkspace = await window.showWorkspaceFolderPick({ placeHolder: "Select workspace to save .iobroker-config.json to" });
@@ -60,7 +66,7 @@ export class WorkspaceService implements IWorkspaceService {
 
             return workspace.workspaceFolders[0];
         }
-        
+
         return new NoWorkspaceFolder();
     }
 }
