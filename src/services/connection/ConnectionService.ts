@@ -158,7 +158,7 @@ export class ConnectionService implements IConnectionService {
 
         const script = await this.downloadScriptWithId(scriptId);
         script._id = newId;
-        script.common.name = sanatizedName;
+        script.common.name = name;
 
         await this.deleteScript(scriptId);
         await this.createScript(script);
