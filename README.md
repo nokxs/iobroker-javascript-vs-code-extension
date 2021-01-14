@@ -91,7 +91,6 @@ Support (not in the listed order)
 * multiple js-Adapter instances
 * syncing of workspace with remote scripts (correclty, delete and remove scirpts)
 * upload multiple changed scripts with an `upload all` command
-* reordering of scripts in the script explorer
 * the functions defined in global scripts
 * showing which scripts were updated and need to be uploaded
 
