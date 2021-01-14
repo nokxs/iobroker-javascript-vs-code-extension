@@ -55,9 +55,11 @@ To start/stop a single script you have the following options:
 * Use the command `iobroker: Start script`, respectively `iobroker: Stop script`. This command starts/stops the script in the active text editor.
 
 ### Show script logging
-Press <kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>U</kbd> to open the "Output" view. Open the drop down and select `ioBroker (all)`.
+Press <kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>U</kbd> to open the "Output" view. Open the drop down and select `ioBroker (all)` or `ioBroker (current script)`.
 
-As long as a connection to ioBroker exists, this will show the output of all scripts.
+* `ioBroker (all)`: As long as a connection to ioBroker exists, this will show the output of all scripts.
+* `ioBroker (current script)`: As long as a connection to ioBroker exists, this will show only the outputs of the script in the currently active tab. This output gets not cleared, if the tab is changed. If you need to 
+clear the output use Visual Studios feature `Clear Output`.
 
 ## Extension Settings
 
@@ -90,7 +92,6 @@ Support (not in the listed order)
 * syncing of workspace with remote scripts (correclty, delete and remove scirpts)
 * upload multiple changed scripts with an `upload all` command
 * reordering of scripts in the script explorer
-* script output only for the currently selected script
 * the functions defined in global scripts
 * showing which scripts were updated and need to be uploaded
 
