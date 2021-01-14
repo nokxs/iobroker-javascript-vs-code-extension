@@ -16,16 +16,15 @@ export class LogService implements ILogService {
 
     async startReceiving(): Promise<void> {
         const allOutputChannel = window.createOutputChannel("ioBroker (all)");
-        // const currentScriptOutputChannel = window.createOutputChannel("ioBroker (current script)"); // TODO: Make this work
+        const currentScriptOutputChannel = window.createOutputChannel("ioBroker (current script)"); // TODO: Make this work
 
         await this.connectionService.registerForLogs(async (logMessage: LogMessage) => {
             if (logMessage.from.startsWith("javascript.")) {
                 this.logMessageToChannel(logMessage, allOutputChannel);
 
-                // TODO: this does not work yet. It returns all messages.
-                // if (await this.isRelevantMessage(logMessage)) {
-                //     this.logMessageToChannel(logMessage, currentScriptOutputChannel);
-                // }
+                if (await this.isRelevantMessage(logMessage)) {
+                    this.logMessageToChannel(logMessage, currentScriptOutputChannel);
+                }
             }
         });
     }
@@ -44,12 +43,12 @@ export class LogService implements ILogService {
 
     private async isRelevantMessage(logMessage: LogMessage): Promise<boolean> {
         const openFileUris = this.getOpenFileUris();
-        const relevantMessages = await openFileUris.filter(async uri => await this.isMessageForFile(logMessage, uri));
+        const relevantMessages = await openFileUris.filter(uri => this.isMessageForFile(logMessage, uri));
         return relevantMessages.length > 0;
     }
 
-    private async isMessageForFile(logMessage: LogMessage, uri: Uri): Promise<boolean> {
-        const fileId = await this.scriptIdService.getIoBrokerId(uri);
-        return logMessage.message.includes(<string>fileId);
+    private isMessageForFile(logMessage: LogMessage, uri: Uri): boolean {
+        const scriptId = this.scriptIdService.getIoBrokerId(uri);
+        return logMessage.message.includes(<string>scriptId);
     }
 }

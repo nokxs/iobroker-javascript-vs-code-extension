@@ -18,7 +18,7 @@ export class StopCurrentScriptCommand implements ICommand {
     ) {}
     
     async execute(...args: any[]) {
-        const scriptId = await this.tryGetScriptId(args);
+        const scriptId = this.tryGetScriptId(args);
 
         if (scriptId && scriptId.length > 0) {
             try {
@@ -32,14 +32,14 @@ export class StopCurrentScriptCommand implements ICommand {
         }
     }
 
-    private async tryGetScriptId(...args: any[]): Promise<ScriptId | null> {
+    private tryGetScriptId(...args: any[]): ScriptId | null {
         if (args && args[0] && args[0].length > 0) {
             return (<ScriptItem>args[0][0]).script._id;
         }
         
         const activeDocument = window.activeTextEditor?.document;
         if (activeDocument) {
-            return await this.scriptIdService.getIoBrokerId(activeDocument.uri);
+            return this.scriptIdService.getIoBrokerId(activeDocument.uri);
         }
 
         return null;

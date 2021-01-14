@@ -13,12 +13,16 @@ export class ScriptIdService implements IScriptIdService {
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService
     ) {}
 
-    async getIoBrokerId(fileUri: Uri): Promise<ScriptId> {
+    getIoBrokerId(fileUri: Uri): ScriptId {
         if (fileUri.scheme !== "file") {
             return "";
         }
         
-        const workspace = await this.workspaceService.getWorkspaceToUse();
+        const workspace = this.workspaceService.workspaceToUse;
+        if (!workspace) {
+            return "";
+        }
+
         const idSuffixPath = fileUri.path.substr(workspace.uri.path.length);
         const suffixLength = idSuffixPath.lastIndexOf(".");
 

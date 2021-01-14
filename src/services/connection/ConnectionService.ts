@@ -85,7 +85,7 @@ export class ConnectionService implements IConnectionService {
     }
 
     async downloadScriptWithUri(scriptUri: Uri): Promise<Script> {
-        const scriptId = await this.scriptIdService.getIoBrokerId(scriptUri);
+        const scriptId = this.scriptIdService.getIoBrokerId(scriptUri);
         return await this.downloadScriptWithId(scriptId);
     }
 
@@ -108,6 +108,7 @@ export class ConnectionService implements IConnectionService {
     uploadScript(script: Script): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
+                // TODO: use private methods
                 this.client.emit("setObject", script._id, script, (err: any) => {
                     if (err) {
                         reject(new Error(`Could not upload script with id '${script._id}': ${err}`));
@@ -146,17 +147,21 @@ export class ConnectionService implements IConnectionService {
         });
     }
 
-    rename(scriptId: ScriptId, name: string): Promise<void> {
+    async rename(scriptId: ScriptId, name: string): Promise<void> {
         const splittedId = scriptId.split(".");
-        splittedId.splice(-1,1);
-        splittedId.push(name.replace(" ", "_").replace(".", "_"));
+        let sanatizedName = this.replaceAll(name, " ", "_");
+        sanatizedName = this.replaceAll(sanatizedName, ".", "_");
 
-        return this.updateScript(scriptId, {
-            _id: splittedId.join("."),
-            common: {
-                name: name
-            }
-        });
+        splittedId.splice(-1,1);
+        splittedId.push(sanatizedName);
+        const newId = splittedId.join(".");
+
+        const script = await this.downloadScriptWithId(scriptId);
+        script._id = newId;
+        script.common.name = sanatizedName;
+
+        await this.deleteScript(scriptId);
+        await this.createScript(script);
     }
 
     unregisterForLogs(): Promise<void> {
@@ -190,6 +195,26 @@ export class ConnectionService implements IConnectionService {
         }
     }
 
+    async deleteScript(scriptId: ScriptId): Promise<void> {
+        if (this.client && this.isConnected) {
+            this.client.emit("delObject", scriptId, (err: any) => {
+                if (err) {
+                    throw new Error(`Could not delete script '${scriptId}': ${err}`);
+                }
+            });
+        }
+    }
+
+    async createScript(script: Script): Promise<void> {
+        if (this.client && this.isConnected) {
+            this.client.emit("setObject", script._id, script, (err: any) => {
+                if (err) {
+                    throw new Error(`Could not create script '${script._id}': ${err}`);
+                }
+            });
+        }
+    }
+
     private registerSocketEvents(): void {
         if (this.client) {
             this.client.on("connect", () => {
@@ -218,5 +243,9 @@ export class ConnectionService implements IConnectionService {
         };
 
         this.updateScript(scriptId, script);
+    }
+    
+    private replaceAll(s: string, searchValue: string, replaceValue: string): string {
+        return s.split(searchValue).join(replaceValue);
     }
 }
