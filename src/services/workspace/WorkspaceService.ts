@@ -23,6 +23,24 @@ export class WorkspaceService implements IWorkspaceService {
         return this.workspaceToUse;
     }
 
+    private async getWorkspaceToUseInternal(): Promise<WorkspaceFolder> {
+        return await this.getWorkspaceFromExisting() ?? await this.getNewWorkspace();
+    }
+
+    private async getWorkspaceFromExisting(): Promise<WorkspaceFolder | undefined> {
+        const workspacesWithConfig = await this.getWorkspacesWithConfig();
+        if (workspacesWithConfig.length === 1) {
+            return workspacesWithConfig[0];
+        } else if (workspacesWithConfig.length > 1) {
+            const result = await window.showQuickPick(workspacesWithConfig.map(ws => ws.name), {placeHolder: "Found multiple .iobroker-config.json. Which to use?"});
+            if (result) {
+                return workspacesWithConfig.filter(ws => ws.name === result)[0];
+            }
+
+            return new NoWorkspaceFolder();
+        }
+    }
+
     async getWorkspacesWithConfig(): Promise<WorkspaceFolder[]> {
         const workspaceFolders = new Array<WorkspaceFolder>();
         
@@ -39,7 +57,7 @@ export class WorkspaceService implements IWorkspaceService {
         return workspaceFolders;
     }
 
-    private async getWorkspaceToUseInternal(): Promise<WorkspaceFolder> {
+    private async getNewWorkspace(): Promise<WorkspaceFolder> {
         if (workspace.workspaceFolders && workspace.workspaceFolders.length > 0) {            
             if (workspace.workspaceFolders.length >= 2) {
                 const pickedWorkspace = await window.showWorkspaceFolderPick({ placeHolder: "Select workspace to save .iobroker-config.json to" });
@@ -48,7 +66,7 @@ export class WorkspaceService implements IWorkspaceService {
 
             return workspace.workspaceFolders[0];
         }
-        
+
         return new NoWorkspaceFolder();
     }
 }
