@@ -29,8 +29,9 @@ export class ScriptIdService implements IScriptIdService {
         const suffixLength = idSuffixPath.lastIndexOf(".");
 
         let path = idSuffixPath.substring(0, suffixLength);
-        path = this.replaceAll(path, "/", ".");
+        path = this.replaceAll(path, ".", "_");
         path = this.replaceAll(path, " ", "_");
+        path = this.replaceAll(path, "/", ".");
 
         return new ScriptId(`script.js${path}`);
     }
