@@ -40,10 +40,10 @@ export class WorkspaceService implements IWorkspaceService {
     }
 
     private async getWorkspaceToUseInternal(): Promise<WorkspaceFolder> {
-        return await this.getWorkspceFromExisting() ?? await this.getNewWorkspace();
+        return await this.getWorkspaceFromExisting() ?? await this.getNewWorkspace();
     }
 
-    private async getWorkspceFromExisting(): Promise<WorkspaceFolder | undefined> {
+    private async getWorkspaceFromExisting(): Promise<WorkspaceFolder | undefined> {
         const workspacesWithConfig = await this.getWorkspacesWithConfig();
         if (workspacesWithConfig.length === 1) {
             return workspacesWithConfig[0];
