@@ -23,22 +23,6 @@ export class WorkspaceService implements IWorkspaceService {
         return this.workspaceToUse;
     }
 
-    async getWorkspacesWithConfig(): Promise<WorkspaceFolder[]> {
-        const workspaceFolders = new Array<WorkspaceFolder>();
-        
-        if (workspace.workspaceFolders) {
-            for (const wsf of workspace.workspaceFolders) {
-                const config = await this.configRepositoryService.read(wsf);
-                
-                if (!(config instanceof NoConfig)) {
-                    workspaceFolders.push(wsf);
-                }   
-            }
-        }
-
-        return workspaceFolders;
-    }
-
     private async getWorkspaceToUseInternal(): Promise<WorkspaceFolder> {
         return await this.getWorkspaceFromExisting() ?? await this.getNewWorkspace();
     }
@@ -55,6 +39,22 @@ export class WorkspaceService implements IWorkspaceService {
 
             return new NoWorkspaceFolder();
         }
+    }
+
+    async getWorkspacesWithConfig(): Promise<WorkspaceFolder[]> {
+        const workspaceFolders = new Array<WorkspaceFolder>();
+        
+        if (workspace.workspaceFolders) {
+            for (const wsf of workspace.workspaceFolders) {
+                const config = await this.configRepositoryService.read(wsf);
+                
+                if (!(config instanceof NoConfig)) {
+                    workspaceFolders.push(wsf);
+                }   
+            }
+        }
+
+        return workspaceFolders;
     }
 
     private async getNewWorkspace(): Promise<WorkspaceFolder> {
