@@ -26,6 +26,7 @@ import { IWorkspaceService } from './services/workspace/IWorkspaceService';
 import { IobrokerConnectionService } from './services/iobrokerConnection/IobrokerConnectionService';
 import { LogService } from './services/log/LogService';
 import { OpenFileCommand } from './commands/OpenFileCommand';
+import { ReorderCommand } from './commands/ReorderCommand';
 import { ScriptExplorerProvider } from './views/scriptExplorer/ScriptExplorerProvider';
 import { ScriptIdService } from './services/scriptId/ScriptIdService';
 import { ScriptRenameCommand } from './commands/ScriptRenameCommand';
@@ -64,6 +65,7 @@ container.bind<ICommand>(TYPES.command).to(UpdateTypeDefinitionCommand);
 container.bind<ICommand>(TYPES.command).to(OpenFileCommand);
 container.bind<ICommand>(TYPES.command).to(ConnectCommand);
 container.bind<ICommand>(TYPES.command).to(ScriptRenameCommand);
+container.bind<ICommand>(TYPES.command).to(ReorderCommand);
 
 container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider);
 
