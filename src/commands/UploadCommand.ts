@@ -23,37 +23,57 @@ export class UploadCommand implements ICommand {
     ) {}
 
     async execute(...args: any[]) {
-        const scriptData = await this.getScriptData(args);
+        const script = await this.getScriptData(args);
 
-        if (scriptData) {
-            scriptData.existingScript.common.source = scriptData.scriptText;
-            await this.connectionService.uploadScript(scriptData.existingScript);
+        if (script) {
+            await this.connectionService.uploadScript(script);
             window.setStatusBarMessage(`ioBroker: Finished uploading script`, CONSTANTS.StatusBarMessageTime);
+        } else {
+            window.setStatusBarMessage(`ioBroker: Couldn't upload script`, CONSTANTS.StatusBarMessageTime);
         }
     }
 
-    private async getScriptData(...args: any[]): Promise<{ scriptText: string, existingScript: Script} | null> {
+    private async getScriptData(...args: any[]): Promise<Script | null> {
         if (args && args[0] && args[0].length > 0) {
-            const script = (<ScriptItem>args[0][0]).script;
-            const scriptId = script._id;
-            const engineType = <EngineType>script.common.engineType;
-            const scriptText = await this.scriptService.getFileContentOnDisk(scriptId, engineType ?? EngineType.unkown);
-            const existingScript = await this.connectionService.downloadScriptWithId(scriptId);
-            
-            if (scriptText) {
-                return {
-                    scriptText: scriptText,
-                    existingScript: existingScript
-                };   
-            }
+           return this.handleScriptFromScriptExplorer(args);
         } else if (window.activeTextEditor) {
+            return this.handleScriptFromScriptExplorer();
+        }
+
+        return null;
+    }
+
+    private getFileName(uri: Uri): string {
+        var extension = path.extname(uri.fsPath);
+        return path.basename(uri.fsPath, extension);
+    }
+
+    private async handleScriptFromScriptExplorer(...args: any[]): Promise<Script | null> {
+        const script = (<ScriptItem>args[0][0]).script;
+        const scriptId = script._id;
+        const engineType = <EngineType>script.common.engineType;
+        const scriptText = await this.scriptService.getFileContentOnDisk(scriptId, engineType ?? EngineType.unkown);
+        const existingScript = await this.connectionService.downloadScriptWithId(scriptId);
+        
+        if (scriptText && existingScript) {
+            existingScript.common.source = scriptText;
+            return existingScript;
+        }
+
+        return null;
+    }
+
+    private async handleScriptFromEditor(): Promise<Script | null> {
+        if (window.activeTextEditor) {
             const scriptText = window.activeTextEditor.document.getText();
             const fileUri = window.activeTextEditor.document.uri;
-            let existingScript = await this.connectionService.downloadScriptWithUri(fileUri);
-
-            if (!existingScript) {
+            let script = await this.connectionService.downloadScriptWithUri(fileUri);
+    
+            if (script) {
+                script.common.source = scriptText;
+            } else {
                 // TODO: Support multiple js engines
-                existingScript = {
+                script = {
                     _id: this.scriptIdService.getIoBrokerId(fileUri),
                     common: {
                         debug: false,
@@ -68,17 +88,9 @@ export class UploadCommand implements ICommand {
                 };
             }
             
-            return {
-                scriptText: scriptText,
-                existingScript: existingScript
-            };
+            return script;
         }
 
         return null;
-    }
-
-    private getFileName(uri: Uri): string {
-        var extension = path.extname(uri.fsPath);
-        return path.basename(uri.fsPath, extension);
     }
 }
