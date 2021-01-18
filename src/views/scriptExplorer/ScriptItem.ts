@@ -38,8 +38,9 @@ export class ScriptItem extends vscode.TreeItem {
     private getScriptName(script: Script) {
         const name = script.common?.name ?? "INVALID NAME";
         const state = script.common.enabled ? "▶" : "❚❚";
+        const jsInstanceNumber = this.getJsInstanceNumber(script.common?.engine);
 
-        return `${state} ${name}`;
+        return `${state} [${jsInstanceNumber}] ${name}`;
     }
 
     private getJsIcon(): string {
@@ -52,5 +53,15 @@ export class ScriptItem extends vscode.TreeItem {
 
     private getBlocklyIcon(): string {
         return path.join(__filename, '..', '..', 'resources', 'blockly.svg');
+    }
+
+    private getJsInstanceNumber(engine: string | undefined): number {
+        if (engine) {
+            const lastDot = engine.lastIndexOf(".");
+            const number = engine.substring(lastDot + 1);
+            return Number.parseInt(number);            
+        }
+
+        return 0;
     }
 }
