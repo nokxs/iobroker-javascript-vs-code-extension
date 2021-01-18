@@ -1,14 +1,16 @@
+import * as path from 'path';
+
 import { ICommand } from "./ICommand";
 import { inject, injectable } from "inversify";
 import { IConnectionService } from "../services/connection/IConnectionService";
 import TYPES from "../Types";
-import { window } from "vscode";
+import { Uri, window } from "vscode";
 import { IScriptService } from "../services/script/IScriptService";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import { Script } from "../models/Script";
-import { InvalidScript } from "../models/InvalidScript";
 import { EngineType } from "../models/EngineType";
 import CONSTANTS from "../Constants";
+import { IScriptIdService } from "../services/scriptId/IScriptIdService";
 
 @injectable()
 export class UploadCommand implements ICommand {
@@ -16,20 +18,17 @@ export class UploadCommand implements ICommand {
     
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
-        @inject(TYPES.services.script) private scriptService: IScriptService
+        @inject(TYPES.services.script) private scriptService: IScriptService,
+        @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService
     ) {}
 
     async execute(...args: any[]) {
         const scriptData = await this.getScriptData(args);
 
         if (scriptData) {
-            if (scriptData.existingScript instanceof InvalidScript) {
-                // TODO: Script does not exist. What to do?
-            } else {
-                scriptData.existingScript.common.source = scriptData.scriptText;
-                await this.connectionService.uploadScript(scriptData.existingScript);
-                window.setStatusBarMessage(`ioBroker: Finished uploading script`, CONSTANTS.StatusBarMessageTime);
-            }
+            scriptData.existingScript.common.source = scriptData.scriptText;
+            await this.connectionService.uploadScript(scriptData.existingScript);
+            window.setStatusBarMessage(`ioBroker: Finished uploading script`, CONSTANTS.StatusBarMessageTime);
         }
     }
 
@@ -50,7 +49,24 @@ export class UploadCommand implements ICommand {
         } else if (window.activeTextEditor) {
             const scriptText = window.activeTextEditor.document.getText();
             const fileUri = window.activeTextEditor.document.uri;
-            const existingScript = await this.connectionService.downloadScriptWithUri(fileUri);
+            let existingScript = await this.connectionService.downloadScriptWithUri(fileUri);
+
+            if (!existingScript) {
+                // TODO: Support multiple js engines
+                existingScript = {
+                    _id: this.scriptIdService.getIoBrokerId(fileUri),
+                    common: {
+                        debug: false,
+                        engine: "system.adapter.javascript.0",
+                        engineType: this.scriptService.getEngineType(fileUri),
+                        expert: true,
+                        name: this.getFileName(fileUri),
+                        source: scriptText,
+                        verbose: false
+                    },
+                    type: "script"
+                };
+            }
             
             return {
                 scriptText: scriptText,
@@ -59,5 +75,10 @@ export class UploadCommand implements ICommand {
         }
 
         return null;
+    }
+
+    private getFileName(uri: Uri): string {
+        var extension = path.extname(uri.fsPath);
+        return path.basename(uri.fsPath, extension);
     }
 }
