@@ -12,6 +12,7 @@ import { IConnectionEventListener } from "../connection/IConnectionEventListener
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import CONSTANTS from "../../Constants";
 import { IConfigCreationService } from "../configCreation/IConfigCreationService";
+import { IScriptService } from "../script/IScriptService";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
@@ -25,7 +26,8 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
       @inject(TYPES.services.configRepository) private configReaderWriterService: IConfigRepositoryService,
       @inject(TYPES.services.connection) private connectionService: IConnectionService,
       @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
-      @inject(TYPES.services.log) private logService: ILogService
+      @inject(TYPES.services.log) private logService: ILogService,
+      @inject(TYPES.services.script) private scriptService: IScriptService
   ) {
     this.statusBarItem.text = "$(warning) ioBroker disconnected";
     this.statusBarItem.show();
@@ -42,7 +44,8 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
 
   async connect(): Promise<void> {
     try {
-        var workspaceFolder = await this.workspaceService.getWorkspaceToUse();
+        let isInitialConnect = false;
+        let workspaceFolder = await this.workspaceService.getWorkspaceToUse();
 
         if (workspaceFolder instanceof NoWorkspaceFolder) {
             window.showErrorMessage("Cannot continue execution of extension 'ioBroker.javascript', because no valid workspace was selected. Exiting.");
@@ -59,11 +62,20 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
           else {
               await this.configReaderWriterService.write(this.config, workspaceFolder);
               window.setStatusBarMessage("ioBroker: Created new 'iobroker-config.json' in root directory", CONSTANTS.StatusBarMessageTime);
+              isInitialConnect = true;
           }
         }
 
         await this.connectionService.connect(Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`));
         await this.logService.startReceiving();
+
+        if (isInitialConnect) {
+          const answer = await window.showQuickPick(["Yes", "No"], { placeHolder: "Download all scripts"});
+          if (answer === "Yes") {
+              const scripts = await this.connectionService.downloadAllScripts();
+              await this.scriptService.saveAllToFile(scripts);
+          } 
+        }
     } catch (error) {
         window.showErrorMessage(`Could not connect to ioBroker. Check your '.iobroker-config.json' for wrong configuration: ${error}`);
     }

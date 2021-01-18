@@ -8,6 +8,7 @@ import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import { Script } from "../models/Script";
 import { InvalidScript } from "../models/InvalidScript";
 import { EngineType } from "../models/EngineType";
+import CONSTANTS from "../Constants";
 
 @injectable()
 export class UploadCommand implements ICommand {
@@ -27,6 +28,7 @@ export class UploadCommand implements ICommand {
             } else {
                 scriptData.existingScript.common.source = scriptData.scriptText;
                 await this.connectionService.uploadScript(scriptData.existingScript);
+                window.setStatusBarMessage(`ioBroker: Finished uploading script`, CONSTANTS.StatusBarMessageTime);
             }
         }
     }

@@ -32,6 +32,7 @@ export class ScriptIdService implements IScriptIdService {
         path = this.replaceAll(path, ".", "_");
         path = this.replaceAll(path, " ", "_");
         path = this.replaceAll(path, "/", ".");
+        path = path.startsWith(".") ? path : `.${path}`;
 
         return new ScriptId(`script.js${path}`);
     }
