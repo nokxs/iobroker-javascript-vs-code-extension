@@ -51,6 +51,20 @@ export class ScriptService implements IScriptService {
         }
     }
 
+    getEngineType(uri: Uri): EngineType {
+        if (uri.path.endsWith(".js")) {
+            return EngineType.javascript;
+        } else 
+        if (uri.path.endsWith(".ts")) {
+            return EngineType.typescript;
+        } else 
+        if (uri.path.endsWith(".block")) {
+            return EngineType.blockly;
+        } 
+
+        return EngineType.unkown;
+    }
+
     async getFileUri(script: Script): Promise<Uri> {
         const relativeScriptPath = this.getRelativeFilePathFromScript(script);
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();

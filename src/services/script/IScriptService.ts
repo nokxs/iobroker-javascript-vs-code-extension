@@ -9,6 +9,7 @@ export interface IScriptService {
     getRelativeFilePath(scriptId: ScriptId, engineType: EngineType): string
     getFileUri(script: Script): Promise<Uri>
     getFileExtension(engineType: EngineType): string
+    getEngineType(uri: Uri): EngineType
 
     getFileContentOnDisk(scriptId: ScriptId, engineType: EngineType): Promise<string | null>
     
