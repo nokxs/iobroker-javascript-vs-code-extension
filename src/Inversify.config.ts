@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 
+import { ChangeJsInstanceCommand } from './commands/ChangeJsInstanceCommand';
 import { CommandService } from './services/command/CommandService';
 import { ConfigCreationService } from './services/configCreation/ConfigCreationService';
 import { ConfigRepositoryService } from './services/configRepository/ConfigRepositoryService';
@@ -16,6 +17,7 @@ import { IConfigRepositoryService } from './services/configRepository/IConfigRep
 import { IConnectionService } from './services/connection/IConnectionService';
 import { IFileService } from './services/file/IFileService';
 import { IIobrokerConnectionService } from './services/iobrokerConnection/IIobrokerConnectionService';
+import { IJsInstanceService } from "./services/jsInstanceService/IJsInstanceService";
 import { ILogService } from "./services/log/ILogService";
 import { IScriptExplorerProvider } from "./views/scriptExplorer/IScriptExplorerProvider";
 import { IScriptIdService } from './services/scriptId/IScriptIdService';
@@ -24,6 +26,7 @@ import { IStartup } from './IStartup';
 import { ITypeDefinitionService } from "./services/typeDefinition/ITypeDefinitionService";
 import { IWorkspaceService } from './services/workspace/IWorkspaceService';
 import { IobrokerConnectionService } from './services/iobrokerConnection/IobrokerConnectionService';
+import { JsInstanceService } from './services/jsInstanceService/JsInstanceService';
 import { LogService } from './services/log/LogService';
 import { OpenFileCommand } from './commands/OpenFileCommand';
 import { ScriptExplorerProvider } from './views/scriptExplorer/ScriptExplorerProvider';
@@ -54,6 +57,7 @@ container.bind<ILogService>(TYPES.services.log).to(LogService).inSingletonScope(
 container.bind<ITypeDefinitionService>(TYPES.services.typeDefinition).to(TypeDefinitionService).inSingletonScope();
 container.bind<IIobrokerConnectionService>(TYPES.services.iobrokerConnection).to(IobrokerConnectionService).inSingletonScope();
 container.bind<IConfigRepositoryService>(TYPES.services.configRepository).to(ConfigRepositoryService).inSingletonScope();
+container.bind<IJsInstanceService>(TYPES.services.jsInstance).to(JsInstanceService).inSingletonScope();
 
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
 container.bind<ICommand>(TYPES.command).to(DownloadCommand);
@@ -64,6 +68,7 @@ container.bind<ICommand>(TYPES.command).to(UpdateTypeDefinitionCommand);
 container.bind<ICommand>(TYPES.command).to(OpenFileCommand);
 container.bind<ICommand>(TYPES.command).to(ConnectCommand);
 container.bind<ICommand>(TYPES.command).to(ScriptRenameCommand);
+container.bind<ICommand>(TYPES.command).to(ChangeJsInstanceCommand);
 
 container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider);
 

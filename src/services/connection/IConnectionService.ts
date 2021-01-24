@@ -19,6 +19,9 @@ export interface IConnectionService {
     downloadScriptWithUri(scriptPath: Uri): Promise<Script>
     downloadScriptWithId(scriptId: ScriptId): Promise<Script>
     uploadScript(script: Script): Promise<void>
+
+    getSystemObjectView<TResult>(type: string, startKey: string, endKey: string): Promise<TResult[]>
+    extendObject(objectId: string | ScriptId, obj: any): Promise<void>
     
     startScript(script: ScriptId): Promise<void>
     stopScript(scriptId: ScriptId): Promise<void>

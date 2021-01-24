@@ -37,7 +37,7 @@ export class UploadCommand implements ICommand {
         if (args && args[0] && args[0].length > 0) {
            return this.handleScriptFromScriptExplorer(args);
         } else if (window.activeTextEditor) {
-            return this.handleScriptFromScriptExplorer();
+            return this.handleScriptFromEditor();
         }
 
         return null;
@@ -49,7 +49,7 @@ export class UploadCommand implements ICommand {
     }
 
     private async handleScriptFromScriptExplorer(...args: any[]): Promise<Script | null> {
-        const script = (<ScriptItem>args[0][0]).script;
+        const script = (<ScriptItem>args[0][0]).script ?? (<ScriptItem>args[0][0][0]).script;
         const scriptId = script._id;
         const engineType = <EngineType>script.common.engineType;
         const scriptText = await this.scriptService.getFileContentOnDisk(scriptId, engineType ?? EngineType.unkown);

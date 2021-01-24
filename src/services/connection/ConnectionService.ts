@@ -72,6 +72,7 @@ export class ConnectionService implements IConnectionService {
         });
     }
 
+    // ["getObjectView","system","instance",{"startkey":"system.adapter.javascript","endkey":"system.adapter.javascript.\u9999"}]
     downloadAllScripts(): Promise<ScriptObject[]> {
         return new Promise<ScriptObject[]>((resolve) => {
             if (this.client && this.isConnected) {
@@ -213,6 +214,35 @@ export class ConnectionService implements IConnectionService {
                 }
             });
         }
+    }
+
+    getSystemObjectView<TResult>(type: string, startKey: string, endKey: string): Promise<TResult[]> {
+        return new Promise<TResult[]>((resolve, reject) => {
+            if (this.client && this.isConnected) {
+                this.client.emit("getObjectView", "system", type,{"startkey": startKey,"endkey": `${endKey}\u9999`}, (err: any, doc: { rows: {id: string, value: TResult}[] }) => {
+                    if (err) {
+                        reject(new Error(`Error while retreiving obect: Type: ${type} | startKey: ${startKey} | endKey: ${endKey}`));
+                    }
+                    resolve(doc.rows.map(row => row.value));
+                });
+            } else {
+                resolve([]);
+            }
+        });
+    }
+
+    extendObject(objectId: string | ScriptId, obj: any): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            if (this.client && this.isConnected) {
+                this.client.emit("extendObject", objectId, obj, (err: any) => {
+                    if (err) {
+                        reject(new Error(`Could not extend object '${objectId}' with '${JSON.stringify(obj)}'`));
+                    } else {
+                        resolve();
+                    }
+                });
+            }
+        });
     }
 
     private registerSocketEvents(): void {
