@@ -88,6 +88,11 @@
 				"command": "iobroker-javascript.view.scriptExplorer.rename",
 				"title": "Rename",
 				"enablement": "view == iobroker-javascript.script-explorer"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.changeJsInstance",
+				"title": "Change instance",
+				"enablement": "view == iobroker-javascript.script-explorer"
 			}
 		],
 		"menus": {
@@ -129,6 +134,10 @@
 				},
 				{
 					"command": "iobroker-javascript.view.scriptExplorer.rename",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.changeJsInstance",
 					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem"
 				}
 			]
