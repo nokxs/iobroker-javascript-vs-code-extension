@@ -3,13 +3,13 @@ import { inject, injectable } from "inversify";
 import { Uri, WorkspaceFolder } from "vscode";
 import { Script } from "../../models/Script";
 import { ScriptObject } from "../../models/ScriptObject";
-import { ScriptId } from "../../models/ScriptId";
 import TYPES from "../../Types";
 import { IFileService } from "../file/IFileService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { IScriptService } from "./IScriptService";
 import { EngineType } from "../../models/EngineType";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
+import { ScriptName } from "../../models/ScriptName";
 
 @injectable()
 export class ScriptService implements IScriptService {
@@ -20,21 +20,20 @@ export class ScriptService implements IScriptService {
     ) {}
     
     getRelativeFilePathFromScript(script: Script): string {
-        let path = script._id.replace("script.js.", "");
-        const engineType = <EngineType>script.common.engineType ?? EngineType.unkown;
-        return this.getRelativeFilePath(path, engineType);
-    }
-    
-    getRelativeFilePath(scriptId: ScriptId, engineType: EngineType): string {
-        let path = scriptId.replace("script.js.", "");
-        path = this.replaceAll(path, ".", "/");
-        path = this.replaceAll(path, "_", " ");
+        if (!script.common?.name) {
+            throw new Error(`Name is not set on script with id '${script._id}'`);
+        }
 
+        const engineType = <EngineType>script.common.engineType ?? EngineType.unkown;
+        return this.getRelativeFilePath(script.common.name, engineType);
+    }
+
+    getRelativeFilePath(scriptName: ScriptName, engineType: EngineType): string {
         let scriptRoot = this.configRepositoryService.config.scriptRoot;
         scriptRoot = scriptRoot.endsWith("/") ? scriptRoot : `${scriptRoot}/`;
 
         const extension = this.getFileExtension(engineType);
-        return `${scriptRoot}${path}.${extension}`;
+        return `${scriptRoot}${scriptName}.${extension}`;
     }
     
     getFileExtension(engineType: EngineType): string {
@@ -72,9 +71,9 @@ export class ScriptService implements IScriptService {
         return Uri.joinPath(workspaceFolder.uri, relativeScriptPath);
     }
     
-    async getFileContentOnDisk(scriptId: ScriptId, engineType: EngineType): Promise<string | null> {
+    async getFileContentOnDisk(scriptName: ScriptName, engineType: EngineType): Promise<string | null> {
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
-        const relativeFilePath = this.getRelativeFilePath(scriptId, engineType);
+        const relativeFilePath = this.getRelativeFilePath(scriptName, engineType);
         const scriptUri = this.getScriptUri(workspaceFolder, relativeFilePath);
 
         if (this.fileService.fileExists(scriptUri)) {

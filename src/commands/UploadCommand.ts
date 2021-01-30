@@ -50,10 +50,15 @@ export class UploadCommand implements ICommand {
 
     private async handleScriptFromScriptExplorer(...args: any[]): Promise<Script | null> {
         const script = (<ScriptItem>args[0][0]).script ?? (<ScriptItem>args[0][0][0]).script;
-        const scriptId = script._id;
+        const scriptName = script.common.name;
+
+        if (!scriptName) {
+            throw new Error(`Cannot upload script '${script._id}', because it's name is not set`);
+        }
+
         const engineType = <EngineType>script.common.engineType;
-        const scriptText = await this.scriptService.getFileContentOnDisk(scriptId, engineType ?? EngineType.unkown);
-        const existingScript = await this.connectionService.downloadScriptWithId(scriptId);
+        const scriptText = await this.scriptService.getFileContentOnDisk(scriptName, engineType ?? EngineType.unkown);
+        const existingScript = await this.connectionService.downloadScriptWithId(scriptName);
         
         if (scriptText && existingScript) {
             existingScript.common.source = scriptText;
