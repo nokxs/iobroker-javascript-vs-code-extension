@@ -4,9 +4,7 @@ import { ScriptId } from "../../models/ScriptId";
 import { Uri } from "vscode";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
-import { LogMessage } from '../../models/LogMessage';
 import { IScriptChangedEventListener as IScriptChangedEventListener } from './IScriptChangedListener';
-import { InvalidScript } from '../../models/InvalidScript';
 import { IScriptIdService } from '../scriptId/IScriptIdService';
 import { IScriptRemoteService } from './IScriptRemoteService';
 import { IConnectionService } from '../connection/IConnectionService';
@@ -20,7 +18,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
     ) {
-        connectionService.registerConnectionEventListener(this)
+        connectionService.registerConnectionEventListener(this);
     }
 
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
@@ -85,11 +83,12 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         return this.connectionService.deleteObject(scriptId);
     }
     
-    private onConnected(): void {
+    onConnected(): void {
         this.registerSocketEvents();
     }
 
-    private onDisconnected(): void {
+    onDisconnected(): void {
+        this.unregisterSocketEvents();
     }
 
     private registerSocketEvents(): void {
@@ -99,7 +98,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     private unregisterSocketEvents(): void {
-        
+        this.connectionService.unregisterObjectChange("script.js.*");
     }
 
     private async setScriptState(scriptId: ScriptId, isEnabled: boolean): Promise<void> {

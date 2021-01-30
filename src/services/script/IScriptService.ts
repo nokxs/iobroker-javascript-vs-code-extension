@@ -2,7 +2,6 @@ import { EngineType } from "../../models/EngineType";
 import { Script } from "../../models/Script";
 import { ScriptId } from "../../models/ScriptId";
 import { ScriptName } from "../../models/ScriptName";
-import { ScriptObject } from "../../models/ScriptObject";
 import { Uri } from "vscode";
 
 export interface IScriptService {
@@ -15,5 +14,5 @@ export interface IScriptService {
     getFileContentOnDisk(scriptId: ScriptId, scriptName: ScriptName, engineType: EngineType): Promise<string | null>
     
     saveToFile(script: Script): Promise<void>
-    saveAllToFile(scripts: ScriptObject[]): Promise<void>
+    saveAllToFile(scripts: Script[]): Promise<void>
 }

@@ -5,17 +5,18 @@ import { inject, injectable } from "inversify";
 import TYPES from "../../Types";
 import { IConnectionService } from "../connection/IConnectionService";
 import { ScriptObject } from "../../models/ScriptObject";
+import { IScriptRemoteService } from "../scriptRemote/IScriptRemoteService";
 
 @injectable()
 export class ScriptRepositoryService implements IScriptRepositoryService {
     private directoriesFlat: Directory[] = [];
 
     constructor(        
-        @inject(TYPES.services.connection) private connectionService: IConnectionService,
+        @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
     ){}
 
     async updateFromServer(): Promise<void> {
-        const allScripts = await this.connectionService.downloadAllScripts();
+        const allScripts = await this.scriptRemoteService.downloadAllScripts();
 
     }
     

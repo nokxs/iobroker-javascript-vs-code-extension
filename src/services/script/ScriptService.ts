@@ -96,9 +96,9 @@ export class ScriptService implements IScriptService {
         await this.fileService.saveToFile(scriptUri, script.common.source ?? "");
     }
     
-    async saveAllToFile(scripts: ScriptObject[]): Promise<void> {
+    async saveAllToFile(scripts: Script[]): Promise<void> {
         for (const script of scripts) {
-            await this.saveToFile(script.value);
+            await this.saveToFile(script);
         }
     }
 

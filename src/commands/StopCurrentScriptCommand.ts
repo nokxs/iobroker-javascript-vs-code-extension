@@ -1,19 +1,19 @@
 import { ICommand } from "./ICommand";
 import { inject, injectable } from "inversify";
 import TYPES from "../Types";
-import { IConnectionService } from "../services/connection/IConnectionService";
 import { window } from "vscode";
 import { ScriptId } from "../models/ScriptId";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import CONSTANTS from "../Constants";
 import { IScriptIdService } from "../services/scriptId/IScriptIdService";
+import { IScriptRemoteService } from "../services/scriptRemote/IScriptRemoteService";
 
 @injectable()
 export class StopCurrentScriptCommand implements ICommand {
     id: string = "iobroker-javascript.stopScript";
     
     constructor(
-        @inject(TYPES.services.connection) private connectionService: IConnectionService,
+        @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
     ) {}
     
@@ -22,7 +22,7 @@ export class StopCurrentScriptCommand implements ICommand {
 
         if (scriptId && scriptId.length > 0) {
             try {
-                await this.connectionService.stopScript(scriptId);
+                await this.scriptRemoteService.stopScript(scriptId);
                 window.setStatusBarMessage(`ioBroker: Stoped script '${scriptId}' sucessfully`, CONSTANTS.StatusBarMessageTime);
             } catch (error) {
                 window.showErrorMessage((<Error>error).message);

@@ -21,6 +21,7 @@ import { IJsInstanceService } from "./services/jsInstanceService/IJsInstanceServ
 import { ILogService } from "./services/log/ILogService";
 import { IScriptExplorerProvider } from "./views/scriptExplorer/IScriptExplorerProvider";
 import { IScriptIdService } from './services/scriptId/IScriptIdService';
+import { IScriptRemoteService } from './services/scriptRemote/IScriptRemoteService';
 import { IScriptService } from './services/script/IScriptService';
 import { IStartup } from './IStartup';
 import { ITypeDefinitionService } from "./services/typeDefinition/ITypeDefinitionService";
@@ -32,6 +33,7 @@ import { OpenFileCommand } from './commands/OpenFileCommand';
 import { ReorderCommand } from './commands/ReorderCommand';
 import { ScriptExplorerProvider } from './views/scriptExplorer/ScriptExplorerProvider';
 import { ScriptIdService } from './services/scriptId/ScriptIdService';
+import { ScriptRemoteService } from './services/scriptRemote/ScriptRemoteService';
 import { ScriptRenameCommand } from './commands/ScriptRenameCommand';
 import { ScriptService } from './services/script/ScriptService';
 import { StartCurrentScriptCommand } from './commands/StartCurrentScriptCommand';
@@ -54,6 +56,7 @@ container.bind<IFileService>(TYPES.services.file).to(FileService).inSingletonSco
 container.bind<ICommandService>(TYPES.services.command).to(CommandService).inSingletonScope();
 container.bind<IScriptService>(TYPES.services.script).to(ScriptService).inSingletonScope();
 container.bind<IScriptIdService>(TYPES.services.scriptId).to(ScriptIdService).inSingletonScope();
+container.bind<IScriptRemoteService>(TYPES.services.scriptId).to(ScriptRemoteService).inSingletonScope();
 container.bind<ILogService>(TYPES.services.log).to(LogService).inSingletonScope();
 container.bind<ITypeDefinitionService>(TYPES.services.typeDefinition).to(TypeDefinitionService).inSingletonScope();
 container.bind<IIobrokerConnectionService>(TYPES.services.iobrokerConnection).to(IobrokerConnectionService).inSingletonScope();

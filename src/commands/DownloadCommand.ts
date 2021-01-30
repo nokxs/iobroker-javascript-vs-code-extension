@@ -1,19 +1,19 @@
 import { ICommand } from "./ICommand";
 import { inject, injectable } from "inversify";
 import TYPES from "../Types";
-import { IConnectionService } from "../services/connection/IConnectionService";
 import { window } from "vscode";
 import { IScriptService } from "../services/script/IScriptService";
 import { Script } from "../models/Script";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import CONSTANTS from "../Constants";
+import { IScriptRemoteService } from "../services/scriptRemote/IScriptRemoteService";
 
 @injectable()
 export class DownloadCommand implements ICommand {
     id: string = "iobroker-javascript.download";
 
     constructor(
-        @inject(TYPES.services.connection) private connectionService: IConnectionService,
+        @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
         @inject(TYPES.services.script) private scriptService: IScriptService
     ) {}
     
@@ -32,12 +32,12 @@ export class DownloadCommand implements ICommand {
     private async tryDownloadScript(...args: any[]): Promise<Script | null> {
         if (args && args[0] && args[0].length > 0) {
             const scriptId = (<ScriptItem>args[0][0]).script._id;
-            return await this.connectionService.downloadScriptWithId(scriptId);
+            return await this.scriptRemoteService.downloadScriptWithId(scriptId);
         }
         
         const activeDocument = window.activeTextEditor?.document;
         if (activeDocument) {
-            return await this.connectionService.downloadScriptWithUri(activeDocument.uri);
+            return await this.scriptRemoteService.downloadScriptWithUri(activeDocument.uri);
         }
 
         return null;
