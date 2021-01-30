@@ -7,7 +7,7 @@ import { ScriptObject } from "../../models/ScriptObject";
 import { IScriptExplorerProvider } from './IScriptExplorerProvider';
 import { ScriptDirectory } from './ScriptDirectory';
 import { ScriptItem } from './ScriptItem';
-import { IScriptChangedEventListener } from '../../services/connection/IScriptChangedListener';
+import { IScriptChangedEventListener } from '../../services/scriptRemote/IScriptChangedListener';
 import { IIobrokerConnectionService } from '../../services/iobrokerConnection/IIobrokerConnectionService';
 import { NoConfig } from '../../models/Config';
 
