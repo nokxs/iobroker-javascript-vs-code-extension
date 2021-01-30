@@ -10,6 +10,7 @@ import { IScriptService } from "./IScriptService";
 import { EngineType } from "../../models/EngineType";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { ScriptName } from "../../models/ScriptName";
+import { ScriptId } from "../../models/ScriptId";
 
 @injectable()
 export class ScriptService implements IScriptService {
@@ -25,10 +26,14 @@ export class ScriptService implements IScriptService {
         }
 
         const engineType = <EngineType>script.common.engineType ?? EngineType.unkown;
-        return this.getRelativeFilePath(script.common.name, engineType);
+        return this.getRelativeFilePath(script._id, script.common.name, engineType);
     }
 
-    getRelativeFilePath(scriptName: ScriptName, engineType: EngineType): string {
+    getRelativeFilePath(scriptId: ScriptId, scriptName: ScriptName, engineType: EngineType): string {
+        let path = scriptId.replace("script.js.", "");
+        path = this.replaceAll(path, ".", "/");
+        path = this.replaceAll(path, "_", " ");
+
         let scriptRoot = this.configRepositoryService.config.scriptRoot;
         scriptRoot = scriptRoot.endsWith("/") ? scriptRoot : `${scriptRoot}/`;
 
@@ -71,9 +76,9 @@ export class ScriptService implements IScriptService {
         return Uri.joinPath(workspaceFolder.uri, relativeScriptPath);
     }
     
-    async getFileContentOnDisk(scriptName: ScriptName, engineType: EngineType): Promise<string | null> {
+    async getFileContentOnDisk(scriptId: ScriptId, scriptName: ScriptName, engineType: EngineType): Promise<string | null> {
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
-        const relativeFilePath = this.getRelativeFilePath(scriptName, engineType);
+        const relativeFilePath = this.getRelativeFilePath(scriptId, scriptName, engineType);
         const scriptUri = this.getScriptUri(workspaceFolder, relativeFilePath);
 
         if (this.fileService.fileExists(scriptUri)) {
