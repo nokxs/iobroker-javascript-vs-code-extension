@@ -5,7 +5,7 @@ import { ScriptId } from "../../models/ScriptId";
 import TYPES from "../../Types";
 import { IConnectionService } from "../connection/IConnectionService";
 import { IJsInstanceService } from "./IJsInstanceService";
-import { JsInstance } from "../../models/JsInstance";
+import { IJsInstance } from "../../models/IJsInstance";
 
 
 @injectable()
@@ -14,11 +14,11 @@ export class JsInstanceService implements IJsInstanceService {
         @inject(TYPES.services.connection) private connectionService: IConnectionService
     ) {}
 
-    getAvailableInstances(): Promise<JsInstance[]> {
-        return this.connectionService.getSystemObjectView<JsInstance>("instance", "system.adapter.javascript", "system.adapter.javascript.");
+    getAvailableInstances(): Promise<IJsInstance[]> {
+        return this.connectionService.getSystemObjectView<IJsInstance>("instance", "system.adapter.javascript", "system.adapter.javascript.");
     }
 
-    changeInstance(scriptId: ScriptId, jsInstance: JsInstance): Promise<void> {
+    changeInstance(scriptId: ScriptId, jsInstance: IJsInstance): Promise<void> {
         const script: Script = {
             _id: scriptId,
             common: {

@@ -1,8 +1,8 @@
-import { Common } from "./Common";
+import { IScriptCommon } from "./ICommon";
 import { ScriptId } from "./ScriptId";
 
 export interface Script {
-    common: Common;
+    common: IScriptCommon;
     type?: string;
     from?: string;
     user?: string;

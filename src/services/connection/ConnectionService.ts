@@ -4,7 +4,7 @@ import { Uri, window } from "vscode";
 
 import { IConnectionEventListener } from "./IConnectionEventListener";
 import { IConnectionService } from "./IConnectionService";
-import { LogMessage } from '../../models/LogMessage';
+import { ILogMessage } from '../../models/ILogMessage';
 import { ScriptId } from "../../models/ScriptId";
 import { injectable } from "inversify";
 
@@ -57,11 +57,11 @@ export class ConnectionService implements IConnectionService {
         });
     }
     
-    registerForLogs(logAction: (logMessage: LogMessage) => void): Promise<void> {
+    registerForLogs(logAction: (logMessage: ILogMessage) => void): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
 
-                this.client.on("log", (message: LogMessage) => {
+                this.client.on("log", (message: ILogMessage) => {
                     logAction(message);
                 });
     

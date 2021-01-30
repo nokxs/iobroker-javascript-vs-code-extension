@@ -1,4 +1,4 @@
-import { Common } from "./Common";
+import { IScriptCommon } from "./ICommon";
 import { Script } from "./Script";
 import { ScriptId } from "./ScriptId";
 
@@ -9,7 +9,7 @@ export class InvalidScript implements Script {
         this._id = "INVALID";
     }
 
-    common: Common;
+    common: IScriptCommon;
     type?: string | undefined;
     from?: string | undefined;
     user?: string | undefined;

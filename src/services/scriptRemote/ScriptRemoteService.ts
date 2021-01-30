@@ -1,5 +1,5 @@
 import { Script } from "../../models/Script";
-import { ScriptObject } from "../../models/ScriptObject";
+import { IScriptObject } from "../../models/ScriptObject";
 import { ScriptId } from "../../models/ScriptId";
 import { Uri } from "vscode";
 import { inject, injectable } from "inversify";
@@ -26,7 +26,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     async downloadAllScripts(): Promise<Script[]> {
-        const scriptOjbects = await this.connectionService.getSystemObjectView<ScriptObject>("script", "script.js.", "script.js.");
+        const scriptOjbects = await this.connectionService.getSystemObjectView<IScriptObject>("script", "script.js.", "script.js.");
         return scriptOjbects.map(so => so.value);
     }
 

@@ -1,5 +1,5 @@
 import { IConnectionEventListener } from "./IConnectionEventListener";
-import { LogMessage } from "../../models/LogMessage";
+import { ILogMessage } from "../../models/ILogMessage";
 import { ScriptId } from "../../models/ScriptId";
 import { Uri } from "vscode";
 
@@ -11,7 +11,7 @@ export interface IConnectionService {
     
     registerConnectionEventListener(listener: IConnectionEventListener): void
 
-    registerForLogs(logAction: (logMessage: LogMessage) => void): Promise<void>
+    registerForLogs(logAction: (logMessage: ILogMessage) => void): Promise<void>
     unregisterForLogs(): Promise<void>
 
     registerForObjectChange(pattern: string, onChangeAction: (id: string, value: any) => void): Promise<void>

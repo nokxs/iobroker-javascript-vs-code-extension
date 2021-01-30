@@ -3,8 +3,6 @@ import { IScriptRepositoryService } from "./IScriptRepositoryService";
 import { Script } from "../../models/Script";
 import { inject, injectable } from "inversify";
 import TYPES from "../../Types";
-import { IConnectionService } from "../connection/IConnectionService";
-import { ScriptObject } from "../../models/ScriptObject";
 import { IScriptRemoteService } from "../scriptRemote/IScriptRemoteService";
 
 @injectable()
@@ -32,7 +30,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService {
         return this.directoriesFlat;
     }
 
-    private async getChildItems(scripts: ScriptObject[], prefix: string): Promise<Directory> {
+    private async getChildItems(scripts: Script[], prefix: string): Promise<Directory> {
         const prefixDirectoryCount = prefix.split(".").length;
         const currentLevelDirectories = scripts.filter(script => script.value._id.startsWith(prefix) && prefixDirectoryCount < script.value._id.split(".").length);
         const currentLevelScripts = scripts.filter(script => script.value._id.startsWith(prefix) && prefixDirectoryCount === script.value._id.split(".").length);

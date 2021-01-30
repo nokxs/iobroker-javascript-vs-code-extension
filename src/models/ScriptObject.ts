@@ -1,7 +1,6 @@
 import { Script } from "./Script";
 
-// Represents an iobroker script
-export interface ScriptObject {
+export interface IScriptObject {
     id: string;
     value: Script;
 }

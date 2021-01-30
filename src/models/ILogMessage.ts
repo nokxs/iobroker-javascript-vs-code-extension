@@ -1,4 +1,4 @@
-export interface LogMessage {
+export interface ILogMessage {
     severity: string;
     ts: number;
     message: string;

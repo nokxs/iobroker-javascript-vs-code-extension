@@ -1,7 +1,7 @@
-import { JsInstance } from "../../models/JsInstance";
+import { IJsInstance } from "../../models/IJsInstance";
 import { ScriptId } from "../../models/ScriptId";
 
 export interface IJsInstanceService {
-    getAvailableInstances(): Promise<JsInstance[]>;
-    changeInstance(scriptId: ScriptId, jsInstance: JsInstance): Promise<void>;
+    getAvailableInstances(): Promise<IJsInstance[]>;
+    changeInstance(scriptId: ScriptId, jsInstance: IJsInstance): Promise<void>;
 }

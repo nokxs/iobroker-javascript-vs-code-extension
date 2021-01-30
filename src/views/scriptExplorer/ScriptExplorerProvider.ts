@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { inject, injectable } from 'inversify';
 import TYPES from '../../Types';
 import { IConnectionService } from '../../services/connection/IConnectionService';
-import { ScriptObject } from "../../models/ScriptObject";
+import { IScriptObject } from "../../models/ScriptObject";
 import { IScriptExplorerProvider } from './IScriptExplorerProvider';
 import { ScriptDirectory } from './ScriptDirectory';
 import { ScriptItem } from './ScriptItem';
@@ -14,7 +14,7 @@ import { NoConfig } from '../../models/Config';
 @injectable()
 export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | ScriptDirectory>, IScriptExplorerProvider, IScriptChangedEventListener {
 
-    private scripts: undefined | ScriptObject[];
+    private scripts: undefined | IScriptObject[];
     private _onDidChangeTreeData: vscode.EventEmitter<ScriptItem | ScriptDirectory | undefined | null | void> = new vscode.EventEmitter<ScriptItem | ScriptDirectory | undefined | null | void>();
 
     onDidChangeTreeData?: vscode.Event<void | ScriptItem | ScriptDirectory | null | undefined> | undefined = this._onDidChangeTreeData.event;
@@ -51,19 +51,19 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         this.refresh();
     }
     
-    private convertToScriptItems(scriptOjbects: ScriptObject[]): ScriptItem[] {
+    private convertToScriptItems(scriptOjbects: IScriptObject[]): ScriptItem[] {
         return scriptOjbects.map(this.convertToScriptItem);
     }
 
-    private convertToScriptItem(scriptObject: ScriptObject): ScriptItem {
+    private convertToScriptItem(scriptObject: IScriptObject): ScriptItem {
         return new ScriptItem(scriptObject.value);
     }
 
-    private convertToScriptDirectories(scriptOjbects: ScriptObject[], prefix: string, collapse: boolean): ScriptDirectory[] {
+    private convertToScriptDirectories(scriptOjbects: IScriptObject[], prefix: string, collapse: boolean): ScriptDirectory[] {
         return scriptOjbects.map((scriptObject) => this.convertToScriptDirectory(scriptObject, prefix, collapse));
     }
 
-    private convertToScriptDirectory(scriptObject: ScriptObject, prefix: string, collapse: boolean): ScriptDirectory {
+    private convertToScriptDirectory(scriptObject: IScriptObject, prefix: string, collapse: boolean): ScriptDirectory {
         const prefixParts = prefix.split(".").length;
         const name = scriptObject.value._id.split(".")[prefixParts - 1];
         const directoryPath = `${prefix}${name}.`;
@@ -71,11 +71,11 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         return new ScriptDirectory(name, directoryPath, collapse);
     }
 
-    private async getRootLevelItems(scripts: ScriptObject[]): Promise<Array<ScriptItem | ScriptDirectory>> {
+    private async getRootLevelItems(scripts: IScriptObject[]): Promise<Array<ScriptItem | ScriptDirectory>> {
         return await this.getChildItems(scripts, "script.js.");
     }
 
-    private async getChildItems(scripts: ScriptObject[], prefix: string): Promise<Array<ScriptItem | ScriptDirectory>> {
+    private async getChildItems(scripts: IScriptObject[], prefix: string): Promise<Array<ScriptItem | ScriptDirectory>> {
         const prefixDirectoryCount = prefix.split(".").length;
         const currentLevelDirectories = scripts.filter(script => script.value._id.startsWith(prefix) && prefixDirectoryCount < script.value._id.split(".").length);
         const currentLevelScripts = scripts.filter(script => script.value._id.startsWith(prefix) && prefixDirectoryCount === script.value._id.split(".").length);
