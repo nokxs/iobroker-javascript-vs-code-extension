@@ -1,4 +1,4 @@
-import { IScriptCommon } from "./ICommon";
+import { IScriptCommon } from "./IScriptCommon";
 import { Script } from "./Script";
 import { ScriptId } from "./ScriptId";
 

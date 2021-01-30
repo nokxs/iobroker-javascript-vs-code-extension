@@ -1,4 +1,4 @@
-import { IScriptCommon } from "./ICommon";
+import { IScriptCommon } from "./IScriptCommon";
 import { ScriptId } from "./ScriptId";
 
 export interface Script {
