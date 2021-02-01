@@ -1,4 +1,4 @@
-name: Publish Extemsopm
+name: Publish Extension
 
 on:
   release:
