@@ -1,55 +1,38 @@
-import { Directory } from "../../models/Directory";
 import { IScriptRepositoryService } from "./IScriptRepositoryService";
-import { Script } from "../../models/Script";
+import { IScript } from "../../models/IScript";
 import { inject, injectable } from "inversify";
 import TYPES from "../../Types";
 import { IScriptRemoteService } from "../scriptRemote/IScriptRemoteService";
+import { IDirectory } from "../../models/IDirectory";
+import { IDirectoryService } from "../directory/IDirectoryService";
 
 @injectable()
 export class ScriptRepositoryService implements IScriptRepositoryService {
-    private directoriesFlat: Directory[] = [];
+    private scripts: IScript[] = [];
+    private directories: IDirectory[] = [];
 
     constructor(        
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
+        @inject(TYPES.services.scriptRemote) private directoryService: IDirectoryService,
     ){}
 
     async updateFromServer(): Promise<void> {
-        const allScripts = await this.scriptRemoteService.downloadAllScripts();
-
+        this.scripts = await this.scriptRemoteService.downloadAllScripts();
+        this.directories = await this.directoryService.downloadAllDirectories();
     }
     
-    getScriptsIn(scriptDirectory: Directory): Promise<Script[]> {
-        throw new Error("Method not implemented.");
+    getScriptsIn(directory: IDirectory): IScript[] {
+        return this.scripts.filter(script => script._id.startsWith(<string>directory._id));
     }
 
-    getDirectories(scriptDirectory: Directory): Promise<Directory[]> {
-        throw new Error("Method not implemented.");
-    }
-
-    getAllDirectoriesFlatPath(): Promise<string[]> {
-        return this.directoriesFlat;
-    }
-
-    private async getChildItems(scripts: Script[], prefix: string): Promise<Directory> {
-        const prefixDirectoryCount = prefix.split(".").length;
-        const currentLevelDirectories = scripts.filter(script => script.value._id.startsWith(prefix) && prefixDirectoryCount < script.value._id.split(".").length);
-        const currentLevelScripts = scripts.filter(script => script.value._id.startsWith(prefix) && prefixDirectoryCount === script.value._id.split(".").length);
-
-        const scriptDirectories = await this.convertToScriptDirectories(currentLevelDirectories, prefix);
-        const scriptItems = this.convertToScriptItems(currentLevelScripts);
-
-        let items: Array<ScriptItem | ScriptDirectory> = new Array();
-        items = items.concat(scriptDirectories.filter(this.onlyUnique));
-        items = items.concat(scriptItems);        
-
-        return items;
-    }
-
-    private convertToScriptDirectory(scriptObject: ScriptObject, prefix: string): Directory {
-        const prefixParts = prefix.split(".").length;
-        const name = scriptObject.value._id.split(".")[prefixParts - 1];
-        const directoryPath = `${prefix}${name}.`;
-
-        return new Directory(name, directoryPath);
+    getDirectories(directory: IDirectory): IDirectory[] {
+        const partCountDirectory = directory._id.split(".").length;
+        return this.directories.filter(dir => {
+            if (dir._id.startsWith(<string>directory._id)) {
+                const partCountDir = dir._id.split(".").length;
+                return partCountDirectory + 1 === partCountDir;
+            }
+            return false;
+        });
     }
 }

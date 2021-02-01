@@ -1,7 +1,7 @@
 import { IScriptCommon } from "./IScriptCommon";
 import { ScriptId } from "./ScriptId";
 
-export interface Script {
+export interface IScript {
     common: IScriptCommon;
     type?: string;
     from?: string;

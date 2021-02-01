@@ -1,5 +1,5 @@
 import { ICommand } from "./ICommand";
-import { Script } from "../models/Script";
+import { IScript } from "../models/IScript";
 import { inject, injectable } from "inversify";
 import TYPES from "../Types";
 import { TextDocument, Uri, window, workspace } from "vscode";
@@ -17,7 +17,7 @@ export class OpenFileCommand implements ICommand {
         @inject(TYPES.services.file) private fileService: IFileService,
     ) {}
     
-    async execute(...args: Script[]) {
+    async execute(...args: IScript[]) {
         if (args && args.length !== 1) {
             return;
         }
@@ -29,13 +29,13 @@ export class OpenFileCommand implements ICommand {
         await window.showTextDocument(document);
     }
 
-    private async openDocument(fileUri: Uri, script: Script): Promise<TextDocument> {
+    private async openDocument(fileUri: Uri, script: IScript): Promise<TextDocument> {
         return this.fileService.fileExists(fileUri) ? 
             await workspace.openTextDocument(fileUri) : 
             await workspace.openTextDocument({language: this.getScriptLanguage(script), content: script.common.source});
     }
 
-    private getScriptLanguage(script: Script): string {
+    private getScriptLanguage(script: IScript): string {
         switch (script.common.engineType?.toLowerCase()) {
             case EngineType.javascript:
                 return "javascript";

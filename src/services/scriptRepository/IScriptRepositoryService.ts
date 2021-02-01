@@ -1,9 +1,8 @@
-import { Directory } from "../../models/Directory";
-import { Script } from "../../models/Script";
+import { IDirectory } from "../../models/IDirectory";
+import { IScript } from "../../models/IScript";
 
 export interface IScriptRepositoryService {
-    updateFromServer(): Promise<void>;
-    getScriptsIn(scriptDirectory: Directory): Promise<Script[]>;
-    getDirectories(scriptDirectory: Directory): Promise<Directory[]>;
-    getAllDirectoriesFlatPath(): Promise<string[]>;
+    updateFromServer(): Promise<void>
+    getScriptsIn(directory: IDirectory): IScript[]
+    getDirectories(directory: IDirectory): IDirectory[]
 }

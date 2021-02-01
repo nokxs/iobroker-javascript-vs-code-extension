@@ -1,5 +1,5 @@
-import { Script } from "../../models/Script";
+import { IScript } from "../../models/IScript";
 
 export interface IScriptChangedEventListener {
-    onScriptChanged(id: string, script: Script): void;
+    onScriptChanged(id: string, script: IScript): void;
 }

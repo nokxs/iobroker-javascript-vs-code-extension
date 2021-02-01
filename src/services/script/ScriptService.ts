@@ -1,8 +1,7 @@
 
 import { inject, injectable } from "inversify";
 import { Uri, WorkspaceFolder } from "vscode";
-import { Script } from "../../models/Script";
-import { IScriptObject } from "../../models/ScriptObject";
+import { IScript } from "../../models/IScript";
 import TYPES from "../../Types";
 import { IFileService } from "../file/IFileService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
@@ -20,7 +19,7 @@ export class ScriptService implements IScriptService {
         @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService
     ) {}
     
-    getRelativeFilePathFromScript(script: Script): string {
+    getRelativeFilePathFromScript(script: IScript): string {
         if (!script.common?.name) {
             throw new Error(`Name is not set on script with id '${script._id}'`);
         }
@@ -69,7 +68,7 @@ export class ScriptService implements IScriptService {
         return EngineType.unkown;
     }
 
-    async getFileUri(script: Script): Promise<Uri> {
+    async getFileUri(script: IScript): Promise<Uri> {
         const relativeScriptPath = this.getRelativeFilePathFromScript(script);
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
 
@@ -88,7 +87,7 @@ export class ScriptService implements IScriptService {
         return null;
     }
 
-    async saveToFile(script: Script): Promise<void> {
+    async saveToFile(script: IScript): Promise<void> {
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
         const relativeFilePath = this.getRelativeFilePathFromScript(script);
         const scriptUri = this.getScriptUri(workspaceFolder, relativeFilePath);
@@ -96,7 +95,7 @@ export class ScriptService implements IScriptService {
         await this.fileService.saveToFile(scriptUri, script.common.source ?? "");
     }
     
-    async saveAllToFile(scripts: Script[]): Promise<void> {
+    async saveAllToFile(scripts: IScript[]): Promise<void> {
         for (const script of scripts) {
             await this.saveToFile(script);
         }

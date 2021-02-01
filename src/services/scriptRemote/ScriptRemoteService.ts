@@ -1,5 +1,4 @@
-import { Script } from "../../models/Script";
-import { IScriptObject } from "../../models/ScriptObject";
+import { IScript } from "../../models/IScript";
 import { ScriptId } from "../../models/ScriptId";
 import { Uri } from "vscode";
 import { inject, injectable } from "inversify";
@@ -25,21 +24,21 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         this.scriptEventListeners.push(listener);
     }
 
-    async downloadAllScripts(): Promise<Script[]> {
-        const scriptOjbects = await this.connectionService.getSystemObjectView<IScriptObject>("script", "script.js.", "script.js.");
-        return scriptOjbects.map(so => so.value);
+    async downloadAllScripts(): Promise<IScript[]> {
+        const scriptObjects = await this.connectionService.getSystemObjectView<{value: IScript}>("script", "script.js.", "script.js.");
+        return scriptObjects.map(so => so.value);
     }
 
-    async downloadScriptWithUri(scriptUri: Uri): Promise<Script> {
+    async downloadScriptWithUri(scriptUri: Uri): Promise<IScript> {
         const scriptId = this.scriptIdService.getIoBrokerId(scriptUri);
         return await this.downloadScriptWithId(scriptId);
     }
 
-    downloadScriptWithId(scriptId: ScriptId): Promise<Script> {
-        return this.connectionService.getObject<Script>(scriptId);
+    downloadScriptWithId(scriptId: ScriptId): Promise<IScript> {
+        return this.connectionService.getObject<IScript>(scriptId);
     }
 
-    uploadScript(script: Script): Promise<void> {
+    uploadScript(script: IScript): Promise<void> {
         return this.connectionService.setObject(<string>script._id, script);
     }
 
@@ -70,7 +69,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         await this.uploadScript(script);
     }
 
-    async updateScript(scriptId: ScriptId, script: Script): Promise<void> {
+    async updateScript(scriptId: ScriptId, script: IScript): Promise<void> {
         const existingScript = await this.downloadScriptWithId(scriptId);
         if (existingScript) {
             await this.connectionService.extendObject(scriptId, script);
@@ -102,7 +101,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     private async setScriptState(scriptId: ScriptId, isEnabled: boolean): Promise<void> {
-        const script: Script = {
+        const script: IScript = {
             _id: scriptId,
             common: {
                 enabled: isEnabled

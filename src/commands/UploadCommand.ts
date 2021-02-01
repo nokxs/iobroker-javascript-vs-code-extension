@@ -6,7 +6,7 @@ import TYPES from "../Types";
 import { Uri, window } from "vscode";
 import { IScriptService } from "../services/script/IScriptService";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
-import { Script } from "../models/Script";
+import { IScript } from "../models/IScript";
 import { EngineType } from "../models/EngineType";
 import CONSTANTS from "../Constants";
 import { IScriptIdService } from "../services/scriptId/IScriptIdService";
@@ -33,7 +33,7 @@ export class UploadCommand implements ICommand {
         }
     }
 
-    private async getScriptData(...args: any[]): Promise<Script | null> {
+    private async getScriptData(...args: any[]): Promise<IScript | null> {
         if (args && args[0] && args[0].length > 0) {
            return this.handleScriptFromScriptExplorer(args);
         } else if (window.activeTextEditor) {
@@ -48,7 +48,7 @@ export class UploadCommand implements ICommand {
         return path.basename(uri.fsPath, extension);
     }
 
-    private async handleScriptFromScriptExplorer(...args: any[]): Promise<Script | null> {
+    private async handleScriptFromScriptExplorer(...args: any[]): Promise<IScript | null> {
         const script = (<ScriptItem>args[0][0]).script ?? (<ScriptItem>args[0][0][0]).script;
         const scriptName = script.common.name;
 
@@ -68,7 +68,7 @@ export class UploadCommand implements ICommand {
         return null;
     }
 
-    private async handleScriptFromEditor(): Promise<Script | null> {
+    private async handleScriptFromEditor(): Promise<IScript | null> {
         if (window.activeTextEditor) {
             const scriptText = window.activeTextEditor.document.getText();
             const fileUri = window.activeTextEditor.document.uri;

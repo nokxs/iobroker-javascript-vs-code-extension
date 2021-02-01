@@ -1,6 +1,6 @@
 
 import { inject, injectable } from "inversify";
-import { Script } from "../../models/Script";
+import { IScript } from "../../models/IScript";
 import { ScriptId } from "../../models/ScriptId";
 import TYPES from "../../Types";
 import { IConnectionService } from "../connection/IConnectionService";
@@ -19,7 +19,7 @@ export class JsInstanceService implements IJsInstanceService {
     }
 
     changeInstance(scriptId: ScriptId, jsInstance: IJsInstance): Promise<void> {
-        const script: Script = {
+        const script: IScript = {
             _id: scriptId,
             common: {
                 engine: jsInstance._id

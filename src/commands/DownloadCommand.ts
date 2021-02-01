@@ -3,7 +3,7 @@ import { inject, injectable } from "inversify";
 import TYPES from "../Types";
 import { window } from "vscode";
 import { IScriptService } from "../services/script/IScriptService";
-import { Script } from "../models/Script";
+import { IScript } from "../models/IScript";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import CONSTANTS from "../Constants";
 import { IScriptRemoteService } from "../services/scriptRemote/IScriptRemoteService";
@@ -29,7 +29,7 @@ export class DownloadCommand implements ICommand {
         }
     }
 
-    private async tryDownloadScript(...args: any[]): Promise<Script | null> {
+    private async tryDownloadScript(...args: any[]): Promise<IScript | null> {
         if (args && args[0] && args[0].length > 0) {
             const scriptId = (<ScriptItem>args[0][0]).script._id;
             return await this.scriptRemoteService.downloadScriptWithId(scriptId);

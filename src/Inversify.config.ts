@@ -44,6 +44,8 @@ import { TypeDefinitionService } from './services/typeDefinition/TypeDefinitionS
 import { UpdateTypeDefinitionCommand } from './commands/UpdateTypeDefinitionCommand';
 import { UploadCommand } from './commands/UploadCommand';
 import { WorkspaceService } from './services/workspace/WorkspaceService';
+import { IDirectoryService } from './services/directory/IDirectoryService';
+import { DirectoryService } from './services/directory/DirectorytService';
 
 const container = new Container();
 
@@ -57,6 +59,7 @@ container.bind<ICommandService>(TYPES.services.command).to(CommandService).inSin
 container.bind<IScriptService>(TYPES.services.script).to(ScriptService).inSingletonScope();
 container.bind<IScriptIdService>(TYPES.services.scriptId).to(ScriptIdService).inSingletonScope();
 container.bind<IScriptRemoteService>(TYPES.services.scriptId).to(ScriptRemoteService).inSingletonScope();
+container.bind<IDirectoryService>(TYPES.services.directory).to(DirectoryService).inSingletonScope();
 container.bind<ILogService>(TYPES.services.log).to(LogService).inSingletonScope();
 container.bind<ITypeDefinitionService>(TYPES.services.typeDefinition).to(TypeDefinitionService).inSingletonScope();
 container.bind<IIobrokerConnectionService>(TYPES.services.iobrokerConnection).to(IobrokerConnectionService).inSingletonScope();

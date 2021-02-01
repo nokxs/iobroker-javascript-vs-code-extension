@@ -4,7 +4,7 @@ import TYPES from "../Types";
 import { IConnectionService } from "../services/connection/IConnectionService";
 import { window } from "vscode";
 import { IScriptService } from "../services/script/IScriptService";
-import { Script } from "../models/Script";
+import { IScript } from "../models/IScript";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import CONSTANTS from "../Constants";
 

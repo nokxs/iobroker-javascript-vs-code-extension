@@ -1,8 +1,8 @@
 import { IScriptCommon } from "./IScriptCommon";
-import { Script } from "./Script";
+import { IScript } from "./IScript";
 import { ScriptId } from "./ScriptId";
 
-export class InvalidScript implements Script {
+export class InvalidScript implements IScript {
 
     constructor() {
         this.common = {};
