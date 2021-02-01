@@ -5,9 +5,10 @@ import TYPES from "../../Types";
 import { IScriptRemoteService } from "../scriptRemote/IScriptRemoteService";
 import { IDirectory } from "../../models/IDirectory";
 import { IDirectoryService } from "../directory/IDirectoryService";
+import { IScriptChangedEventListener } from "../scriptRemote/IScriptChangedListener";
 
 @injectable()
-export class ScriptRepositoryService implements IScriptRepositoryService {
+export class ScriptRepositoryService implements IScriptRepositoryService, IScriptChangedEventListener {
     private scripts: IScript[] = [];
     private directories: IDirectory[] = [];
 
@@ -15,6 +16,15 @@ export class ScriptRepositoryService implements IScriptRepositoryService {
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
         @inject(TYPES.services.scriptRemote) private directoryService: IDirectoryService,
     ){}
+
+    async init(): Promise<void> {
+        await this.updateFromServer();
+        this.scriptRemoteService.registerScriptChangedEventListener(this);
+    }
+
+    registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
+        this.scriptRemoteService.registerScriptChangedEventListener(listener);
+    }
 
     async updateFromServer(): Promise<void> {
         this.scripts = await this.scriptRemoteService.downloadAllScripts();
@@ -25,7 +35,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService {
         return this.scripts.filter(script => script._id.startsWith(<string>directory._id));
     }
 
-    getDirectories(directory: IDirectory): IDirectory[] {
+    getDirectoriesIn(directory: IDirectory): IDirectory[] {
         const partCountDirectory = directory._id.split(".").length;
         return this.directories.filter(dir => {
             if (dir._id.startsWith(<string>directory._id)) {
@@ -34,5 +44,9 @@ export class ScriptRepositoryService implements IScriptRepositoryService {
             }
             return false;
         });
+    }
+
+    onScriptChanged(): void {
+        this.updateFromServer();
     }
 }

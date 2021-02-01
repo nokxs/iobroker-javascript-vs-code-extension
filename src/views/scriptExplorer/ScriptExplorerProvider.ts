@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 
 import { inject, injectable } from 'inversify';
 import TYPES from '../../Types';
-import { IConnectionService } from '../../services/connection/IConnectionService';
 import { IScriptExplorerProvider } from './IScriptExplorerProvider';
 import { ScriptDirectory } from './ScriptDirectory';
 import { ScriptItem } from './ScriptItem';
@@ -11,6 +10,7 @@ import { IIobrokerConnectionService } from '../../services/iobrokerConnection/II
 import { NoConfig } from '../../models/Config';
 import { IScriptRemoteService } from '../../services/scriptRemote/IScriptRemoteService';
 import { IScript } from '../../models/IScript';
+import { IScriptRepositoryService } from '../../services/scriptRepository/IScriptRepositoryService';
 
 @injectable()
 export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | ScriptDirectory>, IScriptExplorerProvider, IScriptChangedEventListener {
@@ -21,8 +21,8 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
     onDidChangeTreeData?: vscode.Event<void | ScriptItem | ScriptDirectory | null | undefined> | undefined = this._onDidChangeTreeData.event;
 
     constructor(
-        @inject(TYPES.services.connection) private connectionService: IConnectionService,
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
+        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService
     ) {
         scriptRemoteService.registerScriptChangedEventListener(this);

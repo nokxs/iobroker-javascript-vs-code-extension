@@ -46,6 +46,8 @@ import { UploadCommand } from './commands/UploadCommand';
 import { WorkspaceService } from './services/workspace/WorkspaceService';
 import { IDirectoryService } from './services/directory/IDirectoryService';
 import { DirectoryService } from './services/directory/DirectorytService';
+import { ScriptRepositoryService } from './services/scriptRepository/ScriptRepositoryService';
+import { IScriptRepositoryService } from './services/scriptRepository/IScriptRepositoryService';
 
 const container = new Container();
 
@@ -59,6 +61,7 @@ container.bind<ICommandService>(TYPES.services.command).to(CommandService).inSin
 container.bind<IScriptService>(TYPES.services.script).to(ScriptService).inSingletonScope();
 container.bind<IScriptIdService>(TYPES.services.scriptId).to(ScriptIdService).inSingletonScope();
 container.bind<IScriptRemoteService>(TYPES.services.scriptId).to(ScriptRemoteService).inSingletonScope();
+container.bind<IScriptRepositoryService>(TYPES.services.scriptRepository).to(ScriptRepositoryService).inSingletonScope();
 container.bind<IDirectoryService>(TYPES.services.directory).to(DirectoryService).inSingletonScope();
 container.bind<ILogService>(TYPES.services.log).to(LogService).inSingletonScope();
 container.bind<ITypeDefinitionService>(TYPES.services.typeDefinition).to(TypeDefinitionService).inSingletonScope();
