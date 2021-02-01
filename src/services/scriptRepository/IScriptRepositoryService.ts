@@ -8,6 +8,10 @@ export interface IScriptRepositoryService {
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void
 
     updateFromServer(): Promise<void>
+
+    getRootLevelScript(): IScript[]
+    getRootLevelDirectories(): IDirectory[]
+
     getScriptsIn(directory: IDirectory): IScript[]
     getDirectoriesIn(directory: IDirectory): IDirectory[]
 

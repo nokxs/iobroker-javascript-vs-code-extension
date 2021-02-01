@@ -6,6 +6,7 @@ import { IScriptRemoteService } from "../scriptRemote/IScriptRemoteService";
 import { IDirectory } from "../../models/IDirectory";
 import { IDirectoryService } from "../directory/IDirectoryService";
 import { IScriptChangedEventListener } from "../scriptRemote/IScriptChangedListener";
+import { RootDirectory } from "../../models/RootDirectory";
 
 @injectable()
 export class ScriptRepositoryService implements IScriptRepositoryService, IScriptChangedEventListener {
@@ -31,6 +32,15 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         this.directories = await this.directoryService.downloadAllDirectories();
     }
     
+
+    getRootLevelScript(): IScript[] {
+        return this.getScriptsIn(new RootDirectory());
+    }
+
+    getRootLevelDirectories(): IDirectory[] {
+        return this.getDirectoriesIn(new RootDirectory());
+    }
+
     getScriptsIn(directory: IDirectory): IScript[] {
         return this.scripts.filter(script => script._id.startsWith(<string>directory._id));
     }
