@@ -1,23 +1,14 @@
 import { ICommand } from "./ICommand";
-import { inject, injectable } from "inversify";
-import TYPES from "../Types";
-import { IConnectionService } from "../services/connection/IConnectionService";
-import { window } from "vscode";
-import { IScriptService } from "../services/script/IScriptService";
-import { IScript } from "../models/IScript";
-import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
-import CONSTANTS from "../Constants";
+import { injectable } from "inversify";
 
 @injectable()
 export class ReorderCommand implements ICommand {
     id: string = "iobroker-javascript.download";
 
     constructor(
-        @inject(TYPES.services.connection) private connectionService: IConnectionService,
-        @inject(TYPES.services.script) private scriptService: IScriptService
     ) {}
     
     async execute(...args: any[]) {
-        
+        console.log(args);
     }
 }

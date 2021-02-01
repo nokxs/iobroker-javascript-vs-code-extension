@@ -1,4 +1,3 @@
-
 import { inject, injectable } from "inversify";
 import { Uri, WorkspaceFolder } from "vscode";
 import { IScript } from "../../models/IScript";
@@ -29,9 +28,9 @@ export class ScriptService implements IScriptService {
     }
 
     getRelativeFilePath(scriptId: ScriptId, scriptName: ScriptName, engineType: EngineType): string {
-        let path = scriptId.replace("script.js.", "");
-        path = this.replaceAll(path, ".", "/");
-        path = this.replaceAll(path, "_", " ");
+        // let path = scriptId.replace("script.js.", "");
+        // path = this.replaceAll(path, ".", "/");
+        // path = this.replaceAll(path, "_", " ");
 
         let scriptRoot = this.configRepositoryService.config.scriptRoot;
         scriptRoot = scriptRoot.endsWith("/") ? scriptRoot : `${scriptRoot}/`;
