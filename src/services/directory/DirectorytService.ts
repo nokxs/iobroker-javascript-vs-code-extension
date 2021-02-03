@@ -11,9 +11,7 @@ export class DirectoryService implements IDirectoryService {
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
     ) {}
     
-    async downloadAllDirectories(): Promise<IDirectory[]> {
-        const directoryObjects = await this.connectionService.getSystemObjectView<{value: IDirectory}>("channel", "script.js.", "script.js.");
-        return directoryObjects.map(so => so.value);
-    }
-    
+    downloadAllDirectories(): Promise<IDirectory[]> {
+        return this.connectionService.getSystemObjectView<IDirectory>("channel", "script.js.", "script.js.");
+    }    
 }

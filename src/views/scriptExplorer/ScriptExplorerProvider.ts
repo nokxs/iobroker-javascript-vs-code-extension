@@ -17,7 +17,6 @@ import { RootDirectory } from '../../models/RootDirectory';
 @injectable()
 export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | ScriptDirectory>, IScriptExplorerProvider, IScriptChangedEventListener {
 
-    private scripts: undefined | IScript[];
     private _onDidChangeTreeData: vscode.EventEmitter<ScriptItem | ScriptDirectory | undefined | null | void> = new vscode.EventEmitter<ScriptItem | ScriptDirectory | undefined | null | void>();
 
     onDidChangeTreeData?: vscode.Event<void | ScriptItem | ScriptDirectory | null | undefined> | undefined = this._onDidChangeTreeData.event;
@@ -39,7 +38,7 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
             return this.getRootLevelItems();
         }
 
-        if (element && element instanceof ScriptDirectory && this.scripts) {
+        if (element && element instanceof ScriptDirectory) {
             return this.getChildItems(element.directory);
         }
 

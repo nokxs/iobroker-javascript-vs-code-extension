@@ -15,7 +15,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
 
     constructor(        
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
-        @inject(TYPES.services.scriptRemote) private directoryService: IDirectoryService,
+        @inject(TYPES.services.directory) private directoryService: IDirectoryService,
     ){}
 
     async init(): Promise<void> {
@@ -28,8 +28,8 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     async updateFromServer(): Promise<void> {
-        this.scripts = await this.scriptRemoteService.downloadAllScripts();
         this.directories = await this.directoryService.downloadAllDirectories();
+        this.scripts = await this.scriptRemoteService.downloadAllScripts();
     }
     
 
@@ -42,7 +42,14 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     getScriptsIn(directory: IDirectory): IScript[] {
-        return this.scripts.filter(script => script._id.startsWith(<string>directory._id));
+        const partCountDirectory = directory._id.split(".").length;
+        return this.scripts.filter(script => {
+            if (script._id.startsWith(<string>directory._id)) {
+                const partCountDir = script._id.split(".").length;
+                return partCountDirectory + 1 === partCountDir;
+            }
+            return false;
+        });
     }
 
     getDirectoriesIn(directory: IDirectory): IDirectory[] {

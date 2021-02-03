@@ -24,9 +24,8 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         this.scriptEventListeners.push(listener);
     }
 
-    async downloadAllScripts(): Promise<IScript[]> {
-        const scriptObjects = await this.connectionService.getSystemObjectView<{value: IScript}>("script", "script.js.", "script.js.");
-        return scriptObjects.map(so => so.value);
+    downloadAllScripts(): Promise<IScript[]> {
+        return this.connectionService.getSystemObjectView<IScript>("script", "script.js.", "script.js.");
     }
 
     async downloadScriptWithUri(scriptUri: Uri): Promise<IScript> {

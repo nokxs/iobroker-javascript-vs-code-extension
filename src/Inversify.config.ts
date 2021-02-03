@@ -60,7 +60,7 @@ container.bind<IFileService>(TYPES.services.file).to(FileService).inSingletonSco
 container.bind<ICommandService>(TYPES.services.command).to(CommandService).inSingletonScope();
 container.bind<IScriptService>(TYPES.services.script).to(ScriptService).inSingletonScope();
 container.bind<IScriptIdService>(TYPES.services.scriptId).to(ScriptIdService).inSingletonScope();
-container.bind<IScriptRemoteService>(TYPES.services.scriptId).to(ScriptRemoteService).inSingletonScope();
+container.bind<IScriptRemoteService>(TYPES.services.scriptRemote).to(ScriptRemoteService).inSingletonScope();
 container.bind<IScriptRepositoryService>(TYPES.services.scriptRepository).to(ScriptRepositoryService).inSingletonScope();
 container.bind<IDirectoryService>(TYPES.services.directory).to(DirectoryService).inSingletonScope();
 container.bind<ILogService>(TYPES.services.log).to(LogService).inSingletonScope();

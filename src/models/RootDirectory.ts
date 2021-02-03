@@ -4,5 +4,5 @@ import { ScriptId } from "./ScriptId";
 
 export class RootDirectory implements IDirectory {
     common: IDirectoryCommon = {};
-    _id: ScriptId = "script.js.";
+    _id: ScriptId = "script.js";
 }
