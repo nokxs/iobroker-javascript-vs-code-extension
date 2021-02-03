@@ -21,7 +21,7 @@ export class ScriptRenameCommand implements ICommand {
 
     async execute(...args: any[]) {
         if (args && args[0]) {
-            const script = (<ScriptItem>args[0]).script;
+            const script = (<ScriptItem>args[0]).script.ioBrokerScript;
             const scriptName = script.common.name;
             const scriptId = script._id;
 

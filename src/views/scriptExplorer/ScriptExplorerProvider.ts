@@ -8,11 +8,11 @@ import { ScriptItem } from './ScriptItem';
 import { IScriptChangedEventListener } from '../../services/scriptRemote/IScriptChangedListener';
 import { IIobrokerConnectionService } from '../../services/iobrokerConnection/IIobrokerConnectionService';
 import { NoConfig } from '../../models/Config';
-import { IScriptRemoteService } from '../../services/scriptRemote/IScriptRemoteService';
 import { IScript } from '../../models/IScript';
 import { IScriptRepositoryService } from '../../services/scriptRepository/IScriptRepositoryService';
 import { IDirectory } from '../../models/IDirectory';
 import { RootDirectory } from '../../models/RootDirectory';
+import { ILocalScript } from '../../models/ILocalScript';
 
 @injectable()
 export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | ScriptDirectory>, IScriptExplorerProvider, IScriptChangedEventListener {
@@ -23,10 +23,9 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
 
     constructor(
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
-        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
-        @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService
+        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService
     ) {
-        scriptRemoteService.registerScriptChangedEventListener(this);
+        scriptRepositoryService.registerScriptChangedEventListener(this);
     }
     
     getTreeItem(element: ScriptItem | ScriptDirectory): vscode.TreeItem | Thenable<vscode.TreeItem> {
@@ -81,7 +80,7 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         return true;
     }
     
-    private convertToScriptItems(scripts: IScript[]): ScriptItem[] {
+    private convertToScriptItems(scripts: ILocalScript[]): ScriptItem[] {
         return scripts.map(s => new ScriptItem(s));
     }
 

@@ -1,5 +1,5 @@
 import { IDirectory } from "../../models/IDirectory";
-import { IScript } from "../../models/IScript";
+import { ILocalScript } from "../../models/ILocalScript";
 import { IScriptChangedEventListener } from "../scriptRemote/IScriptChangedListener";
 
 export interface IScriptRepositoryService {
@@ -9,10 +9,10 @@ export interface IScriptRepositoryService {
 
     updateFromServer(): Promise<void>
 
-    getRootLevelScript(): IScript[]
+    getRootLevelScript(): ILocalScript[]
     getRootLevelDirectories(): IDirectory[]
 
-    getScriptsIn(directory: IDirectory): IScript[]
+    getScriptsIn(directory: IDirectory): ILocalScript[]
     getDirectoriesIn(directory: IDirectory): IDirectory[]
 
 }

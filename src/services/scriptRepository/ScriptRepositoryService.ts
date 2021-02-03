@@ -7,15 +7,23 @@ import { IDirectory } from "../../models/IDirectory";
 import { IDirectoryService } from "../directory/IDirectoryService";
 import { IScriptChangedEventListener } from "../scriptRemote/IScriptChangedListener";
 import { RootDirectory } from "../../models/RootDirectory";
+import { ILocalScript } from "../../models/ILocalScript";
+import { Uri } from "vscode";
+import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
+import { IScriptService } from "../script/IScriptService";
+import { EngineType } from "../../models/EngineType";
+import { stringify } from "querystring";
 
 @injectable()
 export class ScriptRepositoryService implements IScriptRepositoryService, IScriptChangedEventListener {
-    private scripts: IScript[] = [];
+    private scripts: ILocalScript[] = [];
     private directories: IDirectory[] = [];
 
     constructor(        
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
         @inject(TYPES.services.directory) private directoryService: IDirectoryService,
+        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
+        @inject(TYPES.services.script) private scriptService: IScriptService,
     ){}
 
     async init(): Promise<void> {
@@ -29,11 +37,19 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
 
     async updateFromServer(): Promise<void> {
         this.directories = await this.directoryService.downloadAllDirectories();
-        this.scripts = await this.scriptRemoteService.downloadAllScripts();
+        
+        const ioBrokerScripts = await this.scriptRemoteService.downloadAllScripts();
+        this.scripts = ioBrokerScripts.map(script => {
+            return {
+                _id: script._id,
+                ioBrokerScript: script,
+                fileUri: this.getFileUri(script, this.directories)
+            };
+        });
     }
     
 
-    getRootLevelScript(): IScript[] {
+    getRootLevelScript(): ILocalScript[] {
         return this.getScriptsIn(new RootDirectory());
     }
 
@@ -41,29 +57,54 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         return this.getDirectoriesIn(new RootDirectory());
     }
 
-    getScriptsIn(directory: IDirectory): IScript[] {
-        const partCountDirectory = directory._id.split(".").length;
-        return this.scripts.filter(script => {
-            if (script._id.startsWith(<string>directory._id)) {
-                const partCountDir = script._id.split(".").length;
-                return partCountDirectory + 1 === partCountDir;
-            }
-            return false;
-        });
+    getScriptsIn(directory: IDirectory): ILocalScript[] {
+        return this.filterByLength(this.scripts, directory, 1);
     }
 
     getDirectoriesIn(directory: IDirectory): IDirectory[] {
-        const partCountDirectory = directory._id.split(".").length;
-        return this.directories.filter(dir => {
-            if (dir._id.startsWith(<string>directory._id)) {
-                const partCountDir = dir._id.split(".").length;
-                return partCountDirectory + 1 === partCountDir;
-            }
-            return false;
-        });
+        return this.filterByLength(this.directories, directory, 1);
     }
 
     onScriptChanged(): void {
         this.updateFromServer();
+    }
+
+    private getFileUri(script: IScript, directories: IDirectory[]): Uri {
+        let scriptRoot = this.configRepositoryService.config.scriptRoot;
+        scriptRoot = scriptRoot.endsWith("/") ? scriptRoot : `${scriptRoot}/`;
+
+        const engineType = <EngineType>script.common.engineType ?? EngineType.unkown;
+        const extension = this.scriptService.getFileExtension(engineType);
+        
+        let parentDirectory: IDirectory = new RootDirectory();
+        let parentPath: string[] = [];
+        do {
+            parentDirectory = this.getParentDirectory(script, directories);
+            parentPath.push(parentDirectory.common?.name ?? "");
+        } while (!(parentDirectory instanceof RootDirectory));
+        
+        return Uri.parse(`${scriptRoot}${parentPath.join("/")}${script.common.name}.${extension}`);
+    }
+
+    private getParentDirectory(child: IScript | IDirectory, directories: IDirectory[]): IDirectory {
+        const parents = this.filterByLength(directories, child, -1);
+        if(parents.length === 0) {
+            return new RootDirectory();
+        } else if (parents.length === 1) {
+            return parents[0];
+        }
+
+        throw Error(`Could not find parent for ${child._id}`);
+    }
+
+    private filterByLength<TSource extends ILocalScript | IDirectory>(source: TSource[], child: IScript | IDirectory, offset: number): TSource[] {
+        const partCountDirectory = child._id.split(".").length;
+        return source.filter(item => {
+            if (item._id.startsWith(<string>child._id)) {
+                const partCountDir = item._id.split(".").length;
+                return partCountDirectory + offset === partCountDir;
+            }
+            return false;
+        });
     }
 }

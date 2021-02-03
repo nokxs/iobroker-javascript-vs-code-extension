@@ -2,17 +2,18 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 
 import { EngineType } from '../../models/EngineType';
+import { ILocalScript } from '../../models/ILocalScript';
 import { IScript } from "../../models/IScript";
 
 export class ScriptItem extends vscode.TreeItem {
 
     contextValue = "scriptItem";
 
-    constructor(public script: IScript) {
+    constructor(public script: ILocalScript) {
         super("", vscode.TreeItemCollapsibleState.None);
         
-        this.label = this.getScriptName(script);
-        this.iconPath = this.getIconPath(script);
+        this.label = this.getScriptName(script.ioBrokerScript);
+        this.iconPath = this.getIconPath(script.ioBrokerScript);
         this.command = {
             title: "Open script",
             command: "iobroker-javascript.openFile",

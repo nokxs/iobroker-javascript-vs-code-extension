@@ -49,7 +49,7 @@ export class UploadCommand implements ICommand {
     }
 
     private async handleScriptFromScriptExplorer(...args: any[]): Promise<IScript | null> {
-        const script = (<ScriptItem>args[0][0]).script ?? (<ScriptItem>args[0][0][0]).script;
+        const script = (<ScriptItem>args[0][0]).script.ioBrokerScript ?? (<ScriptItem>args[0][0][0]).script.ioBrokerScript;
         const scriptName = script.common.name;
 
         if (!scriptName) {
