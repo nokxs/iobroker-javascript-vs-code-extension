@@ -6,8 +6,7 @@ import { Uri } from "vscode";
 
 export interface IScriptService {
     getRelativeFilePathFromScript(script: IScript): string
-    getRelativeFilePath(scriptId: ScriptId, scriptName: ScriptName, engineType: EngineType): string;
-    getFileUri(script: IScript): Promise<Uri>
+    getRelativeFilePath(scriptId: ScriptId, scriptName: ScriptName, engineType: EngineType): string
     getFileExtension(engineType: EngineType): string
     getEngineType(uri: Uri): EngineType
 

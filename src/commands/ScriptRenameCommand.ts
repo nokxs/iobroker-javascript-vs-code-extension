@@ -21,7 +21,8 @@ export class ScriptRenameCommand implements ICommand {
 
     async execute(...args: any[]) {
         if (args && args[0]) {
-            const script = (<ScriptItem>args[0]).script.ioBrokerScript;
+            const localScript = (<ScriptItem>args[0]).script;
+            const script = localScript.ioBrokerScript;
             const scriptName = script.common.name;
             const scriptId = script._id;
 
@@ -30,7 +31,7 @@ export class ScriptRenameCommand implements ICommand {
             if (newScriptName) {
                 await this.scriptRemoteService.rename(scriptId, newScriptName);
                 
-                const oldPath = await this.scriptService.getFileUri(script);
+                const oldPath = localScript.fileUri;
                 
                 const fileExtension = this.scriptService.getFileExtension(<EngineType>script.common.engineType ?? EngineType.unkown);
                 const splittedPath = oldPath.path.split("/");

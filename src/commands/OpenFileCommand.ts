@@ -6,6 +6,7 @@ import { TextDocument, Uri, window, workspace } from "vscode";
 import { IFileService } from '../services/file/IFileService';
 import { EngineType } from '../models/EngineType';
 import { IScriptService } from "../services/script/IScriptService";
+import { ILocalScript } from "../models/ILocalScript";
 
 @injectable()
 export class OpenFileCommand implements ICommand {
@@ -17,15 +18,15 @@ export class OpenFileCommand implements ICommand {
         @inject(TYPES.services.file) private fileService: IFileService,
     ) {}
     
-    async execute(...args: IScript[]) {
+    async execute(...args: ILocalScript[]) {
         if (args && args.length !== 1) {
             return;
         }
 
         const script = args[0];
 
-        const fileUri = await this.scriptService.getFileUri(script);
-        const document = await this.openDocument(fileUri, script);
+        const fileUri = script.fileUri;
+        const document = await this.openDocument(fileUri, script.ioBrokerScript);
         await window.showTextDocument(document);
     }
 

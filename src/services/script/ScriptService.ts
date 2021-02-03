@@ -66,13 +66,6 @@ export class ScriptService implements IScriptService {
 
         return EngineType.unkown;
     }
-
-    async getFileUri(script: IScript): Promise<Uri> {
-        const relativeScriptPath = this.getRelativeFilePathFromScript(script);
-        const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
-
-        return Uri.joinPath(workspaceFolder.uri, relativeScriptPath);
-    }
     
     async getFileContentOnDisk(scriptId: ScriptId, scriptName: ScriptName, engineType: EngineType): Promise<string | null> {
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
