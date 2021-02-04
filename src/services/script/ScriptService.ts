@@ -1,20 +1,15 @@
 import { inject, injectable } from "inversify";
-import { Uri, WorkspaceFolder } from "vscode";
+import { Uri } from "vscode";
 import TYPES from "../../Types";
 import { IFileService } from "../file/IFileService";
-import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { IScriptService } from "./IScriptService";
 import { EngineType } from "../../models/EngineType";
-import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { ILocalScript } from "../../models/ILocalScript";
 
 @injectable()
 export class ScriptService implements IScriptService {
     constructor(
-        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
-        @inject(TYPES.services.file) private fileService: IFileService,
-        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService
-    ) {}
+        @inject(TYPES.services.file) private fileService: IFileService    ) {}
         
     getFileExtension(engineType: EngineType): string {
         switch (engineType?.toLowerCase()) {
