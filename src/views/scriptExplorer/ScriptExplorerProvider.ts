@@ -8,7 +8,6 @@ import { ScriptItem } from './ScriptItem';
 import { IScriptChangedEventListener } from '../../services/scriptRemote/IScriptChangedListener';
 import { IIobrokerConnectionService } from '../../services/iobrokerConnection/IIobrokerConnectionService';
 import { NoConfig } from '../../models/Config';
-import { IScript } from '../../models/IScript';
 import { IScriptRepositoryService } from '../../services/scriptRepository/IScriptRepositoryService';
 import { IDirectory } from '../../models/IDirectory';
 import { RootDirectory } from '../../models/RootDirectory';

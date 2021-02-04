@@ -31,7 +31,7 @@ export class ScriptRenameCommand implements ICommand {
             if (newScriptName) {
                 await this.scriptRemoteService.rename(scriptId, newScriptName);
                 
-                const oldPath = localScript.fileUri;
+                const oldPath = localScript.absoluteUri;
                 
                 const fileExtension = this.scriptService.getFileExtension(<EngineType>script.common.engineType ?? EngineType.unkown);
                 const splittedPath = oldPath.path.split("/");

@@ -25,7 +25,7 @@ export class OpenFileCommand implements ICommand {
 
         const script = args[0];
 
-        const fileUri = script.fileUri;
+        const fileUri = script.absoluteUri;
         const document = await this.openDocument(fileUri, script.ioBrokerScript);
         await window.showTextDocument(document);
     }

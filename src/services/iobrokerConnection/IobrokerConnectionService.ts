@@ -13,7 +13,6 @@ import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryS
 import CONSTANTS from "../../Constants";
 import { IConfigCreationService } from "../configCreation/IConfigCreationService";
 import { IScriptService } from "../script/IScriptService";
-import { IScriptRemoteService } from "../scriptRemote/IScriptRemoteService";
 import { IScriptRepositoryService } from "../scriptRepository/IScriptRepositoryService";
 
 @injectable()
@@ -30,7 +29,6 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
       @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
       @inject(TYPES.services.log) private logService: ILogService,
       @inject(TYPES.services.script) private scriptService: IScriptService,
-      @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
       @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService
   ) {
     this.statusBarItem.text = "$(warning) ioBroker disconnected";
@@ -77,7 +75,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
         if (isInitialConnect) {
           const answer = await window.showQuickPick(["Yes", "No"], { placeHolder: "Download all scripts"});
           if (answer === "Yes") {
-              const scripts = await this.scriptRemoteService.downloadAllScripts();
+              const scripts = this.scriptRepositoryService.getAllScripts();
               await this.scriptService.saveAllToFile(scripts);
           } 
         }

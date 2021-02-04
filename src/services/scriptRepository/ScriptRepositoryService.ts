@@ -12,7 +12,8 @@ import { Uri } from "vscode";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { IScriptService } from "../script/IScriptService";
 import { EngineType } from "../../models/EngineType";
-import { stringify } from "querystring";
+import { IWorkspaceService } from "../workspace/IWorkspaceService";
+import { ScriptId } from "../../models/ScriptId";
 
 @injectable()
 export class ScriptRepositoryService implements IScriptRepositoryService, IScriptChangedEventListener {
@@ -24,6 +25,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         @inject(TYPES.services.directory) private directoryService: IDirectoryService,
         @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
         @inject(TYPES.services.script) private scriptService: IScriptService,
+        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
     ){}
 
     async init(): Promise<void> {
@@ -43,11 +45,23 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
             return {
                 _id: script._id,
                 ioBrokerScript: script,
-                fileUri: this.getFileUri(script, this.directories)
+                absoluteUri: this.getAbsoluteFileUri(script, this.directories),
+                relativeUri: this.getRelativeFileUri(script, this.directories)
             };
         });
     }
     
+    getAllScripts(): ILocalScript[] {
+        return this.scripts;
+    }
+
+    getScriptFromAbsolutUri(uri: Uri): ILocalScript | undefined {
+        return this.scripts.find(script => script.absoluteUri === uri);
+    }
+
+    getScriptFromId(id: ScriptId): ILocalScript | undefined {
+        return this.scripts.find(script => script._id === id);
+    }
 
     getRootLevelScript(): ILocalScript[] {
         return this.getScriptsIn(new RootDirectory());
@@ -69,10 +83,11 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         this.updateFromServer();
     }
 
-    private getFileUri(script: IScript, directories: IDirectory[]): Uri {
+    private getRelativeFileUri(script: IScript, directories: IDirectory[]): Uri {
+        
         let scriptRoot = this.configRepositoryService.config.scriptRoot;
         scriptRoot = scriptRoot.endsWith("/") ? scriptRoot : `${scriptRoot}/`;
-
+        
         const engineType = <EngineType>script.common.engineType ?? EngineType.unkown;
         const extension = this.scriptService.getFileExtension(engineType);
         
@@ -84,6 +99,13 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         } while (!(parentDirectory instanceof RootDirectory));
         
         return Uri.parse(`${scriptRoot}${parentPath.join("/")}${script.common.name}.${extension}`);
+    }
+
+    private getAbsoluteFileUri(script: IScript, directories: IDirectory[]): Uri {
+        const workspaceRoot = this.workspaceService.workspaceToUse;
+        const relativeFileUri = this.getRelativeFileUri(script, directories);
+        
+        return Uri.joinPath(workspaceRoot.uri, relativeFileUri.path);
     }
 
     private getParentDirectory(child: IScript | IDirectory, directories: IDirectory[]): IDirectory {

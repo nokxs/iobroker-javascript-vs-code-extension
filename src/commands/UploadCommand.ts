@@ -7,7 +7,6 @@ import { Uri, window } from "vscode";
 import { IScriptService } from "../services/script/IScriptService";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import { IScript } from "../models/IScript";
-import { EngineType } from "../models/EngineType";
 import CONSTANTS from "../Constants";
 import { IScriptIdService } from "../services/scriptId/IScriptIdService";
 import { IScriptRemoteService } from '../services/scriptRemote/IScriptRemoteService';
@@ -49,15 +48,15 @@ export class UploadCommand implements ICommand {
     }
 
     private async handleScriptFromScriptExplorer(...args: any[]): Promise<IScript | null> {
-        const script = (<ScriptItem>args[0][0]).script.ioBrokerScript ?? (<ScriptItem>args[0][0][0]).script.ioBrokerScript;
+        const localScript = (<ScriptItem>args[0][0]).script ?? (<ScriptItem>args[0][0][0]).script;
+        const script = localScript.ioBrokerScript;
         const scriptName = script.common.name;
 
         if (!scriptName) {
             throw new Error(`Cannot upload script '${script._id}', because it's name is not set`);
         }
 
-        const engineType = <EngineType>script.common.engineType;
-        const scriptText = await this.scriptService.getFileContentOnDisk(script._id, scriptName, engineType ?? EngineType.unkown);
+        const scriptText = await this.scriptService.getFileContentOnDisk(localScript);
         const existingScript = await this.scriptRemoteService.downloadScriptWithId(scriptName);
         
         if (scriptText && existingScript) {
