@@ -12,6 +12,7 @@ export interface IScriptRepositoryService {
     updateFromServer(): Promise<void>
 
     getAllScripts(): ILocalScript[]
+    getAllDirectories(): IDirectory[]
 
     getScriptFromAbsolutUri(uri: Uri): ILocalScript | undefined
     getScriptFromId(id: ScriptId): ILocalScript | undefined

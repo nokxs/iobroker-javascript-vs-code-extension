@@ -61,14 +61,22 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         const newId = splittedId.join(".");
 
         const script = await this.downloadScriptWithId(scriptId);
-        script._id = newId;
+        script._id = new ScriptId(newId);
         script.common.name = name;
 
         await this.deleteScript(scriptId);
         await this.uploadScript(script);
     }
 
-    async updateScript(scriptId: ScriptId, script: IScript): Promise<void> {
+    async move(scriptId: ScriptId, targetDirectoryId: ScriptId): Promise<void> {
+        const script = await this.downloadScriptWithId(scriptId);
+        await this.deleteScript(scriptId);
+
+        script._id = new ScriptId(`${targetDirectoryId}.${scriptId.substring(scriptId.lastIndexOf(".") + 1)}`);
+        await this.uploadScript(script);
+    }
+
+    async update(scriptId: ScriptId, script: IScript): Promise<void> {
         const existingScript = await this.downloadScriptWithId(scriptId);
         if (existingScript) {
             await this.connectionService.extendObject(scriptId, script);
@@ -107,7 +115,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
             }
         };
 
-        this.updateScript(scriptId, script);
+        this.update(scriptId, script);
     }
     
     private replaceAll(s: string, searchValue: string, replaceValue: string): string {

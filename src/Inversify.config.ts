@@ -30,7 +30,7 @@ import { IobrokerConnectionService } from './services/iobrokerConnection/Iobroke
 import { JsInstanceService } from './services/jsInstanceService/JsInstanceService';
 import { LogService } from './services/log/LogService';
 import { OpenFileCommand } from './commands/OpenFileCommand';
-import { ReorderCommand } from './commands/ReorderCommand';
+import { MoveCommand } from './commands/MoveCommand';
 import { ScriptExplorerProvider } from './views/scriptExplorer/ScriptExplorerProvider';
 import { ScriptIdService } from './services/scriptId/ScriptIdService';
 import { ScriptRemoteService } from './services/scriptRemote/ScriptRemoteService';
@@ -79,7 +79,7 @@ container.bind<ICommand>(TYPES.command).to(OpenFileCommand);
 container.bind<ICommand>(TYPES.command).to(ConnectCommand);
 container.bind<ICommand>(TYPES.command).to(ScriptRenameCommand);
 container.bind<ICommand>(TYPES.command).to(ChangeJsInstanceCommand);
-container.bind<ICommand>(TYPES.command).to(ReorderCommand);
+container.bind<ICommand>(TYPES.command).to(MoveCommand);
 
 container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider);
 

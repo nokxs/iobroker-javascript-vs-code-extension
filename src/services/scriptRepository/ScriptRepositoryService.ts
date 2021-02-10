@@ -54,6 +54,10 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     getAllScripts(): ILocalScript[] {
         return this.scripts;
     }
+    
+    getAllDirectories(): IDirectory[] {
+        return this.directories;
+    }
 
     getScriptFromAbsolutUri(uri: Uri): ILocalScript | undefined {
         return this.scripts.find(script => script.absoluteUri === uri);

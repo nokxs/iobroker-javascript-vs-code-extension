@@ -14,6 +14,7 @@ export interface IScriptRemoteService {
     startScript(script: ScriptId): Promise<void>
     stopScript(scriptId: ScriptId): Promise<void>
 
-    updateScript(scriptId: ScriptId, script: IScript): Promise<void>    
+    update(scriptId: ScriptId, script: IScript): Promise<void>    
     rename(scriptId: ScriptId, name: string): Promise<void>
+    move(scriptId: ScriptId, targetDirectoryId: ScriptId): Promise<void>
 }
