@@ -16,8 +16,6 @@ export class MoveCommand implements ICommand {
     ) {}
     
     async execute(...args: any[]) {
-        console.log(args);
-
         const availableDirectories = this.scriptRepositoryService.getAllDirectories();
         const availableDirectoryIds = availableDirectories.map(dir => <string>dir._id.replace("script.js.", ""));
         const pickedDirectoryId = await window.showQuickPick(availableDirectoryIds, { canPickMany: false});

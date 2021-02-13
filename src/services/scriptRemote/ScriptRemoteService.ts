@@ -61,13 +61,13 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         script._id = new ScriptId(newId);
         script.common.name = name;
 
-        await this.deleteScript(scriptId);
+        await this.delete(scriptId);
         await this.uploadScript(script);
     }
 
     async move(scriptId: ScriptId, targetDirectoryId: ScriptId): Promise<void> {
         const script = await this.downloadScriptWithId(scriptId);
-        await this.deleteScript(scriptId);
+        await this.delete(scriptId);
 
         script._id = new ScriptId(`${targetDirectoryId}.${scriptId.substring(scriptId.lastIndexOf(".") + 1)}`);
         await this.uploadScript(script);
@@ -82,7 +82,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         }
     }
 
-    async deleteScript(scriptId: ScriptId): Promise<void> {
+    async delete(scriptId: ScriptId): Promise<void> {
         return this.connectionService.deleteObject(scriptId);
     }
     
