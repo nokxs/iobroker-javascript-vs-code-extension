@@ -51,12 +51,9 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
 
     async rename(scriptId: ScriptId, name: string): Promise<void> {
         const splittedId = scriptId.split(".");
+        const sanatizedName = (name || '').replace(/[\\/\][*,;'"`<>?\s]/g, '_'); // Taken from https://github.com/ioBroker/ioBroker.javascript/blob/be43a91e002cb13f7c24aac4eebd482159bc4390/src/src/Dialogs/Rename.js#L47
 
-        // TODO: For correct sanatazion much more characters have to be replaced. This part of the function should be moved to an own function.
-        let sanatizedName = this.replaceAll(name, " ", "_");
-        sanatizedName = this.replaceAll(sanatizedName, ".", "_");
-
-        splittedId.splice(-1,1);
+        splittedId.splice(-1, 1);
         splittedId.push(sanatizedName);
         const newId = splittedId.join(".");
 
