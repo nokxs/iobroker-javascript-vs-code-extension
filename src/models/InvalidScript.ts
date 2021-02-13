@@ -1,15 +1,15 @@
-import { Common } from "./Common";
-import { Script } from "./Script";
+import { IScriptCommon } from "./IScriptCommon";
+import { IScript } from "./IScript";
 import { ScriptId } from "./ScriptId";
 
-export class InvalidScript implements Script {
+export class InvalidScript implements IScript {
 
     constructor() {
         this.common = {};
         this._id = "INVALID";
     }
 
-    common: Common;
+    common: IScriptCommon;
     type?: string | undefined;
     from?: string | undefined;
     user?: string | undefined;

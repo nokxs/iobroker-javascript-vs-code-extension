@@ -13,6 +13,7 @@ import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryS
 import CONSTANTS from "../../Constants";
 import { IConfigCreationService } from "../configCreation/IConfigCreationService";
 import { IScriptService } from "../script/IScriptService";
+import { IScriptRepositoryService } from "../scriptRepository/IScriptRepositoryService";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
@@ -27,7 +28,8 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
       @inject(TYPES.services.connection) private connectionService: IConnectionService,
       @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
       @inject(TYPES.services.log) private logService: ILogService,
-      @inject(TYPES.services.script) private scriptService: IScriptService
+      @inject(TYPES.services.script) private scriptService: IScriptService,
+      @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService
   ) {
     this.statusBarItem.text = "$(warning) ioBroker disconnected";
     this.statusBarItem.show();
@@ -68,11 +70,12 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
 
         await this.connectionService.connect(Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`));
         await this.logService.startReceiving();
+        await this.scriptRepositoryService.init();
 
         if (isInitialConnect) {
           const answer = await window.showQuickPick(["Yes", "No"], { placeHolder: "Download all scripts"});
           if (answer === "Yes") {
-              const scripts = await this.connectionService.downloadAllScripts();
+              const scripts = this.scriptRepositoryService.getAllScripts();
               await this.scriptService.saveAllToFile(scripts);
           } 
         }

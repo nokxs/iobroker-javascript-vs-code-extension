@@ -1,9 +1,6 @@
 import { IConnectionEventListener } from "./IConnectionEventListener";
-import { IScriptChangedEventListener } from "./IScriptChangedListener";
-import { LogMessage } from "../../models/LogMessage";
-import { Script } from "../../models/Script";
+import { ILogMessage } from "../../models/ILogMessage";
 import { ScriptId } from "../../models/ScriptId";
-import { ScriptObject } from "../../models/ScriptObject";
 import { Uri } from "vscode";
 
 export interface IConnectionService {
@@ -13,22 +10,17 @@ export interface IConnectionService {
     disconnect(): Promise<void>
     
     registerConnectionEventListener(listener: IConnectionEventListener): void
-    registerScriptChangedEventListener(listener: IScriptChangedEventListener): void
 
-    downloadAllScripts(): Promise<ScriptObject[]>
-    downloadScriptWithUri(scriptPath: Uri): Promise<Script>
-    downloadScriptWithId(scriptId: ScriptId): Promise<Script>
-    uploadScript(script: Script): Promise<void>
-
-    getSystemObjectView<TResult>(type: string, startKey: string, endKey: string): Promise<TResult[]>
-    extendObject(objectId: string | ScriptId, obj: any): Promise<void>
-    
-    startScript(script: ScriptId): Promise<void>
-    stopScript(scriptId: ScriptId): Promise<void>
-
-    registerForLogs(logAction: (logMessage: LogMessage) => void): Promise<void>
+    registerForLogs(logAction: (logMessage: ILogMessage) => void): Promise<void>
     unregisterForLogs(): Promise<void>
 
-    updateScript(scriptId: ScriptId, script: Script): Promise<void>    
-    rename(scriptId: ScriptId, name: string): Promise<void>
+    registerForObjectChange(pattern: string, onChangeAction: (id: string, value: any) => void): Promise<void>
+    unregisterObjectChange(pattern: string): Promise<void>
+
+    getObject<TObject>(objectId: string | ScriptId): Promise<TObject>
+    setObject(objectId: string | ScriptId, obj: any): Promise<void>
+    deleteObject(objectId: string| ScriptId): Promise<void>
+    extendObject(objectId: string | ScriptId, obj: any): Promise<void>
+
+    getSystemObjectView<TResult>(type: string, startKey: string, endKey: string): Promise<TResult[]>
 }

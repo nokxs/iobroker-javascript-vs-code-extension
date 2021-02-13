@@ -1,42 +1,17 @@
-
 import { inject, injectable } from "inversify";
-import { Uri, WorkspaceFolder } from "vscode";
-import { Script } from "../../models/Script";
-import { ScriptObject } from "../../models/ScriptObject";
-import { ScriptId } from "../../models/ScriptId";
+import { Uri } from "vscode";
 import TYPES from "../../Types";
 import { IFileService } from "../file/IFileService";
-import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { IScriptService } from "./IScriptService";
 import { EngineType } from "../../models/EngineType";
-import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
+import { ILocalScript } from "../../models/ILocalScript";
 
 @injectable()
 export class ScriptService implements IScriptService {
     constructor(
-        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
-        @inject(TYPES.services.file) private fileService: IFileService,
-        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService
+        @inject(TYPES.services.file) private fileService: IFileService    
     ) {}
-    
-    getRelativeFilePathFromScript(script: Script): string {
-        let path = script._id.replace("script.js.", "");
-        const engineType = <EngineType>script.common.engineType ?? EngineType.unkown;
-        return this.getRelativeFilePath(path, engineType);
-    }
-    
-    getRelativeFilePath(scriptId: ScriptId, engineType: EngineType): string {
-        let path = scriptId.replace("script.js.", "");
-        path = this.replaceAll(path, ".", "/");
-        path = this.replaceAll(path, "_", " ");
-
-        let scriptRoot = this.configRepositoryService.config.scriptRoot;
-        scriptRoot = scriptRoot.endsWith("/") ? scriptRoot : `${scriptRoot}/`;
-
-        const extension = this.getFileExtension(engineType);
-        return `${scriptRoot}${path}.${extension}`;
-    }
-    
+        
     getFileExtension(engineType: EngineType): string {
         switch (engineType?.toLowerCase()) {
             case EngineType.javascript:
@@ -64,45 +39,23 @@ export class ScriptService implements IScriptService {
 
         return EngineType.unkown;
     }
-
-    async getFileUri(script: Script): Promise<Uri> {
-        const relativeScriptPath = this.getRelativeFilePathFromScript(script);
-        const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
-
-        return Uri.joinPath(workspaceFolder.uri, relativeScriptPath);
-    }
     
-    async getFileContentOnDisk(scriptId: ScriptId, engineType: EngineType): Promise<string | null> {
-        const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
-        const relativeFilePath = this.getRelativeFilePath(scriptId, engineType);
-        const scriptUri = this.getScriptUri(workspaceFolder, relativeFilePath);
-
-        if (this.fileService.fileExists(scriptUri)) {
-            return this.fileService.readFromFile(scriptUri);
+    async getFileContentOnDisk(script: ILocalScript): Promise<string | null> {
+        
+        if (this.fileService.fileExists(script.absoluteUri)) {
+            return this.fileService.readFromFile(script.absoluteUri);
         }
 
         return null;
     }
 
-    async saveToFile(script: Script): Promise<void> {
-        const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
-        const relativeFilePath = this.getRelativeFilePathFromScript(script);
-        const scriptUri = this.getScriptUri(workspaceFolder, relativeFilePath);
-
-        await this.fileService.saveToFile(scriptUri, script.common.source ?? "");
+    async saveToFile(script: ILocalScript): Promise<void> {
+        await this.fileService.saveToFile(script.absoluteUri, script.ioBrokerScript.common.source ?? "");
     }
     
-    async saveAllToFile(scripts: ScriptObject[]): Promise<void> {
+    async saveAllToFile(scripts: ILocalScript[]): Promise<void> {
         for (const script of scripts) {
-            await this.saveToFile(script.value);
+            await this.saveToFile(script);
         }
-    }
-
-    private getScriptUri(workspaceFolder: WorkspaceFolder, relativeFilePath: string): Uri {
-        return Uri.joinPath(workspaceFolder.uri, relativeFilePath);
-    }    
-    
-    private replaceAll(s: string, searchValue: string, replaceValue: string): string {
-        return s.split(searchValue).join(replaceValue);
     }
 }
