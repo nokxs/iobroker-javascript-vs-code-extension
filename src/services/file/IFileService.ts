@@ -5,4 +5,5 @@ export interface IFileService {
     readFromFile(uri: Uri): Promise<string>
     fileExists(uri: Uri): boolean
     rename(oldFile: Uri, newFile: Uri): Promise<void>
+    delete(uri: Uri): Promise<void>
 }

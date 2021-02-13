@@ -49,6 +49,7 @@ import { DirectoryService } from './services/directory/DirectorytService';
 import { ScriptRepositoryService } from './services/scriptRepository/ScriptRepositoryService';
 import { IScriptRepositoryService } from './services/scriptRepository/IScriptRepositoryService';
 import { DeleteCommand } from './commands/DeleteCommand';
+import { RefreshCommand } from './commands/RefreshCommand';
 
 const container = new Container();
 
@@ -82,6 +83,7 @@ container.bind<ICommand>(TYPES.command).to(ScriptRenameCommand);
 container.bind<ICommand>(TYPES.command).to(ChangeJsInstanceCommand);
 container.bind<ICommand>(TYPES.command).to(MoveCommand);
 container.bind<ICommand>(TYPES.command).to(DeleteCommand);
+container.bind<ICommand>(TYPES.command).to(RefreshCommand);
 
 container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider);
 

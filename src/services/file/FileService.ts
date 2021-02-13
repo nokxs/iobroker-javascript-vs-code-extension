@@ -27,4 +27,12 @@ export class FileService implements IFileService {
             });
         });
     }
+
+    delete(uri: Uri): Promise<void> {
+        return new Promise((resolve) => {
+            fs.unlink(uri.fsPath, () => {
+                resolve();
+            });
+        });
+    }
 }
