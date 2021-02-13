@@ -54,6 +54,16 @@ To start/stop a single script you have the following options:
 * Go to the script explorer and press the start or stop button.
 * Use the command `iobroker: Start script`, respectively `iobroker: Stop script`. This command starts/stops the script in the active text editor.
 
+### Move scripts
+Scripts can be moved from one directory to another on your ioBroker server (and only there). Moving a script locally is not supported yet.
+
+Scripts can only be moved over the script explorer. Right click on the script you want to move, select `Move` and choose the directory you want the file to move to.
+
+### Change JS Instance
+The JS Instance for a script can be changed over the script explorer. Right click on a script and select `Change instance` via a quick pick.
+
+![JS Instance Number](https://media.githubusercontent.com/media/nokxs/iobroker-javascript-vs-code-extension/main/doc/js-instance-nr.jpg)
+
 ### Show script logging
 Press <kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>U</kbd> to open the "Output" view. Open the drop down and select `ioBroker (all)` or `ioBroker (current script)`.
 
@@ -86,9 +96,7 @@ If you got any problems, please open a GitHub issue.
 
 Support (not in the listed order)
 * password protected ioBroker installations
-* creating of new scripts
 * deleting of scripts
-* multiple js-Adapter instances
 * syncing of workspace with remote scripts (correclty, delete and remove scirpts)
 * upload multiple changed scripts with an `upload all` command
 * the functions defined in global scripts
