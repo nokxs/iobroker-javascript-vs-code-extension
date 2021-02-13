@@ -38,7 +38,14 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     async updateFromServer(): Promise<void> {
-        this.directories = await this.directoryService.downloadAllDirectories();
+        const ioBrokerDirectories = await this.directoryService.downloadAllDirectories();
+        this.directories = ioBrokerDirectories.map(dir => {
+            return {
+                _id: dir._id,
+                common: dir.common,
+                relativeUri: this.getRelativeDirectoryUri(dir, ioBrokerDirectories)
+            };
+        });
         
         const ioBrokerScripts = await this.scriptRemoteService.downloadAllScripts();
         this.scripts = ioBrokerScripts.map(script => {
@@ -87,22 +94,31 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         this.updateFromServer();
     }
 
-    private getRelativeFileUri(script: IScript, directories: IDirectory[]): Uri {
-        
+    private getRelativeDirectoryUri(dir: IDirectory, ioBrokerDirectories: IDirectory[]) {
+        let currentDirectory: IDirectory = dir;
+        let parentPath: string[] = [dir.common?.name ?? "unkown"];
+
+        do {
+            currentDirectory = this.getParentDirectory(currentDirectory, ioBrokerDirectories);
+            const name = currentDirectory.common?.name;
+            if (name) {
+                parentPath.push(name);
+            }
+        } while (!(currentDirectory instanceof RootDirectory));
+
+        return Uri.parse(parentPath.reverse().join("/"));
+    }
+
+    private getRelativeFileUri(script: IScript, directories: IDirectory[]): Uri {        
         let scriptRoot = this.configRepositoryService.config.scriptRoot;
-        scriptRoot = scriptRoot.endsWith("/") ? scriptRoot : `${scriptRoot}/`;
+        scriptRoot = scriptRoot.endsWith("/") ? scriptRoot.slice(0, -1) : scriptRoot;
         
         const engineType = <EngineType>script.common.engineType ?? EngineType.unkown;
         const extension = this.scriptService.getFileExtension(engineType);
         
-        let parentDirectory: IDirectory = new RootDirectory();
-        let parentPath: string[] = [];
-        do {
-            parentDirectory = this.getParentDirectory(script, directories);
-            parentPath.push(parentDirectory.common?.name ?? "");
-        } while (!(parentDirectory instanceof RootDirectory));
-        
-        return Uri.parse(`${scriptRoot}${parentPath.join("/")}${script.common.name}.${extension}`);
+        let parentDirectory = this.getParentDirectory(script, directories);
+                
+        return Uri.parse(`${scriptRoot}${parentDirectory.relativeUri.path}/${script.common.name}.${extension}`);
     }
 
     private getAbsoluteFileUri(script: IScript, directories: IDirectory[]): Uri {
@@ -113,7 +129,9 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     private getParentDirectory(child: IScript | IDirectory, directories: IDirectory[]): IDirectory {
-        const parents = this.filterByLength(directories, child, -1);
+        const parentId = child._id.substring(0, child._id.lastIndexOf("."));
+        const parents = directories.filter(item => item._id === parentId);
+
         if(parents.length === 0) {
             return new RootDirectory();
         } else if (parents.length === 1) {
