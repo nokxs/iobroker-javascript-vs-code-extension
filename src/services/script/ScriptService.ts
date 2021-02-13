@@ -9,7 +9,8 @@ import { ILocalScript } from "../../models/ILocalScript";
 @injectable()
 export class ScriptService implements IScriptService {
     constructor(
-        @inject(TYPES.services.file) private fileService: IFileService    ) {}
+        @inject(TYPES.services.file) private fileService: IFileService    
+    ) {}
         
     getFileExtension(engineType: EngineType): string {
         switch (engineType?.toLowerCase()) {

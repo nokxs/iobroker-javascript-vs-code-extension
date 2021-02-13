@@ -2,29 +2,43 @@
 class ConfigCreationService
 class ConfigRepositoryService
 class ConnectionService
+class DirectoryService
+class FileService
 class IobrokerConnectionService
+class JsInstanceService
 class LogService
-class TypeDefinitionService
-class WorkspaceService
 class FileService
 class ScriptService
 class ScriptIdService
+class ScriptRemoteService
+class ScriptRepositoryService
+class TypeDefinitionService
+class WorkspaceService
 
 ConfigCreationService --> TypeDefinitionService
 ConfigRepositoryService --> FileService
-ConnectionService --> ScriptIdService
+DirectoryService --> ConnectionService
 IobrokerConnectionService --> ConfigCreationService
 IobrokerConnectionService --> ConfigRepositoryService
 IobrokerConnectionService --> ConnectionService
 IobrokerConnectionService --> WorkspaceService
 IobrokerConnectionService --> LogService
+IobrokerConnectionService --> ScriptService
+IobrokerConnectionService --> ScriptRepositoryService
+JsInstanceService --> ConnectionService
 LogService --> ConnectionService
-LogService --> ScriptService
+LogService --> ScriptIdService
+ScriptService --> FileService
+ScriptIdService --> WorkspaceService
+ScriptIdService --> ConfigRepositoryService
+ScriptRemoteService --> ConnectionService
+ScriptRemoteService --> ScriptIdService
+ScriptRepositoryService --> ScriptRemoteService
+ScriptRepositoryService --> DirectoryService
+ScriptRepositoryService --> ConfigRepositoryService
+ScriptRepositoryService --> ScriptService
+ScriptRepositoryService --> WorkspaceService
 TypeDefinitionService --> FileService
 TypeDefinitionService --> WorkspaceService
 WorkspaceService --> ConfigRepositoryService
-ScriptService --> WorkspaceService
-ScriptService --> FileService
-ScriptService --> ConfigRepositoryService
-ScriptIdService --> WorkspaceService
 @enduml
