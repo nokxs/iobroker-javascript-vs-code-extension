@@ -55,9 +55,9 @@ To start/stop a single script you have the following options:
 * Use the command `iobroker: Start script`, respectively `iobroker: Stop script`. This command starts/stops the script in the active text editor.
 
 ### Move scripts
-Scripts can be moved from one directory to another on your ioBroker server (and only there). Moving a script over the VS Code file browser is not supported yet.
+Scripts can be moved from one directory to another on your ioBroker server. Moving a script over the VS Code file browser is not supported yet.
 
-Scripts can only be moved over the script explorer. Right click on the script you want to move, select `Move` and choose the directory you want the file to move to.
+Scripts can only be moved over the script explorer. Right click on the script you want to move, select `Move` and choose the directory you want the script to move to.
 If the script is synced to your local disk, it will also be moved there.
 
 ### Deleting scripts
