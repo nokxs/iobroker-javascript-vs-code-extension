@@ -85,6 +85,6 @@ container.bind<ICommand>(TYPES.command).to(MoveCommand);
 container.bind<ICommand>(TYPES.command).to(DeleteCommand);
 container.bind<ICommand>(TYPES.command).to(RefreshCommand);
 
-container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider);
+container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider).inSingletonScope();
 
 export default container;
