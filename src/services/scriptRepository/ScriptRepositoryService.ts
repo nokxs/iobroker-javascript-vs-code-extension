@@ -38,7 +38,15 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     async updateFromServer(): Promise<void> {
-        this.directories = await this.directoryService.downloadAllDirectories();
+        const ioBrokerDirectories = await this.directoryService.downloadAllDirectories();
+        this.directories = ioBrokerDirectories.map(dir => {
+            return {
+                _id: dir._id,
+                common: dir.common,
+                relativeUri: this.getRelativeDirectoryUri(dir, ioBrokerDirectories),
+                absoluteUri: this.getAbsoluteDirectoryUri(dir, ioBrokerDirectories)
+            };
+        });
         
         const ioBrokerScripts = await this.scriptRemoteService.downloadAllScripts();
         this.scripts = ioBrokerScripts.map(script => {
@@ -68,11 +76,11 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     getRootLevelScript(): ILocalScript[] {
-        return this.getScriptsIn(new RootDirectory());
+        return this.getScriptsIn(new RootDirectory(this.workspaceService));
     }
 
     getRootLevelDirectories(): IDirectory[] {
-        return this.getDirectoriesIn(new RootDirectory());
+        return this.getDirectoriesIn(new RootDirectory(this.workspaceService));
     }
 
     getScriptsIn(directory: IDirectory): ILocalScript[] {
@@ -87,22 +95,40 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         this.updateFromServer();
     }
 
-    private getRelativeFileUri(script: IScript, directories: IDirectory[]): Uri {
+    private getRelativeDirectoryUri(dir: IDirectory, ioBrokerDirectories: IDirectory[]): Uri {
+        let currentDirectory: IDirectory = dir;
+        let parentPath: string[] = [dir.common?.name ?? "unkown"];
         
         let scriptRoot = this.configRepositoryService.config.scriptRoot;
-        scriptRoot = scriptRoot.endsWith("/") ? scriptRoot : `${scriptRoot}/`;
+        scriptRoot = scriptRoot.endsWith("/") ? scriptRoot.slice(0, -1) : scriptRoot;
+
+        do {
+            currentDirectory = this.getParentDirectory(currentDirectory, ioBrokerDirectories);
+            const name = currentDirectory.common?.name;
+            if (name) {
+                parentPath.push(name);
+            }
+        } while (!(currentDirectory instanceof RootDirectory));
+
+        const directoryPath = parentPath.reverse().join("/");
+        const fullDirectoryPath = `${scriptRoot}/${directoryPath}`;
+        return Uri.parse(fullDirectoryPath);
+    }
+
+    private getAbsoluteDirectoryUri(dir: IDirectory, directories: IDirectory[]): Uri {
+        const workspaceRoot = this.workspaceService.workspaceToUse;
+        const relativeFileUri = this.getRelativeDirectoryUri(dir, directories);
         
+        return Uri.joinPath(workspaceRoot.uri, relativeFileUri.path);
+    }
+
+    private getRelativeFileUri(script: IScript, directories: IDirectory[]): Uri {        
         const engineType = <EngineType>script.common.engineType ?? EngineType.unkown;
         const extension = this.scriptService.getFileExtension(engineType);
         
-        let parentDirectory: IDirectory = new RootDirectory();
-        let parentPath: string[] = [];
-        do {
-            parentDirectory = this.getParentDirectory(script, directories);
-            parentPath.push(parentDirectory.common?.name ?? "");
-        } while (!(parentDirectory instanceof RootDirectory));
-        
-        return Uri.parse(`${scriptRoot}${parentPath.join("/")}${script.common.name}.${extension}`);
+        let parentDirectory = this.getParentDirectory(script, directories);
+                
+        return Uri.parse(`${parentDirectory.relativeUri.path}/${script.common.name}.${extension}`);
     }
 
     private getAbsoluteFileUri(script: IScript, directories: IDirectory[]): Uri {
@@ -113,9 +139,11 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     private getParentDirectory(child: IScript | IDirectory, directories: IDirectory[]): IDirectory {
-        const parents = this.filterByLength(directories, child, -1);
+        const parentId = child._id.substring(0, child._id.lastIndexOf("."));
+        const parents = directories.filter(item => item._id === parentId);
+
         if(parents.length === 0) {
-            return new RootDirectory();
+            return new RootDirectory(this.workspaceService);
         } else if (parents.length === 1) {
             return parents[0];
         }

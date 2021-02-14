@@ -2,6 +2,7 @@ import { IScriptChangedEventListener } from "./IScriptChangedListener";
 import { IScript } from "../../models/IScript";
 import { ScriptId } from "../../models/ScriptId";
 import { Uri } from "vscode";
+import { IDirectory } from "../../models/IDirectory";
 
 export interface IScriptRemoteService {        
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void
@@ -16,5 +17,6 @@ export interface IScriptRemoteService {
 
     update(scriptId: ScriptId, script: IScript): Promise<void>    
     rename(scriptId: ScriptId, name: string): Promise<void>
-    move(scriptId: ScriptId, targetDirectoryId: ScriptId): Promise<void>
+    move(scriptId: ScriptId, targetDirectory: IDirectory): Promise<void>
+    delete(scriptId: ScriptId): Promise<void>
 }

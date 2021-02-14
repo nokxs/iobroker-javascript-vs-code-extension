@@ -98,6 +98,11 @@
 				"command": "iobroker-javascript.view.scriptExplorer.move",
 				"title": "Move",
 				"enablement": "view == iobroker-javascript.script-explorer"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.delete",
+				"title": "Delete",
+				"enablement": "view == iobroker-javascript.script-explorer"
 			}
 		],
 		"menus": {
@@ -147,6 +152,10 @@
 				},
 				{
 					"command": "iobroker-javascript.view.scriptExplorer.move",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.delete",
 					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem"
 				}
 			]

@@ -12,6 +12,7 @@ import { IScriptRepositoryService } from '../../services/scriptRepository/IScrip
 import { IDirectory } from '../../models/IDirectory';
 import { RootDirectory } from '../../models/RootDirectory';
 import { ILocalScript } from '../../models/ILocalScript';
+import { IWorkspaceService } from '../../services/workspace/IWorkspaceService';
 
 @injectable()
 export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | ScriptDirectory>, IScriptExplorerProvider, IScriptChangedEventListener {
@@ -22,7 +23,8 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
 
     constructor(
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
-        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService
+        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
+        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService
     ) {
         scriptRepositoryService.registerScriptChangedEventListener(this);
     }
@@ -52,7 +54,7 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
     }
 
     private async getRootLevelItems(): Promise<Array<ScriptItem | ScriptDirectory>> {
-        return await this.getChildItems(new RootDirectory());
+        return await this.getChildItems(new RootDirectory(this.workspaceService));
     }
 
     private async getChildItems(directory: IDirectory): Promise<Array<ScriptItem | ScriptDirectory>> {

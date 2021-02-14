@@ -48,7 +48,7 @@ export class UploadCommand implements ICommand {
     }
 
     private async handleScriptFromScriptExplorer(...args: any[]): Promise<IScript | null> {
-        const localScript = (<ScriptItem>args[0][0]).script ?? (<ScriptItem>args[0][0][0]).script;
+        const localScript = (<ScriptItem>args[0])?.script ?? (<ScriptItem>args[0][0])?.script ?? (<ScriptItem>args[0][0][0]).script;
         const script = localScript.ioBrokerScript;
         const scriptName = script.common.name;
 
@@ -57,7 +57,7 @@ export class UploadCommand implements ICommand {
         }
 
         const scriptText = await this.scriptService.getFileContentOnDisk(localScript);
-        const existingScript = await this.scriptRemoteService.downloadScriptWithId(scriptName);
+        const existingScript = await this.scriptRemoteService.downloadScriptWithId(script._id);
         
         if (scriptText && existingScript) {
             existingScript.common.source = scriptText;
