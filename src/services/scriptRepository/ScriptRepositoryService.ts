@@ -43,7 +43,8 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
             return {
                 _id: dir._id,
                 common: dir.common,
-                relativeUri: this.getRelativeDirectoryUri(dir, ioBrokerDirectories)
+                relativeUri: this.getRelativeDirectoryUri(dir, ioBrokerDirectories),
+                absoluteUri: this.getAbsoluteDirectoryUri(dir, ioBrokerDirectories)
             };
         });
         
@@ -75,11 +76,11 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     getRootLevelScript(): ILocalScript[] {
-        return this.getScriptsIn(new RootDirectory());
+        return this.getScriptsIn(new RootDirectory(this.workspaceService));
     }
 
     getRootLevelDirectories(): IDirectory[] {
-        return this.getDirectoriesIn(new RootDirectory());
+        return this.getDirectoriesIn(new RootDirectory(this.workspaceService));
     }
 
     getScriptsIn(directory: IDirectory): ILocalScript[] {
@@ -94,9 +95,12 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         this.updateFromServer();
     }
 
-    private getRelativeDirectoryUri(dir: IDirectory, ioBrokerDirectories: IDirectory[]) {
+    private getRelativeDirectoryUri(dir: IDirectory, ioBrokerDirectories: IDirectory[]): Uri {
         let currentDirectory: IDirectory = dir;
         let parentPath: string[] = [dir.common?.name ?? "unkown"];
+        
+        let scriptRoot = this.configRepositoryService.config.scriptRoot;
+        scriptRoot = scriptRoot.endsWith("/") ? scriptRoot.slice(0, -1) : scriptRoot;
 
         do {
             currentDirectory = this.getParentDirectory(currentDirectory, ioBrokerDirectories);
@@ -106,19 +110,25 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
             }
         } while (!(currentDirectory instanceof RootDirectory));
 
-        return Uri.parse(parentPath.reverse().join("/"));
+        const directoryPath = parentPath.reverse().join("/");
+        const fullDirectoryPath = `${scriptRoot}/${directoryPath}`;
+        return Uri.parse(fullDirectoryPath);
+    }
+
+    private getAbsoluteDirectoryUri(dir: IDirectory, directories: IDirectory[]): Uri {
+        const workspaceRoot = this.workspaceService.workspaceToUse;
+        const relativeFileUri = this.getRelativeDirectoryUri(dir, directories);
+        
+        return Uri.joinPath(workspaceRoot.uri, relativeFileUri.path);
     }
 
     private getRelativeFileUri(script: IScript, directories: IDirectory[]): Uri {        
-        let scriptRoot = this.configRepositoryService.config.scriptRoot;
-        scriptRoot = scriptRoot.endsWith("/") ? scriptRoot.slice(0, -1) : scriptRoot;
-        
         const engineType = <EngineType>script.common.engineType ?? EngineType.unkown;
         const extension = this.scriptService.getFileExtension(engineType);
         
         let parentDirectory = this.getParentDirectory(script, directories);
                 
-        return Uri.parse(`${scriptRoot}${parentDirectory.relativeUri.path}/${script.common.name}.${extension}`);
+        return Uri.parse(`${parentDirectory.relativeUri.path}/${script.common.name}.${extension}`);
     }
 
     private getAbsoluteFileUri(script: IScript, directories: IDirectory[]): Uri {
@@ -133,7 +143,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         const parents = directories.filter(item => item._id === parentId);
 
         if(parents.length === 0) {
-            return new RootDirectory();
+            return new RootDirectory(this.workspaceService);
         } else if (parents.length === 1) {
             return parents[0];
         }

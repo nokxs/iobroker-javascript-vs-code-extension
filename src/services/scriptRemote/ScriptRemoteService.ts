@@ -8,6 +8,7 @@ import { IScriptIdService } from '../scriptId/IScriptIdService';
 import { IScriptRemoteService } from './IScriptRemoteService';
 import { IConnectionService } from '../connection/IConnectionService';
 import { IConnectionEventListener } from "../connection/IConnectionEventListener";
+import { IDirectory } from "../../models/IDirectory";
 
 @injectable()
 export class ScriptRemoteService implements IScriptRemoteService, IConnectionEventListener {
@@ -65,11 +66,12 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         await this.uploadScript(script);
     }
 
-    async move(scriptId: ScriptId, targetDirectoryId: ScriptId): Promise<void> {
+    async move(scriptId: ScriptId, targetDirectory: IDirectory): Promise<void> {
         const script = await this.downloadScriptWithId(scriptId);
-        await this.delete(scriptId);
+        const scriptIdName = scriptId.substring(scriptId.lastIndexOf(".") + 1);
 
-        script._id = new ScriptId(`${targetDirectoryId}.${scriptId.substring(scriptId.lastIndexOf(".") + 1)}`);
+        await this.delete(scriptId);
+        script._id = new ScriptId(`${targetDirectory._id}.${scriptIdName}`);
         await this.uploadScript(script);
     }
 

@@ -6,4 +6,6 @@ export interface IFileService {
     fileExists(uri: Uri): boolean
     rename(oldFile: Uri, newFile: Uri): Promise<void>
     delete(uri: Uri): Promise<void>
+    move(oldPath: Uri, newPath: Uri): Promise<void>
+    createDirectory(uri: Uri): Promise<void>
 }

@@ -5,5 +5,6 @@ import { ScriptId } from "./ScriptId";
 export interface IDirectory {
     common: IDirectoryCommon
     _id: ScriptId
-    relativeUri: Uri
+    relativeUri: Uri,
+    absoluteUri: Uri
 }

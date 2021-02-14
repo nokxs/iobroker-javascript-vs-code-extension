@@ -21,9 +21,13 @@ export class FileService implements IFileService {
     }
 
     rename(oldFile: Uri, newFile: Uri): Promise<void> {
-        return new Promise((resolve) => {
-            fs.rename(oldFile.fsPath, newFile.fsPath, () => {
-                resolve();
+        return new Promise((resolve, reject) => {
+            fs.rename(oldFile.fsPath, newFile.fsPath, (err) => {
+                if(err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
             });
         });
     }
@@ -32,6 +36,22 @@ export class FileService implements IFileService {
         return new Promise((resolve) => {
             fs.unlink(uri.fsPath, () => {
                 resolve();
+            });
+        });
+    }
+
+    move(oldPath: Uri, newPath: Uri): Promise<void> {
+        return this.rename(oldPath, newPath);
+    }
+
+    createDirectory(uri: Uri): Promise<void> {
+        return new Promise((resolve, reject) => {
+            fs.mkdir(uri.fsPath, (err) => {
+                if(err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
             });
         });
     }
