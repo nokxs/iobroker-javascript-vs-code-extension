@@ -19,6 +19,7 @@ import { ScriptId } from "../../models/ScriptId";
 export class ScriptRepositoryService implements IScriptRepositoryService, IScriptChangedEventListener {
     private scripts: ILocalScript[] = [];
     private directories: IDirectory[] = [];
+    private scriptEventListeners: Array<IScriptChangedEventListener> = new Array();
 
     constructor(        
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
@@ -31,10 +32,11 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     async init(): Promise<void> {
         await this.updateFromServer();
         this.scriptRemoteService.registerScriptChangedEventListener(this);
+        this.raiseScriptChangedEvent(undefined, undefined);
     }
 
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
-        this.scriptRemoteService.registerScriptChangedEventListener(listener);
+        this.scriptEventListeners.push(listener);
     }
 
     async updateFromServer(): Promise<void> {
@@ -91,8 +93,11 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         return this.filterByLength(this.directories, directory, 1);
     }
 
-    onScriptChanged(): void {
-        this.updateFromServer();
+    async onScriptChanged(id: string, script: IScript): Promise<void> {
+         // TODO: Currently all scripts are redownloaded every time a single script changes.
+         //       Performance could be optimized, if only the changed script is updated.
+        await this.updateFromServer();
+        this.raiseScriptChangedEvent(id, script);
     }
 
     private getRelativeDirectoryUri(dir: IDirectory, ioBrokerDirectories: IDirectory[]): Uri {
@@ -160,5 +165,9 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
             }
             return false;
         });
+    }
+
+    private raiseScriptChangedEvent(id: string | undefined, script: IScript | undefined) {
+        this.scriptEventListeners.forEach(listener => listener.onScriptChanged(id, script));
     }
 }
