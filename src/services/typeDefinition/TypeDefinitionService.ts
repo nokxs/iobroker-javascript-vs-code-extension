@@ -6,21 +6,59 @@ import { IFileService } from "../file/IFileService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { Uri, WorkspaceFolder } from "vscode";
 
-interface MinimalVsCodeSettings {
-    "typescript.tsdk"?: string
+interface CompilerOptions {
+    noEmit: boolean;
+    allowJs: boolean;
+    checkJs: boolean;
+    module: string;
+    moduleResolution: string;
+    esModuleInterop: boolean;
+    resolveJsonModule: boolean;
+    strict: boolean;
+    noImplicitAny: boolean;
+    target: string;
+    typeRoots: string[];
 }
 
 interface MinimalTsConfig {
-    include?: string[]
-    compilerOptions?: {
-        typeRoots?: string[]
-    },
-    allowJs?: boolean
+    compileOnSave: boolean;
+    compilerOptions: CompilerOptions;
+    include: string[];
+    exclude: string[];
 }
 
 @injectable()
 export class TypeDefinitionService implements ITypeDefinitionService {
     
+    // https://github.com/ioBroker/create-adapter/blob/master/test/baselines/adapter_JS_ESLint_TypeChecking_Spaces_SingleQuotes_Apache-2.0/tsconfig.json
+    private tsconfig: MinimalTsConfig = {
+        "compileOnSave": true,
+        "compilerOptions": {
+            "noEmit": true,
+            "allowJs": true,
+            "checkJs": true,
+            "module": "commonjs",
+            "moduleResolution": "node",
+            "esModuleInterop": true,
+            "resolveJsonModule": true,
+            "strict": true,
+            "noImplicitAny": false,
+            "target": "es2018",
+            "typeRoots": [
+                ".iobroker/types",
+                "node_modules/@types"
+            ]
+        },
+        "include": [
+            "**/*.js",
+            "**/*.ts",
+            ".iobroker/types/javascript.d.ts"
+        ],
+        "exclude": [
+            "node_modules/**"
+        ]
+    };
+
     constructor(
         @inject(TYPES.services.file) private fileService: IFileService,
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
@@ -30,7 +68,7 @@ export class TypeDefinitionService implements ITypeDefinitionService {
         const response = await axios.get("https://raw.githubusercontent.com/ioBroker/ioBroker.javascript/master/lib/javascript.d.ts");
         if (response.status === 200) {
             const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
-            const uri = Uri.joinPath(workspaceFolder.uri, "index.d.ts");
+            const uri = Uri.joinPath(workspaceFolder.uri, ".iobroker/types/javascript.d.ts");
 
             await this.fileService.saveToFile(uri, response.data);
         } else {
@@ -40,38 +78,7 @@ export class TypeDefinitionService implements ITypeDefinitionService {
     
     async createConfig(): Promise<void> {
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
-        // await this.createVsCodeConfig(workspaceFolder);
         await this.createTsConfig(workspaceFolder);
-        // await this.createDummyTs(workspaceFolder);
-    }
-
-    private async createDummyTs(workspaceFolder: WorkspaceFolder): Promise<void> {
-        const uri = Uri.joinPath(workspaceFolder.uri, ".iobroker/dummy.ts");
-        await this.fileService.saveToFile(uri, "// this file only exits to satisfy the TS compiler");
-    }
-
-    private async createVsCodeConfig(workspaceFolder: WorkspaceFolder): Promise<void> {
-        const uri = Uri.joinPath(workspaceFolder.uri, ".vscode/settings.json");
-        const tsConfig = await this.getVsCodeSettings(uri);
-               
-        await this.fileService.saveToFile(uri, JSON.stringify(tsConfig, null, 2));
-    }
-
-    private async getVsCodeSettings(uri: Uri): Promise<MinimalVsCodeSettings> {
-        if (this.fileService.fileExists(uri)) {
-            const settings = await this.fileService.readFromFile(uri);
-            const tsConfig = <MinimalVsCodeSettings>JSON.parse(settings.toString());
-
-            if (!tsConfig["typescript.tsdk"]) {
-                tsConfig["typescript.tsdk"] = "./.iobroker/types/";
-            }
-
-            return tsConfig;
-        }
-
-        return {
-            "typescript.tsdk": "./.iobroker/types/"
-        };
     }
 
     private async createTsConfig(workspaceFolder: WorkspaceFolder): Promise<void> {
@@ -82,33 +89,16 @@ export class TypeDefinitionService implements ITypeDefinitionService {
     }
 
     private async getTsConfig(uri: Uri): Promise<MinimalTsConfig> {
+        const result: any = this.tsconfig;
+
         if (this.fileService.fileExists(uri)) {
             const tsConfigString = await this.fileService.readFromFile(uri);
             const tsConfig = <MinimalTsConfig>JSON.parse(tsConfigString.toString());
 
-            if (!tsConfig.include) {
-                tsConfig.include = new Array<string>();
-            }
-            tsConfig.include.push(".iobroker/dummy.ts");
-
-            if (tsConfig.compilerOptions) {
-                if (!tsConfig.compilerOptions.typeRoots) {
-                    tsConfig.compilerOptions.typeRoots = new Array<string>();
-                }
-
-                tsConfig.compilerOptions.typeRoots.push("./.iobroker/types");
-            } else {
-                tsConfig.compilerOptions = {
-                    typeRoots: ["./.iobroker/types"]
-                };
-            }
-
-            return tsConfig;
+            Object.keys(tsConfig).forEach(key => result[key] = (<any>tsConfig)[key]);
+            Object.keys(this.tsconfig).forEach(key => result[key] = (<any>this.tsconfig)[key]);
         }
 
-        return {
-            "include": ["**/*"],
-            "allowJs": true
-        };
+        return result;
     }
 }
