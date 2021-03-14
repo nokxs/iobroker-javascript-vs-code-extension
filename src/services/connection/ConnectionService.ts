@@ -1,18 +1,12 @@
 import * as socketio from 'socket.io-client';
 
-import { IConnectionService } from "./IConnectionService";
-import { IConnectionEventListener } from "./IConnectionEventListener";
+import { Uri, window } from "vscode";
 
-import { Script } from "../../models/Script";
-import { ScriptObject } from "../../models/ScriptObject";
+import { IConnectionEventListener } from "./IConnectionEventListener";
+import { IConnectionService } from "./IConnectionService";
+import { ILogMessage } from '../../models/ILogMessage';
 import { ScriptId } from "../../models/ScriptId";
-import { Uri } from "vscode";
-import { inject, injectable } from "inversify";
-import TYPES from '../../Types';
-import { IScriptService } from '../script/IScriptService';
-import { LogMessage } from '../../models/LogMessage';
-import { IScriptChangedEventListener as IScriptChangedEventListener } from './IScriptChangedListener';
-import { InvalidScript } from '../../models/InvalidScript';
+import { injectable } from "inversify";
 
 @injectable()
 export class ConnectionService implements IConnectionService {
@@ -21,38 +15,36 @@ export class ConnectionService implements IConnectionService {
     private connectionTimeout = 10 * 1000;
 
     private connectionEventListeners: Array<IConnectionEventListener> = new Array();
-    private scriptEventListeners: Array<IScriptChangedEventListener> = new Array();
     private client: SocketIOClient.Socket | undefined = undefined;
     
-    constructor(
-        @inject(TYPES.services.script) private scriptService: IScriptService,
-    ) {}
-
     registerConnectionEventListener(listener: IConnectionEventListener): void {
         this.connectionEventListeners.push(listener);
     }
     
-    registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
-        this.scriptEventListeners.push(listener);
-    }
-    
     async connect(uri: Uri): Promise<void> {
-        this.client = await new Promise<SocketIOClient.Socket>((resolve, reject) => {
-            const localClient = socketio(uri.toString());
+        const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
 
-            localClient.on("connect", () => {
+        if (this.client && this.client.connected) {
+            this.client.disconnect();
+        }
+
+        return new Promise<void>((resolve, reject) => {
+            this.client = socketio(uri.toString());
+            this.registerSocketEvents();
+
+            this.client.on("connect", () => {
                 this.isConnected = true;
-                resolve(localClient);
+                message.dispose();
+                resolve();
             });
 
             setTimeout(() => {
                 if (!this.isConnected) {
+                    message.dispose();
                     reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
                 }
             }, this.connectionTimeout);
         });
-
-        this.registerSocketEvents();
     }
 
     disconnect(): Promise<void> {
@@ -64,67 +56,12 @@ export class ConnectionService implements IConnectionService {
             });
         });
     }
-
-    downloadAllScripts(): Promise<ScriptObject[]> {
-        return new Promise<ScriptObject[]>((resolve) => {
-            if (this.client && this.isConnected) {
-                this.client.emit("getObjectView", "system","script",{"startkey":"script.js.","endkey":"script.js.\u9999"}, (err: any, doc: { rows: ScriptObject[]}) => {
-                    resolve(doc.rows);
-                });
-            } else {
-                resolve([]);
-            }
-        });
-    }
-
-    async downloadScriptWithUri(scriptUri: Uri): Promise<Script> {
-        const scriptId = await this.scriptService.getIoBrokerId(scriptUri);
-        return await this.downloadScriptWithId(scriptId);
-    }
-
-    downloadScriptWithId(scriptId: ScriptId): Promise<Script> {
-        return new Promise<Script>((resolve, reject) => {
-            if (this.client && this.isConnected) {
-                this.client.emit("getObject", scriptId, (err: any, script: Script) => {
-                    if (err) {
-                        reject(new Error(`Could not downlaod script with id '${scriptId}': ${err}`));
-                    } else {
-                        resolve(script);
-                    }
-                });
-            } else {
-                resolve(new InvalidScript());
-            }
-        });
-    }
-
-    uploadScript(script: Script): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            if (this.client && this.isConnected) {
-                this.client.emit("setObject", script._id, script, (err: any) => {
-                    if (err) {
-                        reject(new Error(`Could not upload script with id '${script._id}': ${err}`));
-                    } else {
-                        resolve();
-                    }
-                });
-            }
-        });
-    }
-
-    startScript(scriptId: ScriptId): Promise<void> {
-        return this.setScriptState(scriptId, true);
-    }
-
-    stopScript(scriptId: ScriptId): Promise<void> {
-        return this.setScriptState(scriptId, false);
-    }
-
-    registerForLogs(logAction: (logMessage: LogMessage) => void): Promise<void> {
+    
+    registerForLogs(logAction: (logMessage: ILogMessage) => void): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
 
-                this.client.on("log", (message: LogMessage) => {
+                this.client.on("log", (message: ILogMessage) => {
                     logAction(message);
                 });
     
@@ -155,6 +92,120 @@ export class ConnectionService implements IConnectionService {
         });
     }
 
+    registerForObjectChange(pattern: string, onChangeAction: (id: string, value: any) => void): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            if (this.client && this.isConnected) {          
+                this.client.on("objectChange", (id: string, value: any) => {
+                    // TODO: This will be called for all registered patterns!
+                    onChangeAction(id, value);
+                });
+
+                this.client.emit("subscribeObjects", pattern, (err: any) => {
+                    if (err) {
+                        reject(new Error(`Could not subscribe for pattern '${pattern}': ${err}`));
+                    } else {
+                        resolve();
+                    }
+                });  
+            } else {
+                reject(new Error(`Could not subscribe for pattern '${pattern}': Client is not connect`));
+            }
+        });
+    }
+
+    unregisterObjectChange(pattern: string): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            if (this.client && this.isConnected) {
+                this.client.emit("unsubscribeObjects", pattern, (err: any) => {
+                    if (err) {
+                        reject(new Error(`Could not unsubscribe for pattern '${pattern}': ${err}`));
+                    } else {
+                        resolve();
+                    }
+                });  
+            } else {
+                reject(new Error(`Could not subscribe for pattern '${pattern}': Client is not connect`));
+            }
+        });
+    }
+
+    getObject<TObject>(objectId: string | ScriptId): Promise<TObject> {
+        return new Promise<TObject>((resolve, reject) => {
+            if (this.client && this.isConnected) {
+                this.client.emit("getObject", objectId, (err: any, script: TObject) => {
+                    if (err) {
+                        reject(new Error(`Could not get object with args '${objectId}': ${err}`));
+                    } else {
+                        resolve(script);
+                    }
+                });
+            } else {
+                reject(new Error(`Could not get object with id '${objectId}': Client is not connect`));
+            }
+        });
+    }
+
+    setObject(objectId: string | ScriptId, obj: any): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            if (this.client && this.isConnected) {
+                this.client.emit("setObject", objectId, obj, (err: any) => {
+                    if (err) {
+                        reject(new Error(`Could not upload script with id '${objectId}': ${err}`));
+                    } else {
+                        resolve();
+                    }
+                });
+            } else {
+                reject(new Error(`Cannot get object with id '${objectId}': Client is not connect`));
+            }
+        });
+    }
+
+    deleteObject(objectId: string | ScriptId): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            if (this.client && this.isConnected) {
+                this.client.emit("delObject", objectId, (err: any) => {
+                    if (err) {
+                        reject(new Error(`Could not delete object '${objectId}': ${err}`));
+                    } else {
+                        resolve();
+                    }
+                });
+            } else {
+                reject(`Could not delete object '${objectId}': Client is not connected`);
+            }
+        });
+    }
+
+    extendObject(objectId: string | ScriptId, obj: any): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            if (this.client && this.isConnected) {
+                this.client.emit("extendObject", objectId, obj, (err: any) => {
+                    if (err) {
+                        reject(new Error(`Could not extend object '${objectId}' with '${JSON.stringify(obj)}'`));
+                    } else {
+                        resolve();
+                    }
+                });
+            }
+        });
+    }
+
+    getSystemObjectView<TResult>(type: string, startKey: string, endKey: string): Promise<TResult[]> {
+        return new Promise<TResult[]>((resolve, reject) => {
+            if (this.client && this.isConnected) {
+                this.client.emit("getObjectView", "system", type,{"startkey": startKey,"endkey": `${endKey}\u9999`}, (err: any, doc: { rows: {id: string, value: TResult}[] }) => {
+                    if (err) {
+                        reject(new Error(`Error while retreiving object view: Type: ${type} | startKey: ${startKey} | endKey: ${endKey}`));
+                    }
+                    resolve(doc.rows.map(row => row.value));
+                });
+            } else {
+                reject(`Error while retreiving object view: Type: ${type} | startKey: ${startKey} | endKey: ${endKey}`);
+            }
+        });
+    }
+
     private registerSocketEvents(): void {
         if (this.client) {
             this.client.on("connect", () => {
@@ -166,33 +217,6 @@ export class ConnectionService implements IConnectionService {
                 this.isConnected = false;
                 this.connectionEventListeners.forEach(listener => listener.onDisconnected());
             });
-
-            this.client.emit("subscribeObjects", "script.js.*");            
-            this.client.on("objectChange", (id: string, value: any) => {
-                this.scriptEventListeners.forEach(listener => listener.onScriptChanged(id, value));
-            });
-        }
-    }
-
-    private async setScriptState(scriptId: ScriptId, isEnabled: boolean): Promise<void> {
-        if (this.client && this.isConnected) {
-            const script: Script = {
-                _id: scriptId,
-                common: {
-                    enabled: isEnabled
-                }
-            };
-
-            const existingScript = await this.downloadScriptWithId(scriptId);
-            if (existingScript) {
-                this.client.emit("extendObject", scriptId, script, (err: any) => {
-                    if (err) {
-                        throw new Error(`Could set script state for '${scriptId}' to '${isEnabled}': ${err}`);
-                    }
-                });
-            } else {
-                throw new Error(`Could set script state for '${scriptId}' to '${isEnabled}', because it is not known to ioBroker`);
-            }
         }
     }
 }

@@ -10,18 +10,20 @@ This extension for [Visual Studio Code](https://code.visualstudio.com/) enables 
 
 Open the command pallet (<kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> OR <kbd>F1</kbd>) and type `iobroker: ` to see all available commands.
 
-After the extension is invoked the first time, the extension has to be configured interactively. You can see the process
-in the gif above.
+To connect to your ioBroker instance, you have to invoke `iobroker: Connect to ioBroker`. You can see the process
+in the gif above. If your connection fails, check the created file `.iobroker-config.json` and re-run the command `iobroker: Connect to ioBroker` for another connection attempt.
+
+If an existing `.iobroker-config.json` is found, the extension automatically starts a connection attempt.
 
 > Current limitation: ioBroker instances with a password are not supported yet!
-
-> Current limitation: If the connection to ioBroker fails, VS Code has to be reopened again (to load the extension again).
 
 ### Type definitions
 
 If you choose to configure ioBroker type definitions, the current defintions are downloaded from [GitHub](https://github.com/ioBroker/ioBroker.javascript/blob/master/lib/javascript.d.ts). Additionaly a `tsconfig.json` is created
 (if it does not exist yet) and the definition is added as `typeRoot`. This enables Visual Studio Code to know
 the [ioBroker specific javascript functions](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/javascript.md).
+
+> This does not work well yet and will be improved in the future
 
 ### Script explorer
 The script explorer can be found in the activity bar behind the ioBroker logo. It shows all scripts, which are on
@@ -52,10 +54,27 @@ To start/stop a single script you have the following options:
 * Go to the script explorer and press the start or stop button.
 * Use the command `iobroker: Start script`, respectively `iobroker: Stop script`. This command starts/stops the script in the active text editor.
 
-### Show script logging
-Press <kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>U</kbd> to open the "Output" view. Open the drop down and select `ioBroker (all)`.
+### Move scripts
+Scripts can be moved from one directory to another on your ioBroker server. Moving a script over the VS Code file browser is not supported yet.
 
-As long as a connection to ioBroker exists, this will show the output of all scripts.
+Scripts can only be moved over the script explorer. Right click on the script you want to move, select `Move` and choose the directory you want the script to move to.
+If the script is synced to your local disk, it will also be moved there.
+
+### Deleting scripts
+Scripts can be deleted on your ioBroker server via the script explorer. Right click on a script, select `Delete` and confirm that the script shall be really be deleted. If the script is synced to
+your local disk, it will also be deleted there.
+
+### Change JS Instance
+The JS Instance for a script can be changed over the script explorer. Right click on a script and select `Change instance` via a quick pick.
+
+![JS Instance Number](https://media.githubusercontent.com/media/nokxs/iobroker-javascript-vs-code-extension/main/doc/js-instance-nr.jpg)
+
+### Show script logging
+Press <kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>U</kbd> to open the "Output" view. Open the drop down and select `ioBroker (all)` or `ioBroker (current script)`.
+
+* `ioBroker (all)`: As long as a connection to ioBroker exists, this will show the output of all scripts.
+* `ioBroker (current script)`: As long as a connection to ioBroker exists, this will show only the outputs of the script in the currently active tab. This output gets not cleared, if the tab is changed. If you need to 
+clear the output use Visual Studios feature `Clear Output`.
 
 ## Extension Settings
 
@@ -63,9 +82,16 @@ After the first activation a `.iobroker-config.json` file is created in the root
 
 ### Available settings
 
-* `ioBrokerUrl`: The url has to be prefixed with http/https. Specify no port here
-* `socketIoPort`: Use the port of the admin adapter (usually 8081). Do not use the port of the socket.io Adapter (usually 8084) as this will not work, because of missing permissions.
-* `workspaceSubPath`: Not supported yet
+An example with all available settings can be found [here](./doc/.iobroker-config.json).
+
+| Key           | Description           | Mandatory | Default |
+|---------------|-----------------------|-----------|---------|
+| `ioBrokerUrl` | The url has to be prefixed with http/https. Specify no port here. | Yes | http://localhost |
+| `socketIoPort` | Use the port of the admin adapter (usually 8081). Do not use the port of the socket.io Adapter (usually 8084) as this will not work, because of missing permissions. | Yes | 8081 |
+| `scriptRoot` | Relative directory path, which is used as root of ioBroker scripts. | Yes | "/" |
+| `scriptExplorer.collapseDirectoriesOnStartup` | Should the directories in the script explorer be collapsed on startup. | No | true |
+
+> Caution: The json above is invalid as it contains comments. Remove comments if intend to copy it.
 
 ## Known Issues
 
@@ -75,14 +101,11 @@ If you got any problems, please open a GitHub issue.
 
 Support (not in the listed order)
 * password protected ioBroker installations
-* the setting `workspaceSubPath` to place scripts not in the root directory of the workspace
-* renaming of scripts
-* creating of new scripts
-* deleting of scripts
-* multiple js-Adapter instances
 * syncing of workspace with remote scripts (correclty, delete and remove scirpts)
+* upload multiple changed scripts with an `upload all` command
+* the functions defined in global scripts
+* showing which scripts were updated and need to be uploaded
 
 ## Release Notes
-### 0.5.0
 
-Initial release of ioBroker.javascript.
+See the section [Releases on Github](https://github.com/nokxs/iobroker-javascript-vs-code-extension/releases) for release notes.

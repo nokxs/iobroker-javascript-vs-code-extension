@@ -2,25 +2,31 @@ import * as vscode from 'vscode';
 
 import { inject, injectable } from 'inversify';
 import TYPES from '../../Types';
-import { IConnectionService } from '../../services/connection/IConnectionService';
-import { ScriptObject } from "../../models/ScriptObject";
 import { IScriptExplorerProvider } from './IScriptExplorerProvider';
 import { ScriptDirectory } from './ScriptDirectory';
 import { ScriptItem } from './ScriptItem';
-import { IScriptChangedEventListener } from '../../services/connection/IScriptChangedListener';
+import { IScriptChangedEventListener } from '../../services/scriptRemote/IScriptChangedListener';
+import { IIobrokerConnectionService } from '../../services/iobrokerConnection/IIobrokerConnectionService';
+import { NoConfig } from '../../models/Config';
+import { IScriptRepositoryService } from '../../services/scriptRepository/IScriptRepositoryService';
+import { IDirectory } from '../../models/IDirectory';
+import { RootDirectory } from '../../models/RootDirectory';
+import { ILocalScript } from '../../models/ILocalScript';
+import { IWorkspaceService } from '../../services/workspace/IWorkspaceService';
 
 @injectable()
 export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | ScriptDirectory>, IScriptExplorerProvider, IScriptChangedEventListener {
 
-    private scripts: undefined | ScriptObject[];
     private _onDidChangeTreeData: vscode.EventEmitter<ScriptItem | ScriptDirectory | undefined | null | void> = new vscode.EventEmitter<ScriptItem | ScriptDirectory | undefined | null | void>();
 
     onDidChangeTreeData?: vscode.Event<void | ScriptItem | ScriptDirectory | null | undefined> | undefined = this._onDidChangeTreeData.event;
 
     constructor(
-        @inject(TYPES.services.connection) private connectionService: IConnectionService,
+        @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
+        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
+        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService
     ) {
-        connectionService.registerScriptChangedEventListener(this);
+        scriptRepositoryService.registerScriptChangedEventListener(this);
     }
     
     getTreeItem(element: ScriptItem | ScriptDirectory): vscode.TreeItem | Thenable<vscode.TreeItem> {
@@ -29,12 +35,11 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
 
     async getChildren(element?: ScriptItem | ScriptDirectory): Promise<Array<ScriptItem | ScriptDirectory>> {
         if(!element) {
-            this.scripts = await this.connectionService.downloadAllScripts();
-            return this.getRootLevelItems(this.scripts);
+            return this.getRootLevelItems();
         }
 
-        if (element && element instanceof ScriptDirectory && this.scripts) {
-            return this.getChildItems(this.scripts, element.path);
+        if (element && element instanceof ScriptDirectory) {
+            return this.getChildItems(element.directory);
         }
 
         return Promise.resolve([]);
@@ -47,48 +52,40 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
     onScriptChanged(): void {
         this.refresh();
     }
-    
-    private convertToScriptItems(scriptOjbects: ScriptObject[]): ScriptItem[] {
-        return scriptOjbects.map(this.convertToScriptItem);
+
+    private async getRootLevelItems(): Promise<Array<ScriptItem | ScriptDirectory>> {
+        return await this.getChildItems(new RootDirectory(this.workspaceService));
     }
 
-    private convertToScriptItem(scriptObject: ScriptObject): ScriptItem {
-        return new ScriptItem(scriptObject.value);
-    }
+    private async getChildItems(directory: IDirectory): Promise<Array<ScriptItem | ScriptDirectory>> {
+        const directories = await this.scriptRepositoryService.getDirectoriesIn(directory);
+        const scripts = await this.scriptRepositoryService.getScriptsIn(directory);
 
-    private convertToScriptDirectories(scriptOjbects: ScriptObject[], prefix: string): ScriptDirectory[] {
-        return scriptOjbects.map(scriptObject => this.convertToScriptDirectory(scriptObject, prefix));
-    }
-
-    private convertToScriptDirectory(scriptObject: ScriptObject, prefix: string): ScriptDirectory {
-        const prefixParts = prefix.split(".").length;
-        const name = scriptObject.value._id.split(".")[prefixParts - 1];
-        const directoryPath = `${prefix}${name}.`;
-
-        return new ScriptDirectory(name, directoryPath);
-    }
-
-    private getRootLevelItems(scripts: ScriptObject[]): Array<ScriptItem | ScriptDirectory> {
-        return this.getChildItems(scripts, "script.js.");
-    }
-
-    private getChildItems(scripts: ScriptObject[], prefix: string): Array<ScriptItem | ScriptDirectory> {
-        const prefixDirectoryCount = prefix.split(".").length;
-        const currentLevelDirectories = scripts.filter(script => script.value._id.startsWith(prefix) && prefixDirectoryCount < script.value._id.split(".").length);
-        const currentLevelScripts = scripts.filter(script => script.value._id.startsWith(prefix) && prefixDirectoryCount === script.value._id.split(".").length);
-
-        const scriptDirectories = this.convertToScriptDirectories(currentLevelDirectories, prefix);
-        const scriptItems = this.convertToScriptItems(currentLevelScripts);
+        const collapseDirectories = this.shouldDirectoriesBeCollapsed();
+        const scriptDirectories = this.convertToScriptDirectories(directories, collapseDirectories);
+        const scriptItems = this.convertToScriptItems(scripts);
 
         let items: Array<ScriptItem | ScriptDirectory> = new Array();
-        items = items.concat(scriptDirectories.filter(this.onlyUnique));
+        items = items.concat(scriptDirectories);
         items = items.concat(scriptItems);        
 
         return items;
     }
 
-    private onlyUnique(directory: ScriptDirectory, index: number, directories: ScriptDirectory[]): boolean {
-        const firstMatchingDirectory = directories.filter(dir => dir.path === directory.path)[0];
-        return directories.indexOf(firstMatchingDirectory) === index;
-      }
+    private shouldDirectoriesBeCollapsed(): boolean {
+        const config = this.iobrokerConnectionService.config;
+        if (!(config instanceof NoConfig)) {
+            return config.scriptExplorer?.collapseDirectoriesOnStartup ?? true;
+        }
+
+        return true;
+    }
+    
+    private convertToScriptItems(scripts: ILocalScript[]): ScriptItem[] {
+        return scripts.map(s => new ScriptItem(s));
+    }
+
+    private convertToScriptDirectories(directories: IDirectory[], collapse: boolean): ScriptDirectory[] {
+        return directories.map(d => new ScriptDirectory(d, collapse));
+    }
 }

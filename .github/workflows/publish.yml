@@ -1,8 +1,8 @@
-name: Publish Extemsopm
+name: Publish Extension
 
 on:
   release:
-    types: [created, published]
+    types: [published]
 
 jobs:
   publish:

@@ -1,15 +1,14 @@
-import { Uri, WorkspaceFolder } from "vscode";
-
-import { Script } from "../../models/Script";
-import { ScriptId } from "../../models/ScriptId";
-import { ScriptObject } from "../../models/ScriptObject";
+import { EngineType } from "../../models/EngineType";
+import { Uri } from "vscode";
+import { ILocalScript } from "../../models/ILocalScript";
 
 export interface IScriptService {
-    getIoBrokerId(fileUri: Uri): Promise<ScriptId>;
-    getRelativeFilePathFromScript(script: Script): string
-    getRelativeFilePath(scriptId: ScriptId, engineType: string): string
-    getFileContentOnDisk(scriptId: ScriptId, engineType: string): Promise<string | null>
+
+    getFileExtension(engineType: EngineType): string
+    getEngineType(uri: Uri): EngineType
+
+    getFileContentOnDisk(script: ILocalScript): Promise<string | null>
     
-    saveToFile(script: Script, workspaceFolder: WorkspaceFolder): Promise<void>
-    saveAllToFile(scripts: ScriptObject[], workspaceFolder: WorkspaceFolder): Promise<void>
+    saveToFile(script: ILocalScript): Promise<void>
+    saveAllToFile(scripts: ILocalScript[]): Promise<void>
 }

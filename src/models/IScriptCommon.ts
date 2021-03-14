@@ -1,4 +1,4 @@
-export interface Common {
+export interface IScriptCommon {
     name?: string;
     expert?: boolean;
     engineType?: string;
