@@ -124,7 +124,7 @@ export class ConnectionService implements IConnectionService {
                     }
                 });  
             } else {
-                reject(new Error(`Could not subscribe for pattern '${pattern}': Client is not connect`));
+                resolve();
             }
         });
     }

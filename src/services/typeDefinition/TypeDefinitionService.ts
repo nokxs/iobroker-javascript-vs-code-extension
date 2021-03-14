@@ -4,18 +4,61 @@ import { inject, injectable } from "inversify";
 import TYPES from "../../Types";
 import { IFileService } from "../file/IFileService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
-import { Uri, workspace, WorkspaceFolder } from "vscode";
+import { Uri, WorkspaceFolder } from "vscode";
+
+interface CompilerOptions {
+    noEmit: boolean;
+    allowJs: boolean;
+    checkJs: boolean;
+    module: string;
+    moduleResolution: string;
+    esModuleInterop: boolean;
+    resolveJsonModule: boolean;
+    strict: boolean;
+    noImplicitAny: boolean;
+    target: string;
+    typeRoots: string[];
+}
 
 interface MinimalTsConfig {
-    include?: string[]
-    compilerOptions?: {
-        typeRoots?: string[]
-    }
+    compileOnSave: boolean;
+    compilerOptions: CompilerOptions;
+    include: string[];
+    exclude: string[];
 }
 
 @injectable()
 export class TypeDefinitionService implements ITypeDefinitionService {
     
+    // https://github.com/ioBroker/create-adapter/blob/master/test/baselines/adapter_JS_ESLint_TypeChecking_Spaces_SingleQuotes_Apache-2.0/tsconfig.json
+    private tsconfig: MinimalTsConfig = {
+        "compileOnSave": true,
+        "compilerOptions": {
+            "noEmit": true,
+            "allowJs": true,
+            "checkJs": true,
+            "module": "commonjs",
+            "moduleResolution": "node",
+            "esModuleInterop": true,
+            "resolveJsonModule": true,
+            "strict": true,
+            "noImplicitAny": false,
+            "target": "es2018",
+            "typeRoots": [
+                ".iobroker/types",
+                "node_modules/@types"
+            ]
+        },
+        "include": [
+            "**/*.js",
+            "**/*.ts",
+            ".iobroker/types/javascript.d.ts"
+        ],
+        "exclude": [
+            "node_modules/**"
+        ]
+    };
+
     constructor(
         @inject(TYPES.services.file) private fileService: IFileService,
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
@@ -35,52 +78,27 @@ export class TypeDefinitionService implements ITypeDefinitionService {
     
     async createConfig(): Promise<void> {
         const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
-        await this.createDummyTs(workspaceFolder);
         await this.createTsConfig(workspaceFolder);
-    }
-
-    private async createDummyTs(workspaceFolder: WorkspaceFolder): Promise<void> {
-        const uri = Uri.joinPath(workspaceFolder.uri, ".iobroker/dummy.ts");
-        await this.fileService.saveToFile(uri, "// this file only exits to satisfy the TS compiler");
     }
 
     private async createTsConfig(workspaceFolder: WorkspaceFolder): Promise<void> {
         const uri = Uri.joinPath(workspaceFolder.uri, "tsconfig.json");
         const tsConfig = await this.getTsConfig(uri);
                
-        await this.fileService.saveToFile(uri, JSON.stringify(tsConfig));
+        await this.fileService.saveToFile(uri, JSON.stringify(tsConfig, null, 2));
     }
 
     private async getTsConfig(uri: Uri): Promise<MinimalTsConfig> {
+        const result: any = this.tsconfig;
+
         if (this.fileService.fileExists(uri)) {
-            const tsConfigString = await workspace.fs.readFile(uri);
+            const tsConfigString = await this.fileService.readFromFile(uri);
             const tsConfig = <MinimalTsConfig>JSON.parse(tsConfigString.toString());
 
-            if (!tsConfig.include) {
-                tsConfig.include = new Array<string>();
-            }
-            tsConfig.include.push(".iobroker/dummy.ts");
-
-            if (tsConfig.compilerOptions) {
-                if (!tsConfig.compilerOptions.typeRoots) {
-                    tsConfig.compilerOptions.typeRoots = new Array<string>();
-                }
-
-                tsConfig.compilerOptions.typeRoots.push("./.iobroker/types");
-            } else {
-                tsConfig.compilerOptions = {
-                    typeRoots: ["./.iobroker/types"]
-                };
-            }
-
-            return tsConfig;
+            Object.keys(tsConfig).forEach(key => result[key] = (<any>tsConfig)[key]);
+            Object.keys(this.tsconfig).forEach(key => result[key] = (<any>this.tsconfig)[key]);
         }
 
-        return {
-            "include": ["**/*", ".iobroker/dummy.ts"],
-            "compilerOptions": {
-                "typeRoots" : ["./.iobroker/types"]
-            }
-        };
+        return result;
     }
 }
