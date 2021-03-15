@@ -34,7 +34,7 @@ export class UploadCommand implements ICommand {
 
     private async getScriptData(...args: any[]): Promise<IScript | null> {
         if (args && args[0] && args[0].length > 0) {
-           return this.handleScriptFromScriptExplorer(args);
+            return this.handleScriptFromScriptExplorer(args);
         } else if (window.activeTextEditor) {
             return this.handleScriptFromEditor();
         }

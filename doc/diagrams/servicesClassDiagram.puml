@@ -33,6 +33,7 @@ ScriptIdService --> WorkspaceService
 ScriptIdService --> ConfigRepositoryService
 ScriptRemoteService --> ConnectionService
 ScriptRemoteService --> ScriptIdService
+ScriptRemoteService --> DirectoryService
 ScriptRepositoryService --> ScriptRemoteService
 ScriptRepositoryService --> DirectoryService
 ScriptRepositoryService --> ConfigRepositoryService

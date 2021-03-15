@@ -9,6 +9,7 @@ import { IScriptRemoteService } from './IScriptRemoteService';
 import { IConnectionService } from '../connection/IConnectionService';
 import { IConnectionEventListener } from "../connection/IConnectionEventListener";
 import { IDirectory } from "../../models/IDirectory";
+import { IDirectoryService } from "../directory/IDirectoryService";
 
 @injectable()
 export class ScriptRemoteService implements IScriptRemoteService, IConnectionEventListener {
@@ -17,6 +18,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     constructor(
         @inject(TYPES.services.connection) private connectionService: IConnectionService,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
+        @inject(TYPES.services.directory) private directoryService: IDirectoryService
     ) {
         connectionService.registerConnectionEventListener(this);
     }
@@ -38,8 +40,9 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         return this.connectionService.getObject<IScript>(scriptId);
     }
 
-    uploadScript(script: IScript): Promise<void> {
-        return this.connectionService.setObject(<string>script._id, script);
+    async uploadScript(script: IScript): Promise<void> {
+        await this.directoryService.createDirectoriesRecursively(script._id);
+        await this.connectionService.setObject(<string>script._id, script);
     }
 
     startScript(scriptId: ScriptId): Promise<void> {
