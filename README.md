@@ -101,9 +101,8 @@ If you got any problems, please open a GitHub issue.
 
 Support (not in the listed order)
 * password protected ioBroker installations
-* syncing of workspace with remote scripts (correclty, delete and remove scirpts)
+* syncing of workspace with remote scripts (correctly, delete and remove scirpts)
 * upload multiple changed scripts with an `upload all` command
-* the functions defined in global scripts
 * showing which scripts were updated and need to be uploaded
 
 ## Release Notes
