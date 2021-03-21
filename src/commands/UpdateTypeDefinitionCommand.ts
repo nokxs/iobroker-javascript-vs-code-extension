@@ -11,7 +11,8 @@ export class UpdateTypeDefinitionCommand implements ICommand {
         @inject(TYPES.services.typeDefinition) private typeDefinitionService: ITypeDefinitionService
     ) {}
 
-    execute() {
-        this.typeDefinitionService.downloadFromGithubAndSave();
+    async execute() {
+        await this.typeDefinitionService.downloadFromGithubAndSave();
+        await this.typeDefinitionService.createConfig();
     }
 }

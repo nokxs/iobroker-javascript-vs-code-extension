@@ -89,13 +89,13 @@ export class TypeDefinitionService implements ITypeDefinitionService {
     }
 
     private async getTsConfig(uri: Uri): Promise<MinimalTsConfig> {
-        const result: any = this.tsconfig;
+        const result: any = JSON.parse(JSON.stringify(this.tsconfig)); // hack to deep copy the object
 
         if (this.fileService.fileExists(uri)) {
             const tsConfigString = await this.fileService.readFromFile(uri);
-            const tsConfig = <MinimalTsConfig>JSON.parse(tsConfigString.toString());
+            const existingTsConfig = <MinimalTsConfig>JSON.parse(tsConfigString.toString());
 
-            Object.keys(tsConfig).forEach(key => result[key] = (<any>tsConfig)[key]);
+            Object.keys(existingTsConfig).forEach(key => result[key] = (<any>existingTsConfig)[key]);
             Object.keys(this.tsconfig).forEach(key => result[key] = (<any>this.tsconfig)[key]);
         }
 
