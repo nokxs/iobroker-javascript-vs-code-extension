@@ -9,9 +9,9 @@ template: |
   
   Contributors: $CONTRIBUTORS
 categories:
-  - title: 'Breaking 💥'
+  - title: 'Breaking'
     label: 'breaking'
-  - title: 'Features 🚀'
+  - title: 'Features'
     labels:
       - 'enhancement'
       - 'feature'
