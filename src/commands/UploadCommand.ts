@@ -59,8 +59,8 @@ export class UploadCommand implements ICommand {
         const scriptText = await this.scriptService.getFileContentOnDisk(localScript);
         const existingScript = await this.scriptRemoteService.downloadScriptWithId(script._id);
         
-        if (scriptText && existingScript) {
-            existingScript.common.source = scriptText;
+        if (existingScript) {
+            existingScript.common.source = scriptText ?? "";
             return existingScript;
         }
 
