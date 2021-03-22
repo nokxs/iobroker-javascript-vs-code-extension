@@ -1,0 +1,38 @@
+name-template: 'ioBroker.javascript v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks
+template: |
+  ## What's Changed
+
+  $CHANGES
+  
+  Contributors: $CONTRIBUTORS
+categories:
+  - title: 'Breaking'
+    label: 'breaking'
+  - title: 'Features'
+    labels:
+      - 'enhancement'
+      - 'feature'
+  - title: 'Bug Fixes'
+    label: 'bug'
+  - title: 'Maintenance'
+    label: 'refactoring'
+  - title: 'Documentation'
+    label: 'documentation'
+
+version-resolver:
+  major:
+    labels:
+      - 'breaking'
+  minor:
+    labels:
+      - 'enhancement'
+      - 'feature'
+  patch:
+    labels:
+      - 'bug'
+      - 'refactoring'
+      - 'documentation'
+  default: patch
