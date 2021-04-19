@@ -30,12 +30,21 @@ export class ConnectionService implements IConnectionService {
 
         return new Promise<void>((resolve, reject) => {
             this.client = socketio(uri.toString());
+            // this.client = socketio("ws://localhost:8081/?sid=1618860680418");
             this.registerSocketEvents();
 
             this.client.on("connect", () => {
                 this.isConnected = true;
                 message.dispose();
                 resolve();
+            });
+
+            this.client.on("connect_error", (err: any) => {
+                console.log(err);
+            });
+
+            this.client.on("connect_timeout", (err: any) => {
+                console.log(err);
             });
 
             setTimeout(() => {
