@@ -15,7 +15,8 @@ const TYPES = {
         log: Symbol.for("LogService"),
         typeDefinition: Symbol.for("TypeDefinitionService"),
         iobrokerConnection: Symbol.for("IobrokerConnection"),
-        jsInstance: Symbol.for("JsInstanceService")
+        jsInstance: Symbol.for("JsInstanceService"),
+        socketIoClient: Symbol.for("SocketIoClient")
     },
     views: {
         scriptExplorer: Symbol.for("ScriptExplorerView")

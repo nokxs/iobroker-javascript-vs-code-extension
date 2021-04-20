@@ -6,7 +6,9 @@ import { IConnectionEventListener } from "./IConnectionEventListener";
 import { IConnectionService } from "./IConnectionService";
 import { ILogMessage } from '../../models/ILogMessage';
 import { ScriptId } from "../../models/ScriptId";
-import { injectable } from "inversify";
+import { inject, injectable } from "inversify";
+import { ISocketIoClient } from './ISocketIoClient';
+import TYPES from '../../Types';
 
 @injectable()
 export class ConnectionService implements IConnectionService {
@@ -16,6 +18,10 @@ export class ConnectionService implements IConnectionService {
 
     private connectionEventListeners: Array<IConnectionEventListener> = new Array();
     private client: SocketIOClient.Socket | undefined = undefined;
+
+    constructor(
+        @inject(TYPES.services.socketIoClient) private socketIoClient: ISocketIoClient
+    ) {}
     
     registerConnectionEventListener(listener: IConnectionEventListener): void {
         this.connectionEventListeners.push(listener);
@@ -23,6 +29,11 @@ export class ConnectionService implements IConnectionService {
     
     async connect(uri: Uri): Promise<void> {
         const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
+
+
+        const c = this.socketIoClient.connect(uri.toString(), "");
+
+
 
         if (this.client && this.client.connected) {
             this.client.disconnect();

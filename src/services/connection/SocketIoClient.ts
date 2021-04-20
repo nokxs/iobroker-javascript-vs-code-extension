@@ -10,7 +10,12 @@
 /* jshint -W061 */
 'use strict';
 
+import { ISocketIoClient } from "./ISocketIoClient";
+import { injectable } from "inversify";
+
 import WebSocket = require("ws");
+
+// import btoa = require("btoa");
 
 const MESSAGE_TYPES = {
     MESSAGE: 0,
@@ -21,35 +26,18 @@ const MESSAGE_TYPES = {
 
 const DEBUG = true;
 
-const ERRORS = {
-    1000: 'CLOSE_NORMAL',	        // Successful operation / regular socket shutdown
-    1001: 'CLOSE_GOING_AWAY',	    // Client is leaving (browser tab closing)
-    1002: 'CLOSE_PROTOCOL_ERROR',	// Endpoint received a malformed frame
-    1003: 'CLOSE_UNSUPPORTED',		// Endpoint received an unsupported frame (e.g. binary-only endpoint received text frame)
-    1005: 'CLOSED_NO_STATUS',		// Expected close status, received none
-    1006: 'CLOSE_ABNORMAL',		    // No close code frame has been received
-    1007: 'Unsupported payload',	// Endpoint received inconsistent message (e.g. malformed UTF-8)
-    1008: 'Policy violation',	    // Generic code used for situations other than 1003 and 1009
-    1009: 'CLOSE_TOO_LARGE',	    // Endpoint won't process large frame
-    1010: 'Mandatory extension',	// Client wanted an extension which server did not negotiate
-    1011: 'Server error',	        // Internal server error while operating
-    1012: 'Service restart',	    // Server/service is restarting
-    1013: 'Try again later',	    // Temporary server condition forced blocking client's request
-    1014: 'Bad gateway	Server',    // acting as gateway received an invalid response
-    1015: 'TLS handshake fail',		// Transport Layer Security handshake failure
-};
+@injectable()
+export class SocketIoClient implements ISocketIoClient {
 
-export class SocketIoClient {
-
-    private const handlers: any = {};
+    private handlers: any = {};
     private lastPong: any;
     private socket: any;
     private wasConnected = false;
     private connectTimer: any = null;
     private connectingTimer: any = null;
     private connectionCount = 0;
-    private callbacks = [];
-    private pending = []; // pending requests till connection established
+    private callbacks: any = [];
+    private pending: any = []; // pending requests till connection established
     private url: String = "";
     private options: any;
     private pingInterval: any;
@@ -68,7 +56,7 @@ export class SocketIoClient {
         this.connected = false; // simulate socket.io interface
     }
 
-    connect(_url: any, _options: any): SocketIoClient {
+    connect(_url: any, _options: any): ISocketIoClient {
         this.log.debug('Try to connect');
         this.id = 0;
         this.connectTimer && clearInterval(this.connectTimer);
@@ -95,7 +83,7 @@ export class SocketIoClient {
             this.close(); // re-init connection, because no ___ready___ received in 2000 ms
         }, 3000);
 
-        this.socket.onopen = (event: any) => {
+        this.socket.onopen = () => {
             this.lastPong = Date.now();
             this.connectionCount = 0;
 
@@ -190,7 +178,7 @@ export class SocketIoClient {
             } else if (type === MESSAGE_TYPES.PONG) {
                 // lastPong saved
             } else {
-                this.log.warn('Received unknown message type: ' + type)
+                this.log.warn('Received unknown message type: ' + type);
             }
         };
 
@@ -198,127 +186,128 @@ export class SocketIoClient {
     }
 
     _garbageCollect(): void {
-        // const now = Date.now();
-        // let empty = 0;
-        // if (!DEBUG) {
-        //     for (let i = 0; i < callbacks.length; i++) {
-        //         if (callbacks[i]) {
-        //             if (callbacks[i].ts > now) {
-        //                 const cb = callbacks[i].cb;
-        //                 setTimeout(cb, 0, 'timeout');
-        //                 callbacks[i] = null;
-        //                 empty++;
-        //             }
-        //         } else {
-        //             empty++;
-        //         }
-        //     }
-        // }
+        const now = Date.now();
+        let empty = 0;
+        if (!DEBUG) {
+            for (let i = 0; i < this.callbacks.length; i++) {
+                if (this.callbacks[i]) {
+                    if (this.callbacks[i].ts > now) {
+                        const cb = this.callbacks[i].cb;
+                        setTimeout(cb, 0, 'timeout');
+                        this.callbacks[i] = null;
+                        empty++;
+                    }
+                } else {
+                    empty++;
+                }
+            }
+        }
 
-        // // remove nulls
-        // if (empty > callbacks.length / 2) {
-        //     const newCallback = [];
-        //     for (let i = 0; i < callbacks.length; i++) {
-        //         callbacks[i] && newCallback.push(callbacks[i]);
-        //     }
-        //     callbacks = newCallback;
-        // }
+        // remove nulls
+        if (empty > this.callbacks.length / 2) {
+            const newCallback = [];
+            for (let i = 0; i < this.callbacks.length; i++) {
+                this.callbacks[i] && newCallback.push(this.callbacks[i]);
+            }
+            this.callbacks = newCallback;
+        }
     }
 
-    withCallback (name: String, id: any, args: any, cb: any) {
-        // if (name === 'authenticate') {
-        //     authTimeout = setTimeout(() => {
-        //         authTimeout = null;
-        //         if (this.connected) {
-        //             this.log.debug('Authenticate timeout');
-        //             handlers.error && handlers.error.forEach(cb => cb.call(this, 'Authenticate timeout'));
-        //         }
-        //         this.close();
-        //     }, 2000);
-        // }
-        // callbacks.push({id, cb, ts: DEBUG ? 0 : Date.now() + 30000});
-        // socket.send(JSON.stringify([MESSAGE_TYPES.CALLBACK, id, name, args]));
+    withCallback (name: String, id: any, args: any, cb: any): void {
+        if (name === 'authenticate') {
+            this.authTimeout = setTimeout(() => {
+                this.authTimeout = null;
+                if (this.connected) {
+                    this.log.debug('Authenticate timeout');
+                    this.handlers.error && this.handlers.error.forEach((cb: any) => cb.call(this, 'Authenticate timeout'));
+                }
+                this.close();
+            }, 2000);
+        }
+        this.callbacks.push({id, cb, ts: DEBUG ? 0 : Date.now() + 30000});
+        this.socket.send(JSON.stringify([MESSAGE_TYPES.CALLBACK, id, name, args]));
     }
 
-    findAnswer(id: any, args: any) {
-        // for (let i = 0; i < callbacks.length; i++) {
-        //     if (callbacks[i] && callbacks[i].id === id) {
-        //         const cb = callbacks[i].cb;
-        //         cb.apply(null, args);
-        //         callbacks[i] = null;
-        //     }
-        // }
+    findAnswer(id: any, args: any): void {
+        for (let i = 0; i < this.callbacks.length; i++) {
+            if (this.callbacks[i] && this.callbacks[i].id === id) {
+                const cb = this.callbacks[i].cb;
+                cb.apply(null, args);
+                this.callbacks[i] = null;
+            }
+        }
     }
 
     emit(name: string, arg1: any, arg2: any, arg3: any, arg4: any, arg5: any): void {
-        // if (!socket || !this.connected) {
-        //     if (!wasConnected) {
-        //         // cache all calls till connected
-        //         this.pending.push([name, arg1, arg2, arg3, arg4, arg5]);
-        //     } else {
-        //         this.log.warn('Not connected');
-        //     }
-        //     return;
-        // }
+        if (!this.socket || !this.connected) {
+            if (!this.wasConnected) {
+                // cache all calls till connected
+                this.pending.push([name, arg1, arg2, arg3, arg4, arg5]);
+            } else {
+                this.log.warn('Not connected');
+            }
+            return;
+        }
 
-        // id++;
+        this.id++;
 
-        // if (name === 'writeFile' && typeof arg3 !== 'string') {
-        //     // _adapter, filename, data, callback
-        //     arg3 = arg3 && btoa(String.fromCharCode.apply(null, new Uint8Array(arg3)));
-        // }
+        if (name === 'writeFile' && typeof arg3 !== 'string') {
+            // _adapter, filename, data, callback
+            // arg3 = arg3 && btoa(String.fromCharCode.apply(null, new Uint8Array(arg3)));
+            throw Error("Not implemented yet");
+        }
 
-        // try {
-        //     if (typeof arg5 === 'function') {
-        //         this.withCallback(name, id, [arg1, arg2, arg3, arg4], arg5);
-        //     } else if (typeof arg4 === 'function') {
-        //         this.withCallback(name, id, [arg1, arg2, arg3], arg4);
-        //     } else if (typeof arg3 === 'function') {
-        //         this.withCallback(name, id, [arg1, arg2], arg3);
-        //     } else if (typeof arg2 === 'function') {
-        //         this.withCallback(name, id, [arg1], arg2);
-        //     } else if (typeof arg1 === 'function') {
-        //         this.withCallback(name, id, [], arg1);
-        //     } else
-        //     if (arg1 === undefined && arg2 === undefined && arg3 === undefined && arg4 === undefined && arg5 === undefined) {
-        //         socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, id, name]));
-        //     } else if (arg2 === undefined && arg3 === undefined && arg4 === undefined && arg5 === undefined) {
-        //         socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, id, name, [arg1]]));
-        //     } else if (arg3 === undefined && arg4 === undefined && arg5 === undefined) {
-        //         socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, id, name, [arg1, arg2]]));
-        //     } else if (arg4 === undefined && arg5 === undefined) {
-        //         socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, id, name, [arg1, arg2, arg3]]));
-        //     } else if (arg5 === undefined) {
-        //         socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, id, name, [arg1, arg2, arg3, arg4]]));
-        //     } else {
-        //         socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, id, name, [arg1, arg2, arg3, arg4, arg5]]));
-        //     }
-        // } catch (e) {
-        //     console.error('Cannot send: ' + e);
-        //     this.close();
-        // }
+        try {
+            if (typeof arg5 === 'function') {
+                this.withCallback(name, this.id, [arg1, arg2, arg3, arg4], arg5);
+            } else if (typeof arg4 === 'function') {
+                this.withCallback(name, this.id, [arg1, arg2, arg3], arg4);
+            } else if (typeof arg3 === 'function') {
+                this.withCallback(name, this.id, [arg1, arg2], arg3);
+            } else if (typeof arg2 === 'function') {
+                this.withCallback(name, this.id, [arg1], arg2);
+            } else if (typeof arg1 === 'function') {
+                this.withCallback(name, this.id, [], arg1);
+            } else
+            if (arg1 === undefined && arg2 === undefined && arg3 === undefined && arg4 === undefined && arg5 === undefined) {
+                this.socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name]));
+            } else if (arg2 === undefined && arg3 === undefined && arg4 === undefined && arg5 === undefined) {
+                this.socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name, [arg1]]));
+            } else if (arg3 === undefined && arg4 === undefined && arg5 === undefined) {
+                this.socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name, [arg1, arg2]]));
+            } else if (arg4 === undefined && arg5 === undefined) {
+                this.socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name, [arg1, arg2, arg3]]));
+            } else if (arg5 === undefined) {
+                this.socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name, [arg1, arg2, arg3, arg4]]));
+            } else {
+                this.socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name, [arg1, arg2, arg3, arg4, arg5]]));
+            }
+        } catch (e) {
+            console.error('Cannot send: ' + e);
+            this.close();
+        }
     }
 
-    on(name: String, cb: any) {
-        // if (cb) {
-        //     handlers[name] = handlers[name] || [];
-        //     handlers[name].push(cb);
-        // }
+    on(name: any, cb: any): void {
+        if (cb) {
+            this.handlers[name] = this.handlers[name] || [];
+            this.handlers[name].push(cb);
+        }
     }
 
-    off(name: String, cb: any) {
-        // if (handlers[name]) {
-        //     const pos = handlers[name].indexOf(cb);
-        //     if (pos !== -1) {
-        //         handlers[name].splice(pos, 1);
-        //         if (!handlers[name].length) {
-        //             delete handlers[name];
-        //         }
-        //     }
-        // }
+    off(name: any, cb: any): void {
+        if (this.handlers[name]) {
+            const pos = this.handlers[name].indexOf(cb);
+            if (pos !== -1) {
+                this.handlers[name].splice(pos, 1);
+                if (!this.handlers[name].length) {
+                    delete this.handlers[name];
+                }
+            }
+        }
     }
 
-    close(): void {
+    close(): ISocketIoClient {
         this.pingInterval && clearTimeout(this.pingInterval);
         this.pingInterval = null;
 
@@ -332,7 +321,7 @@ export class SocketIoClient {
             try {
                 this.socket.close();
             } catch (e) {
-
+                this.log.debug("Closing the websocket threw a exception: " + e);
             }
             this.socket = null;
         }
@@ -345,6 +334,7 @@ export class SocketIoClient {
         this.callbacks = [];
 
         this._reconnect();
+        return this;
     }
 
     _reconnect(): void {
