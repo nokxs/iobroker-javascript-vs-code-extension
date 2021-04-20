@@ -1,5 +1,3 @@
-import * as socketio from 'socket.io-client';
-
 import { Uri, window } from "vscode";
 
 import { IConnectionEventListener } from "./IConnectionEventListener";
@@ -17,7 +15,8 @@ export class ConnectionService implements IConnectionService {
     private connectionTimeout = 10 * 1000;
 
     private connectionEventListeners: Array<IConnectionEventListener> = new Array();
-    private client: SocketIOClient.Socket | undefined = undefined;
+    // private client: SocketIOClient.Socket | undefined = undefined;
+    private client: ISocketIoClient | undefined = undefined;
 
     constructor(
         @inject(TYPES.services.socketIoClient) private socketIoClient: ISocketIoClient
@@ -30,19 +29,13 @@ export class ConnectionService implements IConnectionService {
     async connect(uri: Uri): Promise<void> {
         const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
 
-
-        const c = this.socketIoClient.connect(uri.toString(), "");
-
-
-
         if (this.client && this.client.connected) {
-            this.client.disconnect();
+            this.client.close();
         }
 
         return new Promise<void>((resolve, reject) => {
-            this.client = socketio(uri.toString());
-            // this.client = socketio("ws://localhost:8081/?sid=1618860680418");
             this.registerSocketEvents();
+            this.client = this.socketIoClient.connect(uri.toString(), "");
 
             this.client.on("connect", () => {
                 this.isConnected = true;
@@ -69,7 +62,7 @@ export class ConnectionService implements IConnectionService {
 
     disconnect(): Promise<void> {
         return new Promise<void>((resolve) => {
-            this.client?.disconnect();
+            this.client?.close();
 
             this.client?.on("disconnect", () => {
                 resolve();

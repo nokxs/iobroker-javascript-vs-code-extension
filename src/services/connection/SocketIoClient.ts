@@ -44,7 +44,8 @@ export class SocketIoClient implements ISocketIoClient {
     private id = 0;
     private sessionID: any;
     private authTimeout: any = null;
-    private connected = false;
+    
+    public connected = false;
 
     log = {
         debug: (text: String) => DEBUG && console.log(`[${new Date().toISOString()}] ${text}`),
@@ -238,7 +239,7 @@ export class SocketIoClient implements ISocketIoClient {
         }
     }
 
-    emit(name: string, arg1: any, arg2: any, arg3: any, arg4: any, arg5: any): void {
+    emit(name: string, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): void {
         if (!this.socket || !this.connected) {
             if (!this.wasConnected) {
                 // cache all calls till connected
@@ -295,7 +296,7 @@ export class SocketIoClient implements ISocketIoClient {
         }
     }
 
-    off(name: any, cb: any): void {
+    off(name: any, cb?: any): void {
         if (this.handlers[name]) {
             const pos = this.handlers[name].indexOf(cb);
             if (pos !== -1) {
