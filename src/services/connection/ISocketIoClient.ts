@@ -10,8 +10,6 @@
 /* jshint -W061 */
 'use strict';
 
-import { SocketIoClient } from "./SocketIoClient";
-
 // const ERRORS = {
 //     1000: 'CLOSE_NORMAL',	        // Successful operation / regular socket shutdown
 //     1001: 'CLOSE_GOING_AWAY',	    // Client is leaving (browser tab closing)

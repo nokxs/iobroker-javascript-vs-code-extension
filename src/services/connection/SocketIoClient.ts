@@ -120,8 +120,9 @@ export class SocketIoClient implements ISocketIoClient {
                 if (this.socket.readyState === 1) {
                     this.log.error('ws normal error: ' + error.type);
                 }
-                this.handlers.error && this.handlers.error.forEach((cb: any) => cb.call(this, error.code || 'UNKNOWN'));
             }
+            
+            this.handlers.error && this.handlers.error.forEach((cb: any) => cb.call(this, error.code || 'UNKNOWN'));
             this.close();
         };
 

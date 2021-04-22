@@ -1,16 +1,18 @@
-import { Config, NoConfig } from "../../models/Config";
-import { window } from "vscode";
+import { AdminVersion, Config, NoConfig } from "../../models/Config";
+import { StatusBarAlignment, window } from "vscode";
 
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { ITypeDefinitionService } from '../typeDefinition/ITypeDefinitionService';
 import { IConfigCreationService } from "./IConfigCreationService";
+import { IAdminVersionDetector } from "../adminVersionDetector/IAdminVersionDetector";
 
 @injectable()
 export class ConfigCreationService implements IConfigCreationService {
     
     constructor(
-        @inject(TYPES.services.typeDefinition) private typeDefinitionService: ITypeDefinitionService
+        @inject(TYPES.services.typeDefinition) private typeDefinitionService: ITypeDefinitionService,
+        @inject(TYPES.services.adminVersionDetector) private adminVersionDetector: IAdminVersionDetector
     ) {}
 
     async createConfigInteractivly(): Promise<Config> {
@@ -39,6 +41,42 @@ export class ConfigCreationService implements IConfigCreationService {
             await this.typeDefinitionService.createConfig();
         }
 
-        return new Config(ioBrokerUrl, Number.parseInt(port), scriptPath);            
+        const statusBarMessage = window.setStatusBarMessage("$(sync~spin) Trying to detect used ioBroker Admin version...");
+        const adminVersion = await this.getAdminVersion(`${ioBrokerUrl}:${port}`);    
+        statusBarMessage.dispose();
+
+        if (adminVersion === AdminVersion.unknown) {
+            return new NoConfig();
+        }
+        
+        return new Config(ioBrokerUrl, Number.parseInt(port), adminVersion, scriptPath);            
+    }
+
+    private async getAdminVersion(ioBrokerUrl: string): Promise<AdminVersion> {
+        const admin4 = "Admin 4";
+        const admin5 = "Admin 5";
+
+        let adminVersion = await this.adminVersionDetector.getVersion(ioBrokerUrl);
+        
+        if (adminVersion === AdminVersion.unknown) {
+            const adminVersionPick = await window.showQuickPick(
+                [admin4, admin5], 
+                { 
+                    placeHolder: "Could not determine the used Admin version. Which version are you using?",
+                    ignoreFocusOut: true
+                });
+            
+            switch(adminVersionPick) {
+                case admin4:
+                   return AdminVersion.admin4;
+                case admin5:
+                    adminVersion = AdminVersion.admin5;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return adminVersion;
     }
 }

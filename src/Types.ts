@@ -16,7 +16,8 @@ const TYPES = {
         typeDefinition: Symbol.for("TypeDefinitionService"),
         iobrokerConnection: Symbol.for("IobrokerConnection"),
         jsInstance: Symbol.for("JsInstanceService"),
-        socketIoClient: Symbol.for("SocketIoClient")
+        socketIoClient: Symbol.for("SocketIoClient"),
+        adminVersionDetector: Symbol.for("AdminVersionDetector")
     },
     views: {
         scriptExplorer: Symbol.for("ScriptExplorerView")
