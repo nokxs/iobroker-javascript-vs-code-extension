@@ -1,5 +1,5 @@
 import { AdminVersion, Config, NoConfig } from "../../models/Config";
-import { StatusBarAlignment, window } from "vscode";
+import { window } from "vscode";
 
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
@@ -49,7 +49,7 @@ export class ConfigCreationService implements IConfigCreationService {
             return new NoConfig();
         }
         
-        return new Config(ioBrokerUrl, Number.parseInt(port), adminVersion, scriptPath);            
+        return new Config(ioBrokerUrl, Number.parseInt(port), scriptPath, adminVersion);
     }
 
     private async getAdminVersion(ioBrokerUrl: string): Promise<AdminVersion> {

@@ -1,7 +1,7 @@
-import { StatusBarAlignment, Uri, window } from "vscode";
+import { env, StatusBarAlignment, Uri, window } from "vscode";
 
 import { inject, injectable } from "inversify";
-import { Config, NoConfig } from '../../models/Config';
+import { AdminVersion, Config, NoConfig } from '../../models/Config';
 import { NoWorkspaceFolder } from '../../models/NoWorkspaceFolder';
 import TYPES from '../../Types';
 import { IConnectionService } from '../connection/IConnectionService';
@@ -55,6 +55,19 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
         }
     
         this.config = await this.configReaderWriterService.read(workspaceFolder);
+
+        if (!this.config.adminVersion || this.config.adminVersion === AdminVersion.unknown) {
+          const pickAnswer = await window.showQuickPick(["Yes", "No, open documentation"], {placeHolder: "Your config is missing mandatory items. Recreate config?", ignoreFocusOut: true});
+          if(pickAnswer === "Yes") {
+            this.config = new NoConfig();
+          } 
+          else {
+            await env.openExternal(Uri.parse("https://github.com/nokxs/iobroker-javascript-vs-code-extension#available-settings"));
+            window.showWarningMessage("Connection attempt to ioBroker aborted. Update your config and try again");
+            return;
+          }
+        }
+
         if (this.config instanceof NoConfig) {
           this.config = await this.configCreationService.createConfigInteractivly();
           if (this.config instanceof NoConfig) {

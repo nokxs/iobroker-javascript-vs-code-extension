@@ -2,8 +2,8 @@ export class Config {
     constructor(
         readonly ioBrokerUrl: string, 
         readonly socketIoPort: number,
-        readonly adminVersion: AdminVersion,
         readonly scriptRoot: string,
+        readonly adminVersion?: AdminVersion,
         readonly scriptExplorer?: ScriptExplorerConfig) {}
 }
 
@@ -15,7 +15,7 @@ export class ScriptExplorerConfig {
 
 export class NoConfig extends Config {
     constructor() {
-        super("invalid", -1, AdminVersion.unknown, "/");
+        super("invalid", -1, "/", AdminVersion.unknown);
     }
 }
 
