@@ -3,7 +3,7 @@ export class Config {
         readonly ioBrokerUrl: string, 
         readonly socketIoPort: number,
         readonly scriptRoot: string,
-        readonly adminVersion?: AdminVersion,
+        readonly adminVersion: AdminVersion,
         readonly scriptExplorer?: ScriptExplorerConfig) {}
 }
 

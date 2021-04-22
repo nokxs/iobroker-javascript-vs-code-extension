@@ -56,14 +56,14 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
     
         this.config = await this.configReaderWriterService.read(workspaceFolder);
 
-        if (!this.config.adminVersion || this.config.adminVersion === AdminVersion.unknown) {
-          const pickAnswer = await window.showQuickPick(["Yes", "No, open documentation"], {placeHolder: "Your config is missing mandatory items. Recreate config?", ignoreFocusOut: true});
-          if(pickAnswer === "Yes") {
+        if (!this.isConfigValid()) {
+          const pickAnswer = await window.showQuickPick(["Yes", "No, open documentation"], {placeHolder: "ioBroker: Your config is missing mandatory items. Recreate config?", ignoreFocusOut: true});
+          if(pickAnswer === "Yes") {      
             this.config = new NoConfig();
-          } 
+          }
           else {
             await env.openExternal(Uri.parse("https://github.com/nokxs/iobroker-javascript-vs-code-extension#available-settings"));
-            window.showWarningMessage("Connection attempt to ioBroker aborted. Update your config and try again");
+            window.showWarningMessage("Connection attempt to ioBroker aborted. Update your config and try again!");
             return;
           }
         }
@@ -95,5 +95,18 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
     } catch (error) {
         window.showErrorMessage(`Could not connect to ioBroker. Check your '.iobroker-config.json' for wrong configuration: ${error}`);
     }
-  }  
+  }
+
+  private isConfigValid(): boolean {
+    if (
+      !this.config.ioBrokerUrl ||
+      !this.config.socketIoPort ||
+      !this.config.scriptRoot ||
+      !this.config.adminVersion || this.config.adminVersion === AdminVersion.unknown
+      ) {
+      return false;
+    }
+
+    return true;
+  }
 }
