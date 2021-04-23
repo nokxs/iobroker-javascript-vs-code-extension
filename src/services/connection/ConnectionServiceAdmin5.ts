@@ -26,15 +26,15 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     }
     
     async connect(uri: Uri): Promise<void> {
-        const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
-
-        if (this.client && this.client.connected) {
-            this.client.close();
-        }
-
         return new Promise<void>((resolve, reject) => {
+            const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
+
+            if (this.client && this.client.connected) {
+                this.client.close();
+            }
+            
+            this.client = this.socketIoClient.connect(uri.toString(), "vsCode");
             this.registerSocketEvents();
-            this.client = this.socketIoClient.connect(uri.toString(), "");
 
             const timeout = setTimeout(() => {
                 if (!this.isConnected) {

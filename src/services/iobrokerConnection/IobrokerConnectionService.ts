@@ -33,7 +33,6 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
   ) {
     this.statusBarItem.text = "$(warning) ioBroker disconnected";
     this.statusBarItem.show();
-    this.connectionServiceProvider.getConnectionService().registerConnectionEventListener(this);
   }
 
   onConnected(): void {
@@ -56,7 +55,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
     
         this.config = await this.configReaderWriterService.read(workspaceFolder);
 
-        if (!this.isConfigValid()) {
+        if (!(this.config instanceof NoConfig) && !this.isConfigValid()) {
           const pickAnswer = await window.showQuickPick(["Yes", "No, open documentation"], {placeHolder: "ioBroker: Your config is missing mandatory items. Recreate config?", ignoreFocusOut: true});
           if(pickAnswer === "Yes") {      
             this.config = new NoConfig();
@@ -81,7 +80,9 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
           }
         }
 
-        await this.connectionServiceProvider.getConnectionService().connect(Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`));
+        this. connectionServiceProvider.getConnectionService().registerConnectionEventListener(this);
+        const connectionService = this.connectionServiceProvider.getConnectionService();
+        await connectionService.connect(Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`));
         await this.logService.startReceiving();
         await this.scriptRepositoryService.init();
 

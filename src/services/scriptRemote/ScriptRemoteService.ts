@@ -19,8 +19,10 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
         @inject(TYPES.services.directory) private directoryService: IDirectoryService
-    ) {
-        connectionServiceProvider.getConnectionService().registerConnectionEventListener(this);
+    ) {}
+
+    init(): void {
+        this.connectionServiceProvider.getConnectionService().registerConnectionEventListener(this);
     }
 
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {

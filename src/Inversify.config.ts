@@ -7,6 +7,7 @@ import { ConfigCreationService } from './services/configCreation/ConfigCreationS
 import { ConfigRepositoryService } from './services/configRepository/ConfigRepositoryService';
 import { ConnectCommand } from './commands/ConnectCommand';
 import { ConnectionServiceAdmin4 } from './services/connection/ConnectionServiceAdmin4';
+import { ConnectionServiceAdmin5 } from './services/connection/ConnectionServiceAdmin5';
 import { ConnectionServiceProvider } from './services/connectionServiceProvider/ConnectionServiceProvider';
 import { Container } from 'inversify';
 import { DeleteCommand } from './commands/DeleteCommand';
@@ -80,7 +81,7 @@ container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient
 container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inTransientScope();
 
 container.bind(TYPES.services.connectionAdmin4).to(ConnectionServiceAdmin4);
-container.bind(TYPES.services.connectionAdmin5).to(ConnectionServiceAdmin4);
+container.bind(TYPES.services.connectionAdmin5).to(ConnectionServiceAdmin5);
 
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
 container.bind<ICommand>(TYPES.command).to(DownloadCommand);

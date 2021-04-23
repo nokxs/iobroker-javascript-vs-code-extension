@@ -26,6 +26,6 @@ export class ConnectionServiceProvider implements IConnectionServiceProvider {
             return this.connectionServiceAdmin5;
         }
 
-        throw new Error(`Cannot determine which connection service to use. Configure admin version: ${adminVersion}`);
+        throw new Error(`Cannot determine which connection service to use. Configured admin version: ${adminVersion}`);
      }
 }

@@ -1,10 +1,11 @@
-import { IScriptChangedEventListener } from "./IScriptChangedListener";
+import { IDirectory } from "../../models/IDirectory";
 import { IScript } from "../../models/IScript";
+import { IScriptChangedEventListener } from "./IScriptChangedListener";
 import { ScriptId } from "../../models/ScriptId";
 import { Uri } from "vscode";
-import { IDirectory } from "../../models/IDirectory";
 
 export interface IScriptRemoteService {        
+    init(): void
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void
 
     downloadAllScripts(): Promise<IScript[]>
