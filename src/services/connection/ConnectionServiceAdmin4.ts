@@ -67,16 +67,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
             });
         });
     }
-
-    private startReconnectTimeout() {
-        setTimeout(async () => {
-            try {
-                await this.client?.connect();
-            } catch (_: any) {
-                this.startReconnectTimeout();
-            }            
-        }, this.reconnectionTimeout);
-    }
+    
     disconnect(): Promise<void> {
         return new Promise<void>((resolve) => {
             this.client?.disconnect();
@@ -248,5 +239,15 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
                 this.connectionEventListeners.forEach(listener => listener.onDisconnected());
             });
         }
+    }
+
+    private startReconnectTimeout() {
+        setTimeout(async () => {
+            try {
+                await this.client?.connect();
+            } catch (_: any) {
+                this.startReconnectTimeout();
+            }            
+        }, this.reconnectionTimeout);
     }
 }
