@@ -31,6 +31,8 @@ import WebSocket = require("ws");
 //     1015: 'TLS handshake fail',		// Transport Layer Security handshake failure
 // };
 
+const RECONNECT_TIMEOUT = 3000;
+
 const WS_READY_STATE = {
     connecting: 0,
     open: 1,
@@ -372,7 +374,7 @@ export class SocketIoClient implements ISocketIoClient {
             this.connectTimer = setTimeout(() => {
                 this.connectTimer = null;
                 this.connect(this.url, this.options);
-            }, 3000);
+            }, RECONNECT_TIMEOUT);
         } else {
             this.log.debug('Reconnect is already running');
         }
