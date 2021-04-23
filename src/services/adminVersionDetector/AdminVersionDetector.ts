@@ -29,19 +29,30 @@ export class AdminVersionDetector implements IAdminVersionDetector {
         return new Promise<boolean>((resolve) => {
             const client: SocketIOClient.Socket = socketio(iobrokerUrl);
 
-            client.on("connect", () => {
-                resolve(true);
+            const timeout = setTimeout(() => {
+                if(!this.socketIoClient.connected) {
+                    resolve(false);
+                }
+            }, 5000);
+
+            const cleanUp = () => {
+                clearTimeout(timeout);
                 client.disconnect();
+            };
+
+            client.on("connect", () => {
+                cleanUp();
+                resolve(true);
             });
 
             client.on("connect_error", () => {
+                cleanUp();
                 resolve(false);
-                client.disconnect();
             });
 
             client.on("connect_timeout", () => {
+                cleanUp();
                 resolve(false);
-                client.disconnect();
             });
         });
     }
@@ -50,14 +61,25 @@ export class AdminVersionDetector implements IAdminVersionDetector {
         return new Promise<boolean>((resolve) => {
             this.socketIoClient.connect(iobrokerUrl, "");
 
+            const timeout = setTimeout(() => {
+                if(!this.socketIoClient.connected) {
+                    resolve(false);
+                }
+            }, 5000);
+
+            const cleanUp = () => {
+                clearTimeout(timeout);
+                this.socketIoClient.close;
+            };
+
             this.socketIoClient.on("connect", () => {
+                cleanUp();
                 resolve(true);
-                this.socketIoClient.close();
             });
 
             this.socketIoClient.on("error", () => {
+                cleanUp();
                 resolve(false);
-                this.socketIoClient.close();
             });
         });
     }
