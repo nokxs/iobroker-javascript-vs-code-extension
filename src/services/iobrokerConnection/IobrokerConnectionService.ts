@@ -60,11 +60,11 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
         this.config = await this.configReaderWriterService.read(workspaceFolder);
 
         if (!(this.config instanceof NoConfig) && !this.isConfigValid()) {
-          const pickAnswer = await window.showQuickPick(["Yes", "No, open documentation"], {placeHolder: "ioBroker: Your config is missing mandatory items. Recreate config?", ignoreFocusOut: true});
+          const pickAnswer = await window.showQuickPick(["Yes", "No", "No, open documentation"], {placeHolder: "ioBroker: Your config is missing mandatory items. Recreate config?", ignoreFocusOut: true});
           if(pickAnswer === "Yes") {      
             this.config = new NoConfig();
           }
-          else {
+          else if(pickAnswer === "No, open documentation") {
             await env.openExternal(Uri.parse("https://github.com/nokxs/iobroker-javascript-vs-code-extension#available-settings"));
             window.showWarningMessage("Connection attempt to ioBroker aborted. Update your config and try again!");
             return;
