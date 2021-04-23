@@ -73,7 +73,7 @@ clear the output use Visual Studios feature `Clear Output`.
 
 After the first activation a `.iobroker-config.json` file is created in the root directory of your workspace. It contains all settings.
 
-> Caution: Hot reloading the settings is currently not supported. After changing a setting, restart VS Code.
+> Current limitation: Hot reloading the settings is currently not supported. After changing a setting, restart VS Code.
 
 ### Available settings
 
@@ -86,8 +86,6 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 | `scriptRoot` | Relative directory path, which is used as root of ioBroker scripts. | Yes | |
 | `adminVersion` | The admin version to connect to. Valid values: `admin4`, `admin5` | Yes | |
 | `scriptExplorer.collapseDirectoriesOnStartup` | Should the directories in the script explorer be collapsed on startup. | No | true |
-
-> Caution: The json above is invalid as it contains comments. Remove comments if you intend to copy it.
 
 ## Known Issues
 

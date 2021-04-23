@@ -2,6 +2,7 @@
   "ioBrokerUrl": "http://localhost",
   "socketIoPort": 8081,
   "workspaceSubPath": "/",
+  "adminVersion": "admin5",
   "scriptExplorer": {
     "collapseDirectoriesOnStartup": true
   }
