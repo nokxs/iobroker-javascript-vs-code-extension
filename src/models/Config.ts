@@ -20,7 +20,7 @@ export class NoConfig extends Config {
 }
 
 export enum AdminVersion {
-    unknown = "Unknown",
-    admin4 = "Admin4",
-    admin5 = "Admin5"
+    unknown = "unknown",
+    admin4 = "admin4",
+    admin5 = "admin5"
 }
