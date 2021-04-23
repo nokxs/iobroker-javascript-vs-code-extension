@@ -9,7 +9,7 @@ import { ScriptId } from "../../models/ScriptId";
 import { injectable } from "inversify";
 
 @injectable()
-export class ConnectionService implements IConnectionService {
+export class ConnectionServiceAdmin4 implements IConnectionService {
     public isConnected: Boolean = false;
 
     private connectionTimeout = 10 * 1000;

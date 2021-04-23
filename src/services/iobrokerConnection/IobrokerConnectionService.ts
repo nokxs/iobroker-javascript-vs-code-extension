@@ -14,6 +14,7 @@ import CONSTANTS from "../../Constants";
 import { IConfigCreationService } from "../configCreation/IConfigCreationService";
 import { IScriptService } from "../script/IScriptService";
 import { IScriptRepositoryService } from "../scriptRepository/IScriptRepositoryService";
+import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
@@ -25,7 +26,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
   constructor(
       @inject(TYPES.services.configCreation) private configCreationService: IConfigCreationService,
       @inject(TYPES.services.configRepository) private configReaderWriterService: IConfigRepositoryService,
-      @inject(TYPES.services.connection) private connectionService: IConnectionService,
+      @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
       @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
       @inject(TYPES.services.log) private logService: ILogService,
       @inject(TYPES.services.script) private scriptService: IScriptService,
@@ -33,7 +34,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
   ) {
     this.statusBarItem.text = "$(warning) ioBroker disconnected";
     this.statusBarItem.show();
-    this.connectionService.registerConnectionEventListener(this);
+    this.connectionServiceProvider.getConnectionService().registerConnectionEventListener(this);
   }
 
   onConnected(): void {
@@ -81,7 +82,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
           }
         }
 
-        await this.connectionService.connect(Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`));
+        await this.connectionServiceProvider.getConnectionService().connect(Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`));
         await this.logService.startReceiving();
         await this.scriptRepositoryService.init();
 

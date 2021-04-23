@@ -9,7 +9,7 @@ import { ISocketIoClient } from './ISocketIoClient';
 import TYPES from '../../Types';
 
 @injectable()
-export class ConnectionService implements IConnectionService {
+export class ConnectionServiceAdmin5 implements IConnectionService {
     public isConnected: Boolean = false;
 
     private connectionTimeout = 10 * 1000;

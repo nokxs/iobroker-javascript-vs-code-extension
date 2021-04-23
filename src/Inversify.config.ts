@@ -6,7 +6,9 @@ import { CommandService } from './services/command/CommandService';
 import { ConfigCreationService } from './services/configCreation/ConfigCreationService';
 import { ConfigRepositoryService } from './services/configRepository/ConfigRepositoryService';
 import { ConnectCommand } from './commands/ConnectCommand';
-import { ConnectionService } from './services/connection/ConnectionServiceAdmin5';
+import { ConnectionServiceAdmin4 } from './services/connection/ConnectionServiceAdmin4';
+import { ConnectionServiceAdmin5 } from './services/connection/ConnectionServiceAdmin5';
+import { ConnectionServiceProvider } from './services/connectionServiceProvider/ConnectionServiceProvider';
 import { Container } from 'inversify';
 import { DeleteCommand } from './commands/DeleteCommand';
 import { DirectoryService } from './services/directory/DirectorytService';
@@ -18,7 +20,7 @@ import { ICommand } from './commands/ICommand';
 import { ICommandService } from './services/command/ICommandService';
 import { IConfigCreationService } from './services/configCreation/IConfigCreationService';
 import { IConfigRepositoryService } from './services/configRepository/IConfigRepositoryService';
-import { IConnectionService } from './services/connection/IConnectionService';
+import { IConnectionServiceProvider } from './services/connectionServiceProvider/IConnectionServiceProvider';
 import { IDirectoryService } from './services/directory/IDirectoryService';
 import { IFileService } from './services/file/IFileService';
 import { IIobrokerConnectionService } from './services/iobrokerConnection/IIobrokerConnectionService';
@@ -61,7 +63,6 @@ container.bind<IStartup>(TYPES.startup).to(Startup).inSingletonScope();
 
 container.bind<IWorkspaceService>(TYPES.services.workspace).to(WorkspaceService).inSingletonScope();
 container.bind<IConfigCreationService>(TYPES.services.configCreation).to(ConfigCreationService).inSingletonScope();
-container.bind<IConnectionService>(TYPES.services.connection).to(ConnectionService).inSingletonScope();
 container.bind<IFileService>(TYPES.services.file).to(FileService).inSingletonScope();
 container.bind<ICommandService>(TYPES.services.command).to(CommandService).inSingletonScope();
 container.bind<IScriptService>(TYPES.services.script).to(ScriptService).inSingletonScope();
@@ -74,9 +75,13 @@ container.bind<ITypeDefinitionService>(TYPES.services.typeDefinition).to(TypeDef
 container.bind<IIobrokerConnectionService>(TYPES.services.iobrokerConnection).to(IobrokerConnectionService).inSingletonScope();
 container.bind<IConfigRepositoryService>(TYPES.services.configRepository).to(ConfigRepositoryService).inSingletonScope();
 container.bind<IJsInstanceService>(TYPES.services.jsInstance).to(JsInstanceService).inSingletonScope();
+container.bind<IConnectionServiceProvider>(TYPES.services.connectionServiceProvider).to(ConnectionServiceProvider).inSingletonScope();
 
 container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inTransientScope();
 container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inTransientScope();
+
+container.bind(TYPES.services.connectionAdmin4).to(ConnectionServiceAdmin4);
+container.bind(TYPES.services.connectionAdmin5).to(ConnectionServiceAdmin4);
 
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
 container.bind<ICommand>(TYPES.command).to(DownloadCommand);

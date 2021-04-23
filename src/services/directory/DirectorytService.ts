@@ -2,26 +2,26 @@
 import { inject, injectable } from "inversify";
 import TYPES from "../../Types";
 import { IDirectoryService } from "./IDirectoryService";
-import { IConnectionService } from "../connection/IConnectionService";
 import { IDirectory } from "../../models/IDirectory";
 import { ScriptId } from "../../models/ScriptId";
+import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 
 @injectable()
 export class DirectoryService implements IDirectoryService {
     constructor(
-        @inject(TYPES.services.connection) private connectionService: IConnectionService,
+        @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
     ) {}
 
     downloadDirectory(id: ScriptId): Promise<IDirectory> {
-        return this.connectionService.getObject(id);
+        return this.connectionServiceProvider.getConnectionService().getObject(id);
     }
         
     downloadAllDirectories(): Promise<IDirectory[]> {
-        return this.connectionService.getSystemObjectView<IDirectory>("channel", "script.js.", "script.js.");
+        return this.connectionServiceProvider.getConnectionService().getSystemObjectView<IDirectory>("channel", "script.js.", "script.js.");
     }
 
     createDirectory(id: ScriptId, name: string): Promise<void> {
-        return this.connectionService.setObject(id, {
+        return this.connectionServiceProvider.getConnectionService().setObject(id, {
             "common": {
               "name": name,
               "expert": true

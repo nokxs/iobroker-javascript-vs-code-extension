@@ -6,21 +6,21 @@ import TYPES from '../../Types';
 import { IScriptChangedEventListener as IScriptChangedEventListener } from './IScriptChangedListener';
 import { IScriptIdService } from '../scriptId/IScriptIdService';
 import { IScriptRemoteService } from './IScriptRemoteService';
-import { IConnectionService } from '../connection/IConnectionService';
 import { IConnectionEventListener } from "../connection/IConnectionEventListener";
 import { IDirectory } from "../../models/IDirectory";
 import { IDirectoryService } from "../directory/IDirectoryService";
+import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 
 @injectable()
 export class ScriptRemoteService implements IScriptRemoteService, IConnectionEventListener {
     private scriptEventListeners: Array<IScriptChangedEventListener> = new Array();
     
     constructor(
-        @inject(TYPES.services.connection) private connectionService: IConnectionService,
+        @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
         @inject(TYPES.services.directory) private directoryService: IDirectoryService
     ) {
-        connectionService.registerConnectionEventListener(this);
+        connectionServiceProvider.getConnectionService().registerConnectionEventListener(this);
     }
 
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
@@ -28,7 +28,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     downloadAllScripts(): Promise<IScript[]> {
-        return this.connectionService.getSystemObjectView<IScript>("script", "script.js.", "script.js.");
+        return this.connectionServiceProvider.getConnectionService().getSystemObjectView<IScript>("script", "script.js.", "script.js.");
     }
 
     async downloadScriptWithUri(scriptUri: Uri): Promise<IScript> {
@@ -37,12 +37,12 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     downloadScriptWithId(scriptId: ScriptId): Promise<IScript> {
-        return this.connectionService.getObject<IScript>(scriptId);
+        return this.connectionServiceProvider.getConnectionService().getObject<IScript>(scriptId);
     }
 
     async uploadScript(script: IScript): Promise<void> {
         await this.directoryService.createDirectoriesRecursively(script._id);
-        await this.connectionService.setObject(<string>script._id, script);
+        await this.connectionServiceProvider.getConnectionService().setObject(<string>script._id, script);
     }
 
     startScript(scriptId: ScriptId): Promise<void> {
@@ -81,14 +81,14 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     async update(scriptId: ScriptId, script: IScript): Promise<void> {
         const existingScript = await this.downloadScriptWithId(scriptId);
         if (existingScript) {
-            await this.connectionService.extendObject(scriptId, script);
+            await this.connectionServiceProvider.getConnectionService().extendObject(scriptId, script);
         } else {
             throw new Error(`Could not update script '${scriptId}', because it is not known to ioBroker`);
         }
     }
 
     async delete(scriptId: ScriptId): Promise<void> {
-        return this.connectionService.deleteObject(scriptId);
+        return this.connectionServiceProvider.getConnectionService().deleteObject(scriptId);
     }
     
     onConnected(): void {
@@ -100,13 +100,13 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     private registerSocketEvents(): void {
-        this.connectionService.registerForObjectChange("script.js.*", (id: string, value: any) => {
+        this.connectionServiceProvider.getConnectionService().registerForObjectChange("script.js.*", (id: string, value: any) => {
             this.scriptEventListeners.forEach(listener => listener.onScriptChanged(id, value));
         });
     }
 
     private unregisterSocketEvents(): void {
-        this.connectionService.unregisterObjectChange("script.js.*");
+        this.connectionServiceProvider.getConnectionService().unregisterObjectChange("script.js.*");
     }
 
     private async setScriptState(scriptId: ScriptId, isEnabled: boolean): Promise<void> {
@@ -118,9 +118,5 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         };
 
         this.update(scriptId, script);
-    }
-    
-    private replaceAll(s: string, searchValue: string, replaceValue: string): string {
-        return s.split(searchValue).join(replaceValue);
     }
 }
