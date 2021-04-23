@@ -1,10 +1,9 @@
-import { StatusBarAlignment, Uri, window } from "vscode";
+import { env, StatusBarAlignment, Uri, window } from "vscode";
 
 import { inject, injectable } from "inversify";
-import { Config, NoConfig } from '../../models/Config';
+import { AdminVersion, Config, NoConfig } from '../../models/Config';
 import { NoWorkspaceFolder } from '../../models/NoWorkspaceFolder';
 import TYPES from '../../Types';
-import { IConnectionService } from '../connection/IConnectionService';
 import { ILogService } from '../log/ILogService';
 import { IWorkspaceService } from '../workspace/IWorkspaceService';
 import { IIobrokerConnectionService } from "./IIobrokerConnectionService";
@@ -14,6 +13,7 @@ import CONSTANTS from "../../Constants";
 import { IConfigCreationService } from "../configCreation/IConfigCreationService";
 import { IScriptService } from "../script/IScriptService";
 import { IScriptRepositoryService } from "../scriptRepository/IScriptRepositoryService";
+import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
@@ -25,7 +25,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
   constructor(
       @inject(TYPES.services.configCreation) private configCreationService: IConfigCreationService,
       @inject(TYPES.services.configRepository) private configReaderWriterService: IConfigRepositoryService,
-      @inject(TYPES.services.connection) private connectionService: IConnectionService,
+      @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
       @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
       @inject(TYPES.services.log) private logService: ILogService,
       @inject(TYPES.services.script) private scriptService: IScriptService,
@@ -33,7 +33,6 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
   ) {
     this.statusBarItem.text = "$(warning) ioBroker disconnected";
     this.statusBarItem.show();
-    this.connectionService.registerConnectionEventListener(this);
   }
 
   onConnected(): void {
@@ -55,6 +54,19 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
         }
     
         this.config = await this.configReaderWriterService.read(workspaceFolder);
+
+        if (!(this.config instanceof NoConfig) && !this.isConfigValid()) {
+          const pickAnswer = await window.showQuickPick(["Yes", "No, open documentation"], {placeHolder: "ioBroker: Your config is missing mandatory items. Recreate config?", ignoreFocusOut: true});
+          if(pickAnswer === "Yes") {      
+            this.config = new NoConfig();
+          }
+          else {
+            await env.openExternal(Uri.parse("https://github.com/nokxs/iobroker-javascript-vs-code-extension#available-settings"));
+            window.showWarningMessage("Connection attempt to ioBroker aborted. Update your config and try again!");
+            return;
+          }
+        }
+
         if (this.config instanceof NoConfig) {
           this.config = await this.configCreationService.createConfigInteractivly();
           if (this.config instanceof NoConfig) {
@@ -68,7 +80,9 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
           }
         }
 
-        await this.connectionService.connect(Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`));
+        this. connectionServiceProvider.getConnectionService().registerConnectionEventListener(this);
+        const connectionService = this.connectionServiceProvider.getConnectionService();
+        await connectionService.connect(Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`));
         await this.logService.startReceiving();
         await this.scriptRepositoryService.init();
 
@@ -82,5 +96,18 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
     } catch (error) {
         window.showErrorMessage(`Could not connect to ioBroker. Check your '.iobroker-config.json' for wrong configuration: ${error}`);
     }
-  }  
+  }
+
+  private isConfigValid(): boolean {
+    if (
+      !this.config.ioBrokerUrl ||
+      !this.config.socketIoPort ||
+      !this.config.scriptRoot ||
+      !this.config.adminVersion || this.config.adminVersion === AdminVersion.unknown
+      ) {
+      return false;
+    }
+
+    return true;
+  }
 }

@@ -1,20 +1,27 @@
 import 'reflect-metadata';
 
+import { AdminVersionDetector } from './services/adminVersionDetector/AdminVersionDetector';
 import { ChangeJsInstanceCommand } from './commands/ChangeJsInstanceCommand';
 import { CommandService } from './services/command/CommandService';
 import { ConfigCreationService } from './services/configCreation/ConfigCreationService';
 import { ConfigRepositoryService } from './services/configRepository/ConfigRepositoryService';
 import { ConnectCommand } from './commands/ConnectCommand';
-import { ConnectionService } from './services/connection/ConnectionService';
+import { ConnectionServiceAdmin4 } from './services/connection/ConnectionServiceAdmin4';
+import { ConnectionServiceAdmin5 } from './services/connection/ConnectionServiceAdmin5';
+import { ConnectionServiceProvider } from './services/connectionServiceProvider/ConnectionServiceProvider';
 import { Container } from 'inversify';
+import { DeleteCommand } from './commands/DeleteCommand';
+import { DirectoryService } from './services/directory/DirectorytService';
 import { DownloadAllCommand } from './commands/DownloadAllCommand';
 import { DownloadCommand } from './commands/DownloadCommand';
 import { FileService } from './services/file/FileService';
+import { IAdminVersionDetector } from './services/adminVersionDetector/IAdminVersionDetector';
 import { ICommand } from './commands/ICommand';
 import { ICommandService } from './services/command/ICommandService';
 import { IConfigCreationService } from './services/configCreation/IConfigCreationService';
 import { IConfigRepositoryService } from './services/configRepository/IConfigRepositoryService';
-import { IConnectionService } from './services/connection/IConnectionService';
+import { IConnectionServiceProvider } from './services/connectionServiceProvider/IConnectionServiceProvider';
+import { IDirectoryService } from './services/directory/IDirectoryService';
 import { IFileService } from './services/file/IFileService';
 import { IIobrokerConnectionService } from './services/iobrokerConnection/IIobrokerConnectionService';
 import { IJsInstanceService } from "./services/jsInstanceService/IJsInstanceService";
@@ -22,20 +29,25 @@ import { ILogService } from "./services/log/ILogService";
 import { IScriptExplorerProvider } from "./views/scriptExplorer/IScriptExplorerProvider";
 import { IScriptIdService } from './services/scriptId/IScriptIdService';
 import { IScriptRemoteService } from './services/scriptRemote/IScriptRemoteService';
+import { IScriptRepositoryService } from './services/scriptRepository/IScriptRepositoryService';
 import { IScriptService } from './services/script/IScriptService';
+import { ISocketIoClient } from './services/socketIoClient/ISocketIoClient';
 import { IStartup } from './IStartup';
 import { ITypeDefinitionService } from "./services/typeDefinition/ITypeDefinitionService";
 import { IWorkspaceService } from './services/workspace/IWorkspaceService';
 import { IobrokerConnectionService } from './services/iobrokerConnection/IobrokerConnectionService';
 import { JsInstanceService } from './services/jsInstanceService/JsInstanceService';
 import { LogService } from './services/log/LogService';
-import { OpenFileCommand } from './commands/OpenFileCommand';
 import { MoveCommand } from './commands/MoveCommand';
+import { OpenFileCommand } from './commands/OpenFileCommand';
+import { RefreshCommand } from './commands/RefreshCommand';
 import { ScriptExplorerProvider } from './views/scriptExplorer/ScriptExplorerProvider';
 import { ScriptIdService } from './services/scriptId/ScriptIdService';
 import { ScriptRemoteService } from './services/scriptRemote/ScriptRemoteService';
 import { ScriptRenameCommand } from './commands/ScriptRenameCommand';
+import { ScriptRepositoryService } from './services/scriptRepository/ScriptRepositoryService';
 import { ScriptService } from './services/script/ScriptService';
+import { SocketIoClient } from './services/socketIoClient/SocketIoClient';
 import { StartCurrentScriptCommand } from './commands/StartCurrentScriptCommand';
 import { Startup } from './Startup';
 import { StopCurrentScriptCommand } from './commands/StopCurrentScriptCommand';
@@ -44,12 +56,6 @@ import { TypeDefinitionService } from './services/typeDefinition/TypeDefinitionS
 import { UpdateTypeDefinitionCommand } from './commands/UpdateTypeDefinitionCommand';
 import { UploadCommand } from './commands/UploadCommand';
 import { WorkspaceService } from './services/workspace/WorkspaceService';
-import { IDirectoryService } from './services/directory/IDirectoryService';
-import { DirectoryService } from './services/directory/DirectorytService';
-import { ScriptRepositoryService } from './services/scriptRepository/ScriptRepositoryService';
-import { IScriptRepositoryService } from './services/scriptRepository/IScriptRepositoryService';
-import { DeleteCommand } from './commands/DeleteCommand';
-import { RefreshCommand } from './commands/RefreshCommand';
 
 const container = new Container();
 
@@ -57,7 +63,6 @@ container.bind<IStartup>(TYPES.startup).to(Startup).inSingletonScope();
 
 container.bind<IWorkspaceService>(TYPES.services.workspace).to(WorkspaceService).inSingletonScope();
 container.bind<IConfigCreationService>(TYPES.services.configCreation).to(ConfigCreationService).inSingletonScope();
-container.bind<IConnectionService>(TYPES.services.connection).to(ConnectionService).inSingletonScope();
 container.bind<IFileService>(TYPES.services.file).to(FileService).inSingletonScope();
 container.bind<ICommandService>(TYPES.services.command).to(CommandService).inSingletonScope();
 container.bind<IScriptService>(TYPES.services.script).to(ScriptService).inSingletonScope();
@@ -70,6 +75,13 @@ container.bind<ITypeDefinitionService>(TYPES.services.typeDefinition).to(TypeDef
 container.bind<IIobrokerConnectionService>(TYPES.services.iobrokerConnection).to(IobrokerConnectionService).inSingletonScope();
 container.bind<IConfigRepositoryService>(TYPES.services.configRepository).to(ConfigRepositoryService).inSingletonScope();
 container.bind<IJsInstanceService>(TYPES.services.jsInstance).to(JsInstanceService).inSingletonScope();
+container.bind<IConnectionServiceProvider>(TYPES.services.connectionServiceProvider).to(ConnectionServiceProvider).inSingletonScope();
+
+container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inTransientScope();
+container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inTransientScope();
+
+container.bind(TYPES.services.connectionAdmin4).to(ConnectionServiceAdmin4);
+container.bind(TYPES.services.connectionAdmin5).to(ConnectionServiceAdmin5);
 
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
 container.bind<ICommand>(TYPES.command).to(DownloadCommand);

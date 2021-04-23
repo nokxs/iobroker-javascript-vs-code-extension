@@ -3,19 +3,19 @@ import { inject, injectable } from "inversify";
 import { IScript } from "../../models/IScript";
 import { ScriptId } from "../../models/ScriptId";
 import TYPES from "../../Types";
-import { IConnectionService } from "../connection/IConnectionService";
 import { IJsInstanceService } from "./IJsInstanceService";
 import { IJsInstance } from "../../models/IJsInstance";
+import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 
 
 @injectable()
 export class JsInstanceService implements IJsInstanceService {
     constructor(
-        @inject(TYPES.services.connection) private connectionService: IConnectionService
+        @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider
     ) {}
 
     getAvailableInstances(): Promise<IJsInstance[]> {
-        return this.connectionService.getSystemObjectView<IJsInstance>("instance", "system.adapter.javascript", "system.adapter.javascript.");
+        return this.connectionServiceProvider.getConnectionService().getSystemObjectView<IJsInstance>("instance", "system.adapter.javascript", "system.adapter.javascript.");
     }
 
     changeInstance(scriptId: ScriptId, jsInstance: IJsInstance): Promise<void> {
@@ -26,7 +26,7 @@ export class JsInstanceService implements IJsInstanceService {
             }
         };
         
-        return this.connectionService.extendObject(scriptId, script);
+        return this.connectionServiceProvider.getConnectionService().extendObject(scriptId, script);
     }
 }
 

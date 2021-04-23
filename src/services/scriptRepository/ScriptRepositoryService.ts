@@ -30,6 +30,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     ){}
 
     async init(): Promise<void> {
+        this.scriptRemoteService.init();
         await this.updateFromServer();
         this.scriptRemoteService.registerScriptChangedEventListener(this);
         this.raiseScriptChangedEvent(undefined, undefined);

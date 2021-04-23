@@ -2,7 +2,7 @@ import { inject, injectable } from "inversify";
 import { OutputChannel, Uri, window } from "vscode";
 import { ILogMessage } from "../../models/ILogMessage";
 import TYPES from "../../Types";
-import { IConnectionService } from "../connection/IConnectionService";
+import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { IScriptIdService } from "../scriptId/IScriptIdService";
 import { ILogService } from "./ILogService";
 
@@ -10,7 +10,7 @@ import { ILogService } from "./ILogService";
 export class LogService implements ILogService {
        
     constructor(
-        @inject(TYPES.services.connection) private connectionService: IConnectionService,
+        @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
     ) {}
 
@@ -18,7 +18,7 @@ export class LogService implements ILogService {
         const allOutputChannel = window.createOutputChannel("ioBroker (all)");
         const currentScriptOutputChannel = window.createOutputChannel("ioBroker (current script)");
 
-        await this.connectionService.registerForLogs(async (logMessage: ILogMessage) => {
+        await this.connectionServiceProvider.getConnectionService().registerForLogs(async (logMessage: ILogMessage) => {
             if (logMessage.from.startsWith("javascript.")) {
                 this.logMessageToChannel(logMessage, allOutputChannel);
 
@@ -30,7 +30,7 @@ export class LogService implements ILogService {
     }
     
     async stopReceiving(): Promise<void> {
-        await this.connectionService.unregisterForLogs();
+        await this.connectionServiceProvider.getConnectionService().unregisterForLogs();
     }
 
     private logMessageToChannel(message: ILogMessage, channel: OutputChannel) {

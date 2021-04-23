@@ -1,36 +1,47 @@
-import * as socketio from 'socket.io-client';
-
 import { Uri, window } from "vscode";
 
 import { IConnectionEventListener } from "./IConnectionEventListener";
 import { IConnectionService } from "./IConnectionService";
 import { ILogMessage } from '../../models/ILogMessage';
 import { ScriptId } from "../../models/ScriptId";
-import { injectable } from "inversify";
+import { inject, injectable } from "inversify";
+import TYPES from '../../Types';
+import { ISocketIoClient } from "../socketIoClient/ISocketIoClient";
 
 @injectable()
-export class ConnectionService implements IConnectionService {
+export class ConnectionServiceAdmin5 implements IConnectionService {
     public isConnected: Boolean = false;
 
     private connectionTimeout = 10 * 1000;
 
     private connectionEventListeners: Array<IConnectionEventListener> = new Array();
-    private client: SocketIOClient.Socket | undefined = undefined;
+    private client: ISocketIoClient | undefined = undefined;
+
+    constructor(
+        @inject(TYPES.services.socketIoClient) private socketIoClient: ISocketIoClient
+    ) {}
     
     registerConnectionEventListener(listener: IConnectionEventListener): void {
         this.connectionEventListeners.push(listener);
     }
     
     async connect(uri: Uri): Promise<void> {
-        const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
-
-        if (this.client && this.client.connected) {
-            this.client.disconnect();
-        }
-
         return new Promise<void>((resolve, reject) => {
-            this.client = socketio(uri.toString());
+            const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
+
+            if (this.client && this.client.connected) {
+                this.client.close();
+            }
+            
+            this.client = this.socketIoClient.connect(uri.toString(), "vsCode");
             this.registerSocketEvents();
+
+            const timeout = setTimeout(() => {
+                if (!this.isConnected) {
+                    message.dispose();
+                    reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
+                }
+            }, this.connectionTimeout);
 
             this.client.on("connect", () => {
                 this.isConnected = true;
@@ -38,18 +49,17 @@ export class ConnectionService implements IConnectionService {
                 resolve();
             });
 
-            setTimeout(() => {
-                if (!this.isConnected) {
-                    message.dispose();
-                    reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
-                }
-            }, this.connectionTimeout);
+            this.client.on("error", (err: any) => {
+                message.dispose();
+                clearTimeout(timeout);
+                reject(new Error(`The connection to ioBroker was not possible. Reason: ${err}`));
+            });
         });
     }
 
     disconnect(): Promise<void> {
         return new Promise<void>((resolve) => {
-            this.client?.disconnect();
+            this.client?.close();
 
             this.client?.on("disconnect", () => {
                 resolve();

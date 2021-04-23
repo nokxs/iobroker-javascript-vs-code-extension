@@ -3,7 +3,6 @@ const TYPES = {
     services: {
         configCreation: Symbol.for("ConfigCreationService"),
         configRepository: Symbol.for("ConfigRepositoryService"),
-        connection: Symbol.for("ConnectionService"),
         file: Symbol.for("FileService"),
         command: Symbol.for("CommandService"),
         workspace: Symbol.for("WorkspaceService"),
@@ -15,7 +14,13 @@ const TYPES = {
         log: Symbol.for("LogService"),
         typeDefinition: Symbol.for("TypeDefinitionService"),
         iobrokerConnection: Symbol.for("IobrokerConnection"),
-        jsInstance: Symbol.for("JsInstanceService")
+        jsInstance: Symbol.for("JsInstanceService"),
+        socketIoClient: Symbol.for("SocketIoClient"),
+        adminVersionDetector: Symbol.for("AdminVersionDetector"),
+        
+        connectionServiceProvider: Symbol.for("ConnectionServiceProvider"),
+        connectionAdmin4: Symbol.for("ConnectionServiceAdmin4"),
+        connectionAdmin5: Symbol.for("ConnectionServiceAdmin5"),
     },
     views: {
         scriptExplorer: Symbol.for("ScriptExplorerView")
