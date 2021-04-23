@@ -13,6 +13,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
     public isConnected: boolean = false;
 
     private connectionTimeout = 10 * 1000;
+    private reconnectionTimeout = 2000;
 
     private connectionEventListeners: Array<IConnectionEventListener> = new Array();
     private client: SocketIOClient.Socket | undefined = undefined;
@@ -32,21 +33,41 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
             this.client = socketio(uri.toString());
             this.registerSocketEvents();
 
-            this.client.on("connect", () => {
-                this.isConnected = true;
-                message.dispose();
-                resolve();
-            });
-
-            setTimeout(() => {
+            const timeout = setTimeout(() => {
                 if (!this.isConnected) {
                     message.dispose();
                     reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
                 }
             }, this.connectionTimeout);
+
+            this.client.on("connect", () => {
+                clearTimeout(timeout);
+                this.isConnected = true;
+                message.dispose();
+                resolve();
+            });
+
+            this.client.on("connect_timeout", (err: any) => {
+                clearTimeout(timeout);
+                message.dispose();
+                reject(new Error(`Could not connect to '${uri}'. Reason: ${err}.`));
+            });
+            
+            this.client.on("connect_error", (err: any) => {
+                clearTimeout(timeout);
+                message.dispose();
+                reject(new Error(`Could not connect to '${uri}'. Reason: ${err}.`));
+            });
+
+            this.client.on("reconnect_attempt", () => {
+                this.client?.disconnect();
+                this.client?.removeAllListeners();
+                this.registerSocketEvents();
+                this.startReconnectTimeout();
+            });
         });
     }
-
+    
     disconnect(): Promise<void> {
         return new Promise<void>((resolve) => {
             this.client?.disconnect();
@@ -218,5 +239,15 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
                 this.connectionEventListeners.forEach(listener => listener.onDisconnected());
             });
         }
+    }
+
+    private startReconnectTimeout() {
+        setTimeout(async () => {
+            try {
+                await this.client?.connect();
+            } catch (_: any) {
+                this.startReconnectTimeout();
+            }            
+        }, this.reconnectionTimeout);
     }
 }
