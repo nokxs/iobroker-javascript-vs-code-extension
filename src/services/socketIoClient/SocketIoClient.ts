@@ -10,6 +10,7 @@ import { injectable } from "inversify";
 
 import WebSocket = require("ws");
 
+
 // import btoa = require("btoa");
 
 // const ERRORS = {
@@ -30,6 +31,15 @@ import WebSocket = require("ws");
 //     1015: 'TLS handshake fail',		// Transport Layer Security handshake failure
 // };
 
+const RECONNECT_TIMEOUT = 3000;
+
+const WS_READY_STATE = {
+    connecting: 0,
+    open: 1,
+    closing: 2,
+    closed: 3
+};
+
 const MESSAGE_TYPES = {
     message: 0,
     ping: 1,
@@ -44,11 +54,10 @@ export class SocketIoClient implements ISocketIoClient {
 
     private handlers: any = {};
     private lastPong: any;
-    private socket: any;
+    private socket: WebSocket | null = null;
     private wasConnected = false;
     private connectTimer: any = null;
     private connectingTimer: any = null;
-    private connectionCount = 0;
     private callbacks: any = [];
     private pending: any = []; // pending requests till connection established
     private url: String = "";
@@ -70,7 +79,7 @@ export class SocketIoClient implements ISocketIoClient {
         this.connected = false; // simulate socket.io interface
     }
 
-    connect(_url: any, _options: any): ISocketIoClient {
+    async connect(_url: any, _options: any): Promise<ISocketIoClient> {
         this.log.debug('Try to connect');
         this.id = 0;
         this.connectTimer && clearInterval(this.connectTimer);
@@ -88,55 +97,54 @@ export class SocketIoClient implements ISocketIoClient {
             this.socket = new WebSocket(u);
         } catch (error) {
             this.handlers.error && this.handlers.error.forEach((cb: any) => cb.call(this, error));
-            return this.close();
+            return await this.closeAndReconnect();
         }
 
-        this.connectingTimer = setTimeout(() => {
+        this.connectingTimer = setTimeout(async () => {
             this.connectingTimer = null;
             this.log.warn('No READY flag received in 3 seconds. Re-init');
-            this.close(); // re-init connection, because no ___ready___ received in 2000 ms
+            await this.closeAndReconnect(); // re-init connection, because no ___ready___ received in 3000 ms
         }, 3000);
 
         this.socket.onopen = () => {
             this.lastPong = Date.now();
-            this.connectionCount = 0;
 
-            this.pingInterval = setInterval(() => {
+            this.pingInterval = setInterval(async () => {
                 if (Date.now() - this.lastPong > 5000) {
                     try {
-                        this.socket.send(JSON.stringify([MESSAGE_TYPES.ping]));
+                        this.socket?.send(JSON.stringify([MESSAGE_TYPES.ping]));
                     } catch (e) {
                         this.log.warn('Cannot send ping. Close connection: ' + e);
-                        this.close();
+                        await this.closeAndReconnect();
                         return this._garbageCollect();
                     }
                 }
                 if (Date.now() - this.lastPong > 15000) {
-                    this.close();
+                    await this.closeAndReconnect();
                 }
                 this._garbageCollect();
             }, 5000);
         };
 
-        this.socket.onclose = (event: {code: Number}) => {
+        this.socket.onclose = async (event: {code: Number}) => {
             if (event.code === 3001) {
                 this.log.warn('ws closed');
             } else {
                 // this.log.error('ws connection error: ' + ERRORS[event.code]);
                 this.log.error('ws connection error: ' + event.code);
             }
-            this.close();
+            await this.closeAndReconnect();
         };
 
-        this.socket.onerror = (error: any) => {
+        this.socket.onerror = async (error: any) => {
             if (this.connected) {
-                if (this.socket.readyState === 1) {
-                    this.log.error('ws normal error: ' + error.type);
+                if (this.socket?.readyState === WS_READY_STATE.open) {
+                    this.log.error('ws normal error: ' + error.message);
                 }
             }
             
-            this.handlers.error && this.handlers.error.forEach((cb: any) => cb.call(this, error.code || 'UNKNOWN'));
-            this.close();
+            this.handlers.error && this.handlers.error.forEach((cb: any) => cb.call(this, `Error Code: ${error.code || 'UNKNOWN'}; Message: ${error.message}`));
+            await this.closeAndReconnect();
         };
 
         this.socket.onmessage = (message: any) => {
@@ -189,7 +197,7 @@ export class SocketIoClient implements ISocketIoClient {
                     this.handlers[name] && this.handlers[name].forEach((cb: any) => cb.call(this));
                 }
             } else if (type === MESSAGE_TYPES.ping) {
-                this.socket.send(JSON.stringify([MESSAGE_TYPES.pong]));
+                this.socket?.send(JSON.stringify([MESSAGE_TYPES.pong]));
             } else if (type === MESSAGE_TYPES.pong) {
                 // lastPong saved
             } else {
@@ -236,11 +244,11 @@ export class SocketIoClient implements ISocketIoClient {
                     this.log.debug('Authenticate timeout');
                     this.handlers.error && this.handlers.error.forEach((cb: any) => cb.call(this, 'Authenticate timeout'));
                 }
-                this.close();
+                this.closeAndReconnect();
             }, 2000);
         }
         this.callbacks.push({id, cb, ts: DEBUG ? 0 : Date.now() + 30000});
-        this.socket.send(JSON.stringify([MESSAGE_TYPES.callback, id, name, args]));
+        this.socket?.send(JSON.stringify([MESSAGE_TYPES.callback, id, name, args]));
     }
 
     findAnswer(id: any, args: any): void {
@@ -299,7 +307,7 @@ export class SocketIoClient implements ISocketIoClient {
             }
         } catch (e) {
             console.error('Cannot send: ' + e);
-            this.close();
+            this.closeAndReconnect();
         }
     }
 
@@ -322,7 +330,7 @@ export class SocketIoClient implements ISocketIoClient {
         }
     }
 
-    close(): ISocketIoClient {
+    close(): Promise<ISocketIoClient> {
         this.pingInterval && clearTimeout(this.pingInterval);
         this.pingInterval = null;
 
@@ -338,7 +346,6 @@ export class SocketIoClient implements ISocketIoClient {
             } catch (e) {
                 this.log.debug("Closing the websocket threw a exception: " + e);
             }
-            this.socket = null;
         }
 
         if (this.connected) {
@@ -347,23 +354,35 @@ export class SocketIoClient implements ISocketIoClient {
         }
 
         this.callbacks = [];
+        const client = this;
+        return new Promise<ISocketIoClient>((resolve) => {
+            if (this.socket?.readyState === WS_READY_STATE.closed) {
+                resolve(client);
+                return;
+            } 
 
-        this._reconnect();
-        return this;
+            this.socket!.onclose = () => {  
+                this.socket = null;            
+                resolve(client);
+            };
+        });
     }
 
     _reconnect(): void {
         if (!this.connectTimer) {
-            this.log.debug('Start reconnect ' + this.connectionCount);
+            this.log.debug('Start reconnect');
             this.connectTimer = setTimeout(() => {
                 this.connectTimer = null;
-                if (this.connectionCount < 5) {
-                    this.connectionCount++;
-                }
                 this.connect(this.url, this.options);
-            }, this.connectionCount * 1000);
+            }, RECONNECT_TIMEOUT);
         } else {
-            this.log.debug('Reconnect is already running ' + this.connectionCount);
+            this.log.debug('Reconnect is already running');
         }
+    }
+
+    private async closeAndReconnect(): Promise<ISocketIoClient> {
+        await this.close();
+        this._reconnect();
+        return this;
     }
 }
