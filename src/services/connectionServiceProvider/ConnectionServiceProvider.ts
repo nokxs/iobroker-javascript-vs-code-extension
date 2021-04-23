@@ -15,7 +15,13 @@ export class ConnectionServiceProvider implements IConnectionServiceProvider {
         @inject(TYPES.services.connectionAdmin5) private connectionServiceAdmin5: ConnectionServiceAdmin5
     ) {}
 
-     getConnectionService(): IConnectionService {
+    isConnectionServiceAvailable(): boolean {
+        return this.configRepositoryService.config && 
+            this.configRepositoryService.config.adminVersion && 
+            this.configRepositoryService.config.adminVersion !== AdminVersion.unknown;
+    }
+
+    getConnectionService(): IConnectionService {
         const adminVersion = this.configRepositoryService.config.adminVersion;
 
          if (adminVersion === AdminVersion.admin4) {

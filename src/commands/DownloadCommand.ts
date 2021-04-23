@@ -7,17 +7,23 @@ import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import CONSTANTS from "../Constants";
 import { IScriptRepositoryService } from "../services/scriptRepository/IScriptRepositoryService";
 import { ILocalScript } from "../models/ILocalScript";
+import { IIobrokerConnectionService } from "../services/iobrokerConnection/IIobrokerConnectionService";
 
 @injectable()
 export class DownloadCommand implements ICommand {
     id: string = "iobroker-javascript.download";
 
     constructor(
+        @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
         @inject(TYPES.services.script) private scriptService: IScriptService,
         @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService
     ) {}
     
     async execute(...args: any[]) {
+        if (!this.iobrokerConnectionService.isConnected()) {
+            await this.iobrokerConnectionService.connect();
+        }
+
         await this.scriptRepositoryService.updateFromServer();
         const localScript = await this.tryGetLocalScript(args);
 

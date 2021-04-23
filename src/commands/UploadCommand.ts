@@ -10,18 +10,24 @@ import { IScript } from "../models/IScript";
 import CONSTANTS from "../Constants";
 import { IScriptIdService } from "../services/scriptId/IScriptIdService";
 import { IScriptRemoteService } from '../services/scriptRemote/IScriptRemoteService';
+import { IIobrokerConnectionService } from '../services/iobrokerConnection/IIobrokerConnectionService';
 
 @injectable()
 export class UploadCommand implements ICommand {
     id: string = "iobroker-javascript.upload";
     
     constructor(
+        @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
         @inject(TYPES.services.script) private scriptService: IScriptService,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService
     ) {}
 
     async execute(...args: any[]) {
+        if (!this.iobrokerConnectionService.isConnected()) {
+            await this.iobrokerConnectionService.connect();
+        }
+
         const script = await this.getScriptData(args);
 
         if (script) {

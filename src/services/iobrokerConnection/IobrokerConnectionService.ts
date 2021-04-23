@@ -43,6 +43,10 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
     this.statusBarItem.text = "$(warning) ioBroker disconnected";
   }
 
+  isConnected(): boolean {
+    return this.connectionServiceProvider.isConnectionServiceAvailable() && this.connectionServiceProvider.getConnectionService().isConnected;
+  }
+
   async connect(): Promise<void> {
     try {
         let isInitialConnect = false;

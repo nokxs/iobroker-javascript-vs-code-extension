@@ -4,7 +4,7 @@ import { ScriptId } from "../../models/ScriptId";
 import { Uri } from "vscode";
 
 export interface IConnectionService {
-    isConnected: Boolean;
+    isConnected: boolean;
     
     connect(uri: Uri): Promise<void>
     disconnect(): Promise<void>
