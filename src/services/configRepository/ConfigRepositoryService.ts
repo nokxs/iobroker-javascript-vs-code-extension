@@ -21,7 +21,13 @@ export class ConfigRepositoryService implements IConfigRepositoryService {
         
         if (configFileExists) {
             const configFileContent = await workspace.fs.readFile(expectedConfigFilePath);
-            this.config = JSON.parse(configFileContent.toString());
+            this.config = JSON.parse(configFileContent.toString(), (key: string, value: any) => {
+                if (key === "adminVersion") {
+                    return (<string>value).toLocaleLowerCase();
+                }
+
+                return value;
+            });
         } else {
             this.config = new NoConfig();
         }
