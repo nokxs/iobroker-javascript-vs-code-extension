@@ -7,17 +7,23 @@ import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import CONSTANTS from "../Constants";
 import { IScriptIdService } from "../services/scriptId/IScriptIdService";
 import { IScriptRemoteService } from "../services/scriptRemote/IScriptRemoteService";
+import { IIobrokerConnectionService } from "../services/iobrokerConnection/IIobrokerConnectionService";
 
 @injectable()
 export class StopCurrentScriptCommand implements ICommand {
     id: string = "iobroker-javascript.stopScript";
     
     constructor(
+        @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
     ) {}
     
     async execute(...args: any[]) {
+        if (!this.iobrokerConnectionService.isConnected()) {
+            await this.iobrokerConnectionService.connect();
+        }
+
         const scriptId = this.tryGetScriptId(args);
 
         if (scriptId && scriptId.length > 0) {

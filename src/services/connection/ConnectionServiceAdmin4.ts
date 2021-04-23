@@ -10,7 +10,7 @@ import { injectable } from "inversify";
 
 @injectable()
 export class ConnectionServiceAdmin4 implements IConnectionService {
-    public isConnected: Boolean = false;
+    public isConnected: boolean = false;
 
     private connectionTimeout = 10 * 1000;
 

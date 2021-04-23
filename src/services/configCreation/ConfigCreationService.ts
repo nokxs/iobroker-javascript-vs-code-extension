@@ -16,22 +16,26 @@ export class ConfigCreationService implements IConfigCreationService {
     ) {}
 
     async createConfigInteractivly(): Promise<Config> {
-        const ioBrokerUrl = await window.showInputBox({prompt: "The URL to your ioBroker installation", value: "http://localhost"});
+        const ioBrokerUrl = await window.showInputBox({prompt: "The URL to your ioBroker installation", value: "http://localhost", ignoreFocusOut: true});
         if (!ioBrokerUrl) {
             return new NoConfig();
         }
+        else if (!(ioBrokerUrl.startsWith("http://") || ioBrokerUrl.startsWith("https://"))) {
+            await window.showWarningMessage("The ioBroker URL has to start with 'http://' or 'https://'");
+            return new NoConfig();
+        }
 
-        const port = await window.showInputBox({prompt: "The port of the socket.io Adapter", value: "8081"});
+        const port = await window.showInputBox({prompt: "The port of the socket.io Adapter", value: "8081", ignoreFocusOut: true});
         if (!port) {
             return new NoConfig();
         }
 
-        const scriptPath = await window.showInputBox({prompt: "The relative path in your workspace to the scripts", value: "/"});
+        const scriptPath = await window.showInputBox({prompt: "The relative path in your workspace to the scripts", value: "/", ignoreFocusOut: true});
         if (!scriptPath) {
             return new NoConfig();
         }
 
-        const shouldCreateTypeDefinitionConfig = await window.showQuickPick(["Yes", "No"], {canPickMany: false, placeHolder: "Configure ioBroker type defintions?"});
+        const shouldCreateTypeDefinitionConfig = await window.showQuickPick(["Yes", "No"], {canPickMany: false, placeHolder: "Configure ioBroker type defintions?", ignoreFocusOut: true});
         if (!shouldCreateTypeDefinitionConfig) {
             return new NoConfig();
         }
