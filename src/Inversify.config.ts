@@ -7,7 +7,6 @@ import { ConfigCreationService } from './services/configCreation/ConfigCreationS
 import { ConfigRepositoryService } from './services/configRepository/ConfigRepositoryService';
 import { ConnectCommand } from './commands/ConnectCommand';
 import { ConnectionServiceAdmin4 } from './services/connection/ConnectionServiceAdmin4';
-import { ConnectionServiceAdmin5 } from './services/connection/ConnectionServiceAdmin5';
 import { ConnectionServiceProvider } from './services/connectionServiceProvider/ConnectionServiceProvider';
 import { Container } from 'inversify';
 import { DeleteCommand } from './commands/DeleteCommand';
@@ -31,7 +30,7 @@ import { IScriptIdService } from './services/scriptId/IScriptIdService';
 import { IScriptRemoteService } from './services/scriptRemote/IScriptRemoteService';
 import { IScriptRepositoryService } from './services/scriptRepository/IScriptRepositoryService';
 import { IScriptService } from './services/script/IScriptService';
-import { ISocketIoClient } from './services/connection/ISocketIoClient';
+import { ISocketIoClient } from './services/socketIoClient/ISocketIoClient';
 import { IStartup } from './IStartup';
 import { ITypeDefinitionService } from "./services/typeDefinition/ITypeDefinitionService";
 import { IWorkspaceService } from './services/workspace/IWorkspaceService';
@@ -47,7 +46,7 @@ import { ScriptRemoteService } from './services/scriptRemote/ScriptRemoteService
 import { ScriptRenameCommand } from './commands/ScriptRenameCommand';
 import { ScriptRepositoryService } from './services/scriptRepository/ScriptRepositoryService';
 import { ScriptService } from './services/script/ScriptService';
-import { SocketIoClient } from './services/connection/SocketIoClient';
+import { SocketIoClient } from './services/socketIoClient/SocketIoClient';
 import { StartCurrentScriptCommand } from './commands/StartCurrentScriptCommand';
 import { Startup } from './Startup';
 import { StopCurrentScriptCommand } from './commands/StopCurrentScriptCommand';

@@ -2,8 +2,8 @@ import { AdminVersion } from "../../models/Config";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import * as socketio from 'socket.io-client';
-import { ISocketIoClient } from "../connection/ISocketIoClient";
 import { IAdminVersionDetector } from "./IAdminVersionDetector";
+import { ISocketIoClient } from "../socketIoClient/ISocketIoClient";
 
 
 @injectable()
