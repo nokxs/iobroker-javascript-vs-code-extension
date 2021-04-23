@@ -1,13 +1,9 @@
-/*!
- * ioBroker WebSockets
- * Copyright 2020-2021, bluefox <dogafox@gmail.com>
- * Released under the MIT License.
- * v 0.2.1 (2020_10_16)
+/**
+ * 
+ * This is a type script compilable version of the client of the ioBroker admin adapter
+ * from https://github.com/ioBroker/ioBroker.admin/blob/18aef11bd262c069dd9ba266950811d4c10931ae/src-rx/public/lib/js/socket.io.js
+ * 
  */
-/* jshint -W097 */
-/* jshint strict: false */
-/* jslint node: true */
-/* jshint -W061 */
 'use strict';
 
 import { ISocketIoClient } from "./ISocketIoClient";

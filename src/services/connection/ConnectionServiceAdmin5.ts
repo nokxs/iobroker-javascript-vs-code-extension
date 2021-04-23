@@ -5,8 +5,8 @@ import { IConnectionService } from "./IConnectionService";
 import { ILogMessage } from '../../models/ILogMessage';
 import { ScriptId } from "../../models/ScriptId";
 import { inject, injectable } from "inversify";
-import { ISocketIoClient } from './ISocketIoClient';
 import TYPES from '../../Types';
+import { ISocketIoClient } from "../socketIoClient/ISocketIoClient";
 
 @injectable()
 export class ConnectionServiceAdmin5 implements IConnectionService {
@@ -15,7 +15,6 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     private connectionTimeout = 10 * 1000;
 
     private connectionEventListeners: Array<IConnectionEventListener> = new Array();
-    // private client: SocketIOClient.Socket | undefined = undefined;
     private client: ISocketIoClient | undefined = undefined;
 
     constructor(
@@ -37,26 +36,24 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
             this.registerSocketEvents();
             this.client = this.socketIoClient.connect(uri.toString(), "");
 
+            const timeout = setTimeout(() => {
+                if (!this.isConnected) {
+                    message.dispose();
+                    reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
+                }
+            }, this.connectionTimeout);
+
             this.client.on("connect", () => {
                 this.isConnected = true;
                 message.dispose();
                 resolve();
             });
 
-            this.client.on("connect_error", (err: any) => {
-                console.log(err);
+            this.client.on("error", (err: any) => {
+                message.dispose();
+                clearTimeout(timeout);
+                reject(new Error(`The connection to ioBroker was not possible. Reason: ${err}`));
             });
-
-            this.client.on("connect_timeout", (err: any) => {
-                console.log(err);
-            });
-
-            setTimeout(() => {
-                if (!this.isConnected) {
-                    message.dispose();
-                    reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
-                }
-            }, this.connectionTimeout);
         });
     }
 
