@@ -32,18 +32,31 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
             this.client = socketio(uri.toString());
             this.registerSocketEvents();
 
-            this.client.on("connect", () => {
-                this.isConnected = true;
-                message.dispose();
-                resolve();
-            });
-
-            setTimeout(() => {
+            const timeout = setTimeout(() => {
                 if (!this.isConnected) {
                     message.dispose();
                     reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
                 }
             }, this.connectionTimeout);
+
+            this.client.on("connect", () => {
+                clearTimeout(timeout);
+                this.isConnected = true;
+                message.dispose();
+                resolve();
+            });
+
+            this.client.on("connect_timeout", (err: any) => {
+                clearTimeout(timeout);
+                message.dispose();
+                reject(new Error(`Could not connect to '${uri}'. Reason: ${err}.`));
+            });
+            
+            this.client.on("connect_error", (err: any) => {
+                clearTimeout(timeout);
+                message.dispose();
+                reject(new Error(`Could not connect to '${uri}'. Reason: ${err}.`));
+            });
         });
     }
 
