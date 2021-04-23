@@ -18,10 +18,10 @@ import WebSocket = require("ws");
 // import btoa = require("btoa");
 
 const MESSAGE_TYPES = {
-    MESSAGE: 0,
-    PING: 1,
-    PONG: 2,
-    CALLBACK: 3
+    message: 0,
+    ping: 1,
+    pong: 2,
+    callback: 3
 };
 
 const DEBUG = true;
@@ -91,7 +91,7 @@ export class SocketIoClient implements ISocketIoClient {
             this.pingInterval = setInterval(() => {
                 if (Date.now() - this.lastPong > 5000) {
                     try {
-                        this.socket.send(JSON.stringify([MESSAGE_TYPES.PING]));
+                        this.socket.send(JSON.stringify([MESSAGE_TYPES.ping]));
                     } catch (e) {
                         this.log.warn('Cannot send ping. Close connection: ' + e);
                         this.close();
@@ -145,10 +145,10 @@ export class SocketIoClient implements ISocketIoClient {
                 this.authTimeout = null;
             }
 
-            if (type === MESSAGE_TYPES.CALLBACK) {
+            if (type === MESSAGE_TYPES.callback) {
                 this.findAnswer(id, args);
             } else
-            if (type === MESSAGE_TYPES.MESSAGE) {
+            if (type === MESSAGE_TYPES.message) {
                 if (name === '___ready___') {
                     this.connected  = true;
 
@@ -175,9 +175,9 @@ export class SocketIoClient implements ISocketIoClient {
                 } else {
                     this.handlers[name] && this.handlers[name].forEach((cb: any) => cb.call(this));
                 }
-            } else if (type === MESSAGE_TYPES.PING) {
-                this.socket.send(JSON.stringify([MESSAGE_TYPES.PONG]));
-            } else if (type === MESSAGE_TYPES.PONG) {
+            } else if (type === MESSAGE_TYPES.ping) {
+                this.socket.send(JSON.stringify([MESSAGE_TYPES.pong]));
+            } else if (type === MESSAGE_TYPES.pong) {
                 // lastPong saved
             } else {
                 this.log.warn('Received unknown message type: ' + type);
@@ -227,7 +227,7 @@ export class SocketIoClient implements ISocketIoClient {
             }, 2000);
         }
         this.callbacks.push({id, cb, ts: DEBUG ? 0 : Date.now() + 30000});
-        this.socket.send(JSON.stringify([MESSAGE_TYPES.CALLBACK, id, name, args]));
+        this.socket.send(JSON.stringify([MESSAGE_TYPES.callback, id, name, args]));
     }
 
     findAnswer(id: any, args: any): void {
@@ -272,17 +272,17 @@ export class SocketIoClient implements ISocketIoClient {
                 this.withCallback(name, this.id, [], arg1);
             } else
             if (arg1 === undefined && arg2 === undefined && arg3 === undefined && arg4 === undefined && arg5 === undefined) {
-                this.socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name]));
+                this.socket.send(JSON.stringify([MESSAGE_TYPES.message, this.id, name]));
             } else if (arg2 === undefined && arg3 === undefined && arg4 === undefined && arg5 === undefined) {
-                this.socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name, [arg1]]));
+                this.socket.send(JSON.stringify([MESSAGE_TYPES.message, this.id, name, [arg1]]));
             } else if (arg3 === undefined && arg4 === undefined && arg5 === undefined) {
-                this.socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name, [arg1, arg2]]));
+                this.socket.send(JSON.stringify([MESSAGE_TYPES.message, this.id, name, [arg1, arg2]]));
             } else if (arg4 === undefined && arg5 === undefined) {
-                this.socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name, [arg1, arg2, arg3]]));
+                this.socket.send(JSON.stringify([MESSAGE_TYPES.message, this.id, name, [arg1, arg2, arg3]]));
             } else if (arg5 === undefined) {
-                this.socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name, [arg1, arg2, arg3, arg4]]));
+                this.socket.send(JSON.stringify([MESSAGE_TYPES.message, this.id, name, [arg1, arg2, arg3, arg4]]));
             } else {
-                this.socket.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name, [arg1, arg2, arg3, arg4, arg5]]));
+                this.socket.send(JSON.stringify([MESSAGE_TYPES.message, this.id, name, [arg1, arg2, arg3, arg4, arg5]]));
             }
         } catch (e) {
             console.error('Cannot send: ' + e);

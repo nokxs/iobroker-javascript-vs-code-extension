@@ -4,7 +4,6 @@ import { inject, injectable } from "inversify";
 import { AdminVersion, Config, NoConfig } from '../../models/Config';
 import { NoWorkspaceFolder } from '../../models/NoWorkspaceFolder';
 import TYPES from '../../Types';
-import { IConnectionService } from '../connection/IConnectionService';
 import { ILogService } from '../log/ILogService';
 import { IWorkspaceService } from '../workspace/IWorkspaceService';
 import { IIobrokerConnectionService } from "./IIobrokerConnectionService";
