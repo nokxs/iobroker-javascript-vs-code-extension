@@ -47,5 +47,5 @@ export class ConfigRepositoryService implements IConfigRepositoryService {
 
     private getConfigPath(root: Uri) {
         return Uri.joinPath(root, ".iobroker-config.json");
-    };
+    }
 }
