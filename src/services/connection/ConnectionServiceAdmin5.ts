@@ -26,14 +26,16 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     }
     
     async connect(uri: Uri): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
+        const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
 
-            if (this.client && this.client.connected) {
-                this.client.close();
-            }
-            
-            this.client = this.socketIoClient.connect(uri.toString(), "vsCode");
+        if (this.client && this.client.connected) {
+            await this.client.close();
+            this.isConnected = false;
+        }
+        
+        this.client = await this.socketIoClient.connect(uri.toString(), {name: "vsCode"});
+
+        return new Promise<void>((resolve, reject) => {
             this.registerSocketEvents();
 
             const timeout = setTimeout(() => {
@@ -43,13 +45,19 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                 }
             }, this.connectionTimeout);
 
-            this.client.on("connect", () => {
+            this.client!.on("connect", () => {
                 this.isConnected = true;
                 message.dispose();
                 resolve();
             });
 
-            this.client.on("error", (err: any) => {
+            this.client!.on("reconnect", () => {
+                this.isConnected = true;
+                message.dispose();
+                resolve();
+            });
+
+            this.client!.on("error", (err: any) => {
                 message.dispose();
                 clearTimeout(timeout);
                 reject(new Error(`The connection to ioBroker was not possible. Reason: ${err}`));
@@ -57,9 +65,10 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
         });
     }
 
-    disconnect(): Promise<void> {
+    async disconnect(): Promise<void> {
+        await this.client?.close();
         return new Promise<void>((resolve) => {
-            this.client?.close();
+            this.isConnected = false;
 
             this.client?.on("disconnect", () => {
                 resolve();
@@ -219,6 +228,11 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     private registerSocketEvents(): void {
         if (this.client) {
             this.client.on("connect", () => {
+                this.isConnected = true;
+                this.connectionEventListeners.forEach(listener => listener.onConnected());
+            });
+
+            this.client.on("reconnect", () => {
                 this.isConnected = true;
                 this.connectionEventListeners.forEach(listener => listener.onConnected());
             });
