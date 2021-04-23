@@ -13,6 +13,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
     public isConnected: boolean = false;
 
     private connectionTimeout = 10 * 1000;
+    private reconnectionTimeout = 2000;
 
     private connectionEventListeners: Array<IConnectionEventListener> = new Array();
     private client: SocketIOClient.Socket | undefined = undefined;
@@ -57,9 +58,25 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
                 message.dispose();
                 reject(new Error(`Could not connect to '${uri}'. Reason: ${err}.`));
             });
+
+            this.client.on("reconnect_attempt", () => {
+                this.client?.disconnect();
+                this.client?.removeAllListeners();
+                this.registerSocketEvents();
+                this.startReconnectTimeout();
+            });
         });
     }
 
+    private startReconnectTimeout() {
+        setTimeout(async () => {
+            try {
+                await this.client?.connect();
+            } catch (_: any) {
+                this.startReconnectTimeout();
+            }            
+        }, this.reconnectionTimeout);
+    }
     disconnect(): Promise<void> {
         return new Promise<void>((resolve) => {
             this.client?.disconnect();
