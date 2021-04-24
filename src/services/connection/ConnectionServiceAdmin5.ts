@@ -25,7 +25,7 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
         this.connectionEventListeners.push(listener);
     }
     
-    async connect(uri: Uri): Promise<void> {
+    async connect(uri: Uri, autoReconnect: boolean): Promise<void> {
         const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
 
         if (this.client && this.client.connected) {
@@ -33,6 +33,7 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
             this.isConnected = false;
         }
         
+        this.socketIoClient.autoReconnect = autoReconnect;
         this.client = await this.socketIoClient.connect(uri.toString(), {name: "vsCode"});
 
         return new Promise<void>((resolve, reject) => {

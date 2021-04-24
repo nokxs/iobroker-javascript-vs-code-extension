@@ -1,5 +1,6 @@
 export interface ISocketIoClient {
     connected: boolean;
+    autoReconnect: boolean;
 
     connect(_url: any, _options: any): Promise<ISocketIoClient>;
     withCallback(name: String, id: any, args: any, cb: any): void;

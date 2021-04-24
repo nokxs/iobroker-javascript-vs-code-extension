@@ -68,6 +68,7 @@ export class SocketIoClient implements ISocketIoClient {
     private authTimeout: any = null;
     
     public connected = false;
+    public autoReconnect = true;
 
     log = {
         debug: (text: String) => DEBUG && console.log(`[${new Date().toISOString()}] ${text}`),
@@ -133,7 +134,13 @@ export class SocketIoClient implements ISocketIoClient {
                 // this.log.error('ws connection error: ' + ERRORS[event.code]);
                 this.log.error('ws connection error: ' + event.code);
             }
-            await this.closeAndReconnect();
+
+            if (this.autoReconnect) {
+                await this.closeAndReconnect();                
+            }
+            else {
+                await this.close();
+            }
         };
 
         this.socket.onerror = async (error: any) => {
@@ -144,7 +151,13 @@ export class SocketIoClient implements ISocketIoClient {
             }
             
             this.handlers.error && this.handlers.error.forEach((cb: any) => cb.call(this, `Error Code: ${error.code || 'UNKNOWN'}; Message: ${error.message}`));
-            await this.closeAndReconnect();
+
+            if (this.autoReconnect) {
+                await this.closeAndReconnect();                
+            }
+            else {
+                await this.close();
+            }
         };
 
         this.socket.onmessage = (message: any) => {
