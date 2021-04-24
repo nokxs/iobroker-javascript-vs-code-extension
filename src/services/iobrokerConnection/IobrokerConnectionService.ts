@@ -32,6 +32,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
       @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService
   ) {
     this.statusBarItem.text = "$(warning) ioBroker disconnected";
+    this.statusBarItem.command = "iobroker-javascript.connect";
     this.statusBarItem.show();
   }
 
