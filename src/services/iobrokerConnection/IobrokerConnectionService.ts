@@ -32,6 +32,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
       @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService
   ) {
     this.statusBarItem.text = "$(warning) ioBroker disconnected";
+    this.statusBarItem.command = "iobroker-javascript.connect";
     this.statusBarItem.show();
   }
 
@@ -86,7 +87,8 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
 
         this. connectionServiceProvider.getConnectionService().registerConnectionEventListener(this);
         const connectionService = this.connectionServiceProvider.getConnectionService();
-        await connectionService.connect(Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`));
+        const useAutoReconnect = this.config?.autoReconnect ?? true;
+        await connectionService.connect(Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`), useAutoReconnect);
         await this.logService.startReceiving();
         await this.scriptRepositoryService.init();
 

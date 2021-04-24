@@ -3,6 +3,7 @@
   "socketIoPort": 8081,
   "workspaceSubPath": "/",
   "adminVersion": "admin5",
+  "autoReconnect": true,
   "scriptExplorer": {
     "collapseDirectoriesOnStartup": true
   }

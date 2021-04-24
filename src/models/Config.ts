@@ -4,6 +4,7 @@ export class Config {
         readonly socketIoPort: number,
         readonly scriptRoot: string,
         readonly adminVersion: AdminVersion,
+        readonly autoReconnect?: boolean,
         readonly scriptExplorer?: ScriptExplorerConfig) {}
 }
 

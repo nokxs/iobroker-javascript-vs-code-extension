@@ -22,7 +22,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
         this.connectionEventListeners.push(listener);
     }
     
-    async connect(uri: Uri): Promise<void> {
+    async connect(uri: Uri, autoReconnect: boolean): Promise<void> {
         const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
 
         if (this.client && this.client.connected) {
@@ -62,8 +62,11 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
             this.client.on("reconnect_attempt", () => {
                 this.client?.disconnect();
                 this.client?.removeAllListeners();
-                this.registerSocketEvents();
-                this.startReconnectTimeout();
+
+                if (autoReconnect) {
+                    this.registerSocketEvents();
+                    this.startReconnectTimeout();
+                }
             });
         });
     }

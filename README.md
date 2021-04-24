@@ -85,6 +85,7 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 | `socketIoPort` | Use the port of the admin adapter (usually 8081). Do not use the port of the socket.io Adapter (usually 8084) as this will not work, because of missing permissions. | Yes | |
 | `scriptRoot` | Relative directory path, which is used as root of ioBroker scripts. | Yes | |
 | `adminVersion` | The admin version to connect to. Valid values: `Admin4`, `Admin5` | Yes | |
+| `autoReconnect` | Should a lost connection be automatically be restored? | No | true |
 | `scriptExplorer.collapseDirectoriesOnStartup` | Should the directories in the script explorer be collapsed on startup. | No | true |
 
 ## Known Issues
