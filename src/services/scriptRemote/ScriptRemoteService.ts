@@ -23,6 +23,10 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
 
     init(): void {
         this.connectionServiceProvider.getConnectionService().registerConnectionEventListener(this);
+        
+        if(this.connectionServiceProvider.getConnectionService().isConnected) {
+            this.registerSocketEvents();
+        }
     }
 
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
