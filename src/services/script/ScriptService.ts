@@ -24,7 +24,7 @@ export class ScriptService implements IScriptService {
                 return "rules";
         
             default:
-                return "";
+                return "txt";
         }
     }
 

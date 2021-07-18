@@ -1,7 +1,7 @@
 export enum EngineType {
     unkown = "",
-    javascript = "JavaScript/js",
-    typescript = "TypeScript/ts",
+    javascript = "javascript/js",
+    typescript = "typescript/ts",
     blockly = "blockly",
     rules = "rules"
 }
