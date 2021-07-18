@@ -20,6 +20,8 @@ export class ScriptService implements IScriptService {
                 return "ts";
             case EngineType.blockly:
                 return "block";
+            case EngineType.rules:
+                return "rules";
         
             default:
                 return "";
@@ -29,13 +31,16 @@ export class ScriptService implements IScriptService {
     getEngineType(uri: Uri): EngineType {
         if (uri.path.endsWith(".js")) {
             return EngineType.javascript;
-        } else 
-        if (uri.path.endsWith(".ts")) {
+        } 
+        else if (uri.path.endsWith(".ts")) {
             return EngineType.typescript;
-        } else 
-        if (uri.path.endsWith(".block")) {
+        } 
+        else if (uri.path.endsWith(".block")) {
             return EngineType.blockly;
         } 
+        else if(uri.path.endsWith(".rules")) {
+            return EngineType.rules;
+        }
 
         return EngineType.unkown;
     }

@@ -44,6 +44,8 @@ export class OpenFileCommand implements ICommand {
                 return "typescript";
             case EngineType.blockly:
                 return "blockly";
+            case EngineType.rules:
+                return "rules";
         
             default:
                 return "text";

@@ -31,6 +31,8 @@ export class ScriptItem extends vscode.TreeItem {
                 return this.getTsIcon();
             case EngineType.blockly:
                 return this.getBlocklyIcon();
+            case EngineType.rules:
+                return this.getRulesIcon();
             default:
                 return undefined;
         }
@@ -54,6 +56,10 @@ export class ScriptItem extends vscode.TreeItem {
 
     private getBlocklyIcon(): string {
         return path.join(__filename, '..', '..', 'resources', 'blockly.svg');
+    }
+
+    private getRulesIcon(): string {
+        return path.join(__filename, '..', '..', 'resources', 'rules.svg');
     }
 
     private getJsInstanceNumber(engine: string | undefined): number {
