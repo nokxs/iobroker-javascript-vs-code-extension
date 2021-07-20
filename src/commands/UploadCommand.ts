@@ -82,17 +82,17 @@ export class UploadCommand implements ICommand {
             if (script) {
                 script.common.source = scriptText;
             } else {
-                // TODO: Support multiple js engines
                 script = {
                     _id: this.scriptIdService.getIoBrokerId(fileUri),
                     common: {
-                        debug: false,
                         engine: "system.adapter.javascript.0",
                         engineType: this.scriptService.getEngineType(fileUri),
-                        expert: true,
                         name: this.getFileName(fileUri),
                         source: scriptText,
-                        verbose: false
+                        debug: false,
+                        verbose: false,
+                        enabled: false,
+                        expert: true
                     },
                     type: "script"
                 };
