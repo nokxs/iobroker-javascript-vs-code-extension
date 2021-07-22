@@ -21,7 +21,6 @@ export class CreateJavaScriptFileCommand implements ICommand {
     async execute(...args: any[]) {
         if (args) {
             const scriptDirectory = <ScriptDirectory>args[0] ?? <ScriptDirectory>args[0][0];
-            scriptDirectory.id = "1";
             let fileName = await window.showInputBox({title: "Enter file name"});
             
             if (fileName) {
