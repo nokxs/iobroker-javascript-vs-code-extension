@@ -5,11 +5,15 @@ import { IFileService } from "../file/IFileService";
 import { IScriptService } from "./IScriptService";
 import { EngineType } from "../../models/EngineType";
 import { ILocalScript } from "../../models/ILocalScript";
+import { ScriptId } from "../../models/ScriptId";
+import { IScript } from "../../models/IScript";
+import { IScriptIdService } from "../scriptId/IScriptIdService";
 
 @injectable()
 export class ScriptService implements IScriptService {
     constructor(
-        @inject(TYPES.services.file) private fileService: IFileService    
+        @inject(TYPES.services.file) private fileService: IFileService,
+        @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService   
     ) {}
         
     getFileExtension(engineType: EngineType): string {
@@ -43,6 +47,25 @@ export class ScriptService implements IScriptService {
         }
 
         return EngineType.unkown;
+    }
+
+    getDefaultScript(id: ScriptId, engineType: EngineType): IScript {
+        const script: IScript = {
+            _id: this.scriptIdService.sanatizeId(id), // TODO: sanatize id
+            common: {
+                engine: "system.adapter.javascript.0",
+                engineType: engineType,
+                name: id.substring(id.lastIndexOf(".") + 1),
+                source: "",
+                debug: false,
+                verbose: false,
+                enabled: false,
+                expert: true
+            },
+            type: "script"
+        };
+
+        return script;
     }
     
     async getFileContentOnDisk(script: ILocalScript): Promise<string | null> {
