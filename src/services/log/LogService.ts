@@ -8,22 +8,26 @@ import { ILogService } from "./ILogService";
 
 @injectable()
 export class LogService implements ILogService {
-       
+    
+    private allOutputChannel: OutputChannel | undefined = undefined;
+    private currentScriptOutputChannel: OutputChannel | undefined = undefined;
+
     constructor(
         @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
     ) {}
 
     async startReceiving(): Promise<void> {
-        const allOutputChannel = window.createOutputChannel("ioBroker (all)");
-        const currentScriptOutputChannel = window.createOutputChannel("ioBroker (current script)");
+        // get channels to ensure they are created on startup
+        this.getAllOutputChannel();
+        this.getcurrentScriptOutputChannel();
 
         await this.connectionServiceProvider.getConnectionService().registerForLogs(async (logMessage: ILogMessage) => {
             if (logMessage.from.startsWith("javascript.")) {
-                this.logMessageToChannel(logMessage, allOutputChannel);
+                this.logMessageToChannel(logMessage, this.getAllOutputChannel());
 
                 if (await this.isRelevantMessage(logMessage)) {
-                    this.logMessageToChannel(logMessage, currentScriptOutputChannel);
+                    this.logMessageToChannel(logMessage, this.getcurrentScriptOutputChannel());
                 }
             }
         });
@@ -50,5 +54,21 @@ export class LogService implements ILogService {
     private isMessageForFile(logMessage: ILogMessage, uri: Uri): boolean {
         const scriptId = <string>this.scriptIdService.getIoBrokerId(uri);
         return logMessage.message.includes(scriptId);
+    }
+
+    private getAllOutputChannel(): OutputChannel {
+        if (!this.allOutputChannel) {           
+            this.allOutputChannel = window.createOutputChannel("ioBroker (all)");
+        }
+
+        return this.allOutputChannel;
+    }
+
+    private getcurrentScriptOutputChannel(): OutputChannel {
+        if (!this.currentScriptOutputChannel) {
+            this.currentScriptOutputChannel = window.createOutputChannel("ioBroker (current script)");            
+        }
+
+        return this.currentScriptOutputChannel;
     }
 }
