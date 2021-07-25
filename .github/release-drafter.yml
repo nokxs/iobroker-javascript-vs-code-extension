@@ -18,7 +18,9 @@ categories:
   - title: 'Bug Fixes'
     label: 'bug'
   - title: 'Maintenance'
-    label: 'refactoring'
+    labels: 
+      - 'refactoring'
+      - 'maintenance'
   - title: 'Documentation'
     label: 'documentation'
 
