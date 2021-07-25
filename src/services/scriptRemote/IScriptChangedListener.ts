@@ -1,5 +1,3 @@
-import { IScript } from "../../models/IScript";
-
 export interface IScriptChangedEventListener {
-    onScriptChanged(id: string | undefined, script: IScript | undefined): void;
+    onScriptChanged(id: string | undefined): void;
 }
