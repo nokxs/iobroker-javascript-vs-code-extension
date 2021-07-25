@@ -10,6 +10,9 @@ import { ConnectionServiceAdmin4 } from './services/connection/ConnectionService
 import { ConnectionServiceAdmin5 } from './services/connection/ConnectionServiceAdmin5';
 import { ConnectionServiceProvider } from './services/connectionServiceProvider/ConnectionServiceProvider';
 import { Container } from 'inversify';
+import { CreateDirectoryCommand } from './commands/CreateDirectoryCommand';
+import { CreateJavaScriptFileCommand } from './commands/CreateJavaScriptFileCommand';
+import { CreateTypeScriptFileCommandy } from './commands/CreateTypeScriptFileCommandy';
 import { DeleteCommand } from './commands/DeleteCommand';
 import { DirectoryService } from './services/directory/DirectorytService';
 import { DownloadAllCommand } from './commands/DownloadAllCommand';
@@ -96,6 +99,9 @@ container.bind<ICommand>(TYPES.command).to(ChangeJsInstanceCommand);
 container.bind<ICommand>(TYPES.command).to(MoveCommand);
 container.bind<ICommand>(TYPES.command).to(DeleteCommand);
 container.bind<ICommand>(TYPES.command).to(RefreshCommand);
+container.bind<ICommand>(TYPES.command).to(CreateDirectoryCommand);
+container.bind<ICommand>(TYPES.command).to(CreateTypeScriptFileCommandy);
+container.bind<ICommand>(TYPES.command).to(CreateJavaScriptFileCommand);
 
 container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider).inSingletonScope();
 

@@ -30,12 +30,31 @@ export class ScriptIdService implements IScriptIdService {
 
         let path = idSuffixPath.substring(0, suffixLength);
         path = this.replaceAll(path, ".", "_");
-        path = this.replaceAll(path, " ", "_");
         path = this.replaceAll(path, "/", ".");
         path = path.startsWith(".") ? path : `.${path}`;
 
-        return new ScriptId(`script.js${path}`);
+        return this.sanatizeId(new ScriptId(`script.js${path}`));
     }
+
+    sanatizeId(scriptId: ScriptId): ScriptId {
+        scriptId = this.replaceAll(<string>scriptId, " ", "_");
+        scriptId = this.replaceAll(<string>scriptId, "*", "_");
+        scriptId = this.replaceAll(<string>scriptId, ",", "_");
+        scriptId = this.replaceAll(<string>scriptId, ";", "_");
+        scriptId = this.replaceAll(<string>scriptId, "'", "_");
+        scriptId = this.replaceAll(<string>scriptId, "\"", "_");
+        scriptId = this.replaceAll(<string>scriptId, "\\", "_");
+        scriptId = this.replaceAll(<string>scriptId, "&", "_");
+        scriptId = this.replaceAll(<string>scriptId, "#", "_");
+        scriptId = this.replaceAll(<string>scriptId, "9", "_");
+        scriptId = this.replaceAll(<string>scriptId, "6", "_");
+        scriptId = this.replaceAll(<string>scriptId, ";", "_");
+        scriptId = this.replaceAll(<string>scriptId, "<", "_");
+        scriptId = this.replaceAll(<string>scriptId, ">", "_");
+        scriptId = this.replaceAll(<string>scriptId, "?", "_");
+
+        return scriptId;
+    }  
 
     private replaceAll(s: string, searchValue: string, replaceValue: string): string {
         return s.split(searchValue).join(replaceValue);

@@ -10,11 +10,12 @@ import { IConnectionEventListener } from "../connection/IConnectionEventListener
 import { IDirectory } from "../../models/IDirectory";
 import { IDirectoryService } from "../directory/IDirectoryService";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
+import { EngineType } from "../../models/EngineType";
 
 @injectable()
 export class ScriptRemoteService implements IScriptRemoteService, IConnectionEventListener {
     private scriptEventListeners: Array<IScriptChangedEventListener> = new Array();
-    
+
     constructor(
         @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
@@ -23,8 +24,8 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
 
     init(): void {
         this.connectionServiceProvider.getConnectionService().registerConnectionEventListener(this);
-        
-        if(this.connectionServiceProvider.getConnectionService().isConnected) {
+
+        if (this.connectionServiceProvider.getConnectionService().isConnected) {
             this.registerSocketEvents();
         }
     }
@@ -47,6 +48,8 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     async uploadScript(script: IScript): Promise<void> {
+       script.common.engineType = this.getFixedEngineTypeCasing(script.common.engineType);
+
         await this.directoryService.createDirectoriesRecursively(script._id);
         await this.connectionServiceProvider.getConnectionService().setObject(<string>script._id, script);
     }
@@ -96,7 +99,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     async delete(scriptId: ScriptId): Promise<void> {
         return this.connectionServiceProvider.getConnectionService().deleteObject(scriptId);
     }
-    
+
     onConnected(): void {
         this.registerSocketEvents();
     }
@@ -124,5 +127,20 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         };
 
         this.update(scriptId, script);
+    }
+
+    private getFixedEngineTypeCasing(engineType: string | undefined): string {
+        switch (engineType) {
+            case EngineType.typescript:
+                return "TypeScript/ts";
+            case EngineType.javascript:
+                return "JavaScript/js";
+            case EngineType.blockly:
+                return "Rules";
+            case EngineType.rules:
+                return "Blockly";
+        }
+
+        return "";
     }
 }

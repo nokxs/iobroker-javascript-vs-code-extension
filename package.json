@@ -103,6 +103,21 @@
 				"command": "iobroker-javascript.view.scriptExplorer.delete",
 				"title": "Delete",
 				"enablement": "view == iobroker-javascript.script-explorer"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.createDirectory",
+				"title": "Create directory",
+				"enablement": "view == iobroker-javascript.script-explorer"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.createTypeScriptFile",
+				"title": "Create TypeScript file",
+				"enablement": "view == iobroker-javascript.script-explorer"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.createJavaScriptFile",
+				"title": "Create JavaScript file",
+				"enablement": "view == iobroker-javascript.script-explorer"
 			}
 		],
 		"menus": {
@@ -157,6 +172,18 @@
 				{
 					"command": "iobroker-javascript.view.scriptExplorer.delete",
 					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.createDirectory",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptDirectory"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.createTypeScriptFile",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptDirectory"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.createJavaScriptFile",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptDirectory"
 				}
 			]
 		}

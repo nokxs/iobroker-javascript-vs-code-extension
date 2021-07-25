@@ -1,9 +1,7 @@
-import * as path from 'path';
-
 import { ICommand } from "./ICommand";
 import { inject, injectable } from "inversify";
 import TYPES from "../Types";
-import { Uri, window } from "vscode";
+import { window } from "vscode";
 import { IScriptService } from "../services/script/IScriptService";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import { IScript } from "../models/IScript";
@@ -48,11 +46,6 @@ export class UploadCommand implements ICommand {
         return null;
     }
 
-    private getFileName(uri: Uri): string {
-        var extension = path.extname(uri.fsPath);
-        return path.basename(uri.fsPath, extension);
-    }
-
     private async handleScriptFromScriptExplorer(...args: any[]): Promise<IScript | null> {
         const localScript = (<ScriptItem>args[0])?.script ?? (<ScriptItem>args[0][0])?.script ?? (<ScriptItem>args[0][0][0]).script;
         const script = localScript.ioBrokerScript;
@@ -82,20 +75,7 @@ export class UploadCommand implements ICommand {
             if (script) {
                 script.common.source = scriptText;
             } else {
-                // TODO: Support multiple js engines
-                script = {
-                    _id: this.scriptIdService.getIoBrokerId(fileUri),
-                    common: {
-                        debug: false,
-                        engine: "system.adapter.javascript.0",
-                        engineType: this.scriptService.getEngineType(fileUri),
-                        expert: true,
-                        name: this.getFileName(fileUri),
-                        source: scriptText,
-                        verbose: false
-                    },
-                    type: "script"
-                };
+                script = this.scriptService.getDefaultScript(this.scriptIdService.getIoBrokerId(fileUri), this.scriptService.getEngineType(fileUri));
             }
             
             return script;
