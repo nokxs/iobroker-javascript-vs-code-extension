@@ -2,7 +2,7 @@
 	"name": "iobroker-javascript",
 	"displayName": "ioBroker.javascript",
 	"description": "Enables you to develop ioBroker scripts completely in Visual Studio Code, without the need of the web interface.",
-	"version": "0.11.2",
+	"version": "0.12.0",
 	"repository": {
 		"url": "https://github.com/nokxs/iobroker-javascript-vs-code-extension",
 		"type": "git"
@@ -45,6 +45,12 @@
 				}
 			]
 		},
+		"viewsWelcome": [
+			{
+			  "view": "iobroker-javascript.script-explorer",
+			  "contents": "In order to use the ioBroker extension, you must connect to your ioBroker instance.\n[Connect to ioBroker](command:iobroker-javascript.connect)\n\nTo learn more about how to use the extension [read the docs](https://github.com/nokxs/iobroker-javascript-vs-code-extension)."
+			}
+		],
 		"commands": [
 			{
 				"command": "iobroker-javascript.downloadAll",
