@@ -11,7 +11,6 @@ import { IWorkspaceService } from "../services/workspace/IWorkspaceService";
 @injectable()
 export class CreateDirectoryCommand implements ICommand {
     id: string = "iobroker-javascript.view.scriptExplorer.createDirectory";
-
     
     constructor(        
         @inject(TYPES.services.directory) private directoryService: IDirectoryService,

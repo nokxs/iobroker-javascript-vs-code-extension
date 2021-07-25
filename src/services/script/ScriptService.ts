@@ -51,7 +51,7 @@ export class ScriptService implements IScriptService {
 
     getDefaultScript(id: ScriptId, engineType: EngineType): IScript {
         const script: IScript = {
-            _id: this.scriptIdService.sanatizeId(id), // TODO: sanatize id
+            _id: this.scriptIdService.sanatizeId(id),
             common: {
                 engine: "system.adapter.javascript.0",
                 engineType: engineType,

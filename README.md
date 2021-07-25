@@ -54,7 +54,7 @@ Scripts can only be moved over the script explorer. Right click on the script yo
 If the script is synced to your local disk, it will also be moved there.
 
 ### Create scripts and subdirectories
-Right click on an existing directory to create a new file in this directory. It is possible to create subdirectories, TypeScript files and JavaScript files. Newly created scripts are immediatly uploaded to
+Right click on an existing directory to create a new file in this directory or in the root directory. It is possible to create subdirectories, TypeScript files and JavaScript files. Newly created scripts are immediatly uploaded to
 the server as stoped scripts.
 
 ### Delete scripts
