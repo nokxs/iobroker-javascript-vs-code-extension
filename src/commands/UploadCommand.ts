@@ -48,11 +48,6 @@ export class UploadCommand implements ICommand {
         return null;
     }
 
-    private getFileName(uri: Uri): string {
-        var extension = path.extname(uri.fsPath);
-        return path.basename(uri.fsPath, extension);
-    }
-
     private async handleScriptFromScriptExplorer(...args: any[]): Promise<IScript | null> {
         const localScript = (<ScriptItem>args[0])?.script ?? (<ScriptItem>args[0][0])?.script ?? (<ScriptItem>args[0][0][0]).script;
         const script = localScript.ioBrokerScript;
