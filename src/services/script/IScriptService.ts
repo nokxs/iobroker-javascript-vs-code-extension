@@ -5,12 +5,11 @@ import { ScriptId } from "../../models/ScriptId";
 import { Uri } from "vscode";
 
 export interface IScriptService {
-
     getFileExtension(engineType: EngineType): string
     getEngineType(uri: Uri): EngineType
     getDefaultScript(id: ScriptId, engineType: EngineType): IScript
 
-    getFileContentOnDisk(script: ILocalScript): Promise<string | null>
+    getFileContentOnDisk(absoluteFileUri: Uri): Promise<string | null>
     
     saveToFile(script: ILocalScript): Promise<void>
     saveAllToFile(scripts: ILocalScript[]): Promise<void>

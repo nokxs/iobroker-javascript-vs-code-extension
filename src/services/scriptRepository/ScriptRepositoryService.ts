@@ -52,14 +52,17 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         });
         
         const ioBrokerScripts = await this.scriptRemoteService.downloadAllScripts();
-        this.scripts = ioBrokerScripts.map(script => {
+        this.scripts = await Promise.all(ioBrokerScripts.map(async script => {
+            const absoluteUri = this.getAbsoluteFileUri(script, this.directories);
+
             return {
                 _id: script._id,
                 ioBrokerScript: script,
-                absoluteUri: this.getAbsoluteFileUri(script, this.directories),
-                relativeUri: this.getRelativeFileUri(script, this.directories)
+                absoluteUri: absoluteUri,
+                relativeUri: this.getRelativeFileUri(script, this.directories),
+                isDirty: await this.isScriptDirty(script, absoluteUri)
             };
-        });
+        }));
     }
     
     getAllScripts(): ILocalScript[] {
@@ -170,5 +173,12 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
 
     private raiseScriptChangedEvent(id: string | undefined, script: IScript | undefined) {
         this.scriptEventListeners.forEach(listener => listener.onScriptChanged(id, script));
+    }
+
+    private async isScriptDirty(script: IScript, absoluteScriptUri: Uri): Promise<boolean> {
+        const serverScriptBuffer = Buffer.from(script.common.source ?? "");
+        const localScriptBuffer = Buffer.from(await this.scriptService.getFileContentOnDisk(absoluteScriptUri) ?? "");
+
+        return !serverScriptBuffer.equals(localScriptBuffer);
     }
 }
