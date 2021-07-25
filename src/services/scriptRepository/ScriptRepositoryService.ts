@@ -36,10 +36,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         await this.updateFromServer();
         this.scriptRemoteService.registerScriptChangedEventListener(this);
         this.raiseScriptChangedEvent(undefined);
-        workspace.onDidSaveTextDocument(document => {
-            const scriptId = this.scriptIdService.getIoBrokerId(document.uri);
-            this.raiseScriptChangedEvent(<string>scriptId);
-        });
+        this.handleTextDocumentChanges();
     }
 
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
@@ -186,5 +183,18 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         const localScriptBuffer = Buffer.from(await this.scriptService.getFileContentOnDisk(absoluteScriptUri) ?? "");
 
         return !serverScriptBuffer.equals(localScriptBuffer);
+    }
+
+    private handleTextDocumentChanges() {
+        workspace.onDidSaveTextDocument(async document => {
+            const scriptId = this.scriptIdService.getIoBrokerId(document.uri);
+
+            var matchingScript = this.scripts.find(script => script._id === scriptId);
+            if (matchingScript) {
+                matchingScript.isDirty = await this.isScriptDirty(matchingScript.ioBrokerScript, document.uri);
+            }
+
+            this.raiseScriptChangedEvent(<string>scriptId);
+        });
     }
 }
