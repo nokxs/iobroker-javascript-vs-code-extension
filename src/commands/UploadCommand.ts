@@ -1,9 +1,7 @@
-import * as path from 'path';
-
 import { ICommand } from "./ICommand";
 import { inject, injectable } from "inversify";
 import TYPES from "../Types";
-import { Uri, window } from "vscode";
+import { window } from "vscode";
 import { IScriptService } from "../services/script/IScriptService";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import { IScript } from "../models/IScript";
