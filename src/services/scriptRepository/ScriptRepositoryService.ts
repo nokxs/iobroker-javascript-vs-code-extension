@@ -63,7 +63,8 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
                 ioBrokerScript: script,
                 absoluteUri: absoluteUri,
                 relativeUri: this.getRelativeFileUri(script, this.directories),
-                isDirty: await this.isScriptDirty(script, absoluteUri)
+                isDirty: await this.isScriptDirty(script, absoluteUri),
+                isRemoteOnly: await this.isRemoteOnly(absoluteUri)
             };
         }));
     }
@@ -198,6 +199,10 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         }
 
         return !serverScriptBuffer.equals(localScriptBuffer);
+    }
+
+    private async isRemoteOnly(absoluteUri: Uri) {
+        return !await this.scriptService.existsScriptLocally(absoluteUri);
     }
 
     private handleTextDocumentChanges() {

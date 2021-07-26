@@ -12,7 +12,7 @@ export class ScriptItem extends vscode.TreeItem {
     constructor(public script: ILocalScript) {
         super("", vscode.TreeItemCollapsibleState.None);
         
-        this.description = script.isDirty ? "*" : undefined;
+        this.description = this.getDescription(script);
         this.label = this.getScriptName(script.ioBrokerScript);
         this.iconPath = this.getIconPath(script.ioBrokerScript);
         this.command = {
@@ -71,5 +71,13 @@ export class ScriptItem extends vscode.TreeItem {
         }
 
         return 0;
+    }
+
+    private getDescription(script: ILocalScript): string | undefined {
+        if (script.isRemoteOnly) {
+            return "(remote only)";
+        }
+        
+        return script.isDirty ? "*" : undefined;
     }
 }

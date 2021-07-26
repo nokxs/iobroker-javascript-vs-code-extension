@@ -13,4 +13,6 @@ export interface IScriptService {
     
     saveToFile(script: ILocalScript): Promise<void>
     saveAllToFile(scripts: ILocalScript[]): Promise<void>
+
+    existsScriptLocally(absoluteUri: Uri): Promise<boolean>;
 }
