@@ -23,7 +23,8 @@ If you choose to configure ioBroker type definitions, the current defintions are
 the [ioBroker specific javascript functions](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/javascript.md).
 
 ### Script explorer
-The script explorer can be found in the activity bar behind the ioBroker logo. It shows all scripts, which are on the configured iobroker server.
+The script explorer can be found in the activity bar behind the ioBroker logo. It shows all scripts, which are on the configured iobroker server. If the script content differs on the local disk from the remote version on the
+ioBroker server, a star (*) is shown next to the script name.
 
 Click on script to show its contents. If the script is not downloaded yet, only a preview is openend. 
 
