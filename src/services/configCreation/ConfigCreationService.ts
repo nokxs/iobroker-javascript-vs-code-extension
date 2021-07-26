@@ -16,7 +16,7 @@ export class ConfigCreationService implements IConfigCreationService {
     ) {}
 
     async createConfigInteractivly(): Promise<Config> {
-        const ioBrokerUrl = await window.showInputBox({prompt: "The URL to your ioBroker installation", value: "http://localhost", ignoreFocusOut: true});
+        let ioBrokerUrl = await window.showInputBox({prompt: "The URL to your ioBroker installation", value: "http://localhost", ignoreFocusOut: true});
         if (!ioBrokerUrl) {
             return new NoConfig();
         }
@@ -25,7 +25,17 @@ export class ConfigCreationService implements IConfigCreationService {
             return new NoConfig();
         }
 
-        const port = await window.showInputBox({prompt: "The port of the socket.io Adapter", value: "8081", ignoreFocusOut: true});
+        let port: string | undefined;
+        const portRegex = new RegExp("(http.*):(\\d+)");
+        const portMatch = portRegex.exec(ioBrokerUrl);
+        if (portMatch && (portMatch?.length ?? 0) === 3) {
+            ioBrokerUrl = portMatch[1];
+            port = portMatch[2]; 
+        }
+        else {
+            port = await window.showInputBox({prompt: "The port of the socket.io Adapter", value: "8081", ignoreFocusOut: true});
+        }
+        
         if (!port) {
             return new NoConfig();
         }
