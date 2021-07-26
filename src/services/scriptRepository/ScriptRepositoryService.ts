@@ -259,6 +259,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
             const matchingScript = this.scripts.find(script => script.absoluteUri.fsPath === file.fsPath);
             if (matchingScript) {
                 this.evaluateScriptOnRemote(matchingScript);
+                this.evaluateDirtyState(matchingScript);
             }
         }
     }
