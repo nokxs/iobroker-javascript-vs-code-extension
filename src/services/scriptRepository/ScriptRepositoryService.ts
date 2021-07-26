@@ -8,7 +8,7 @@ import { IDirectoryService } from "../directory/IDirectoryService";
 import { IScriptChangedEventListener } from "../scriptRemote/IScriptChangedListener";
 import { RootDirectory } from "../../models/RootDirectory";
 import { ILocalScript } from "../../models/ILocalScript";
-import { Uri, workspace } from "vscode";
+import { FileDeleteEvent, Uri, workspace } from "vscode";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { IScriptService } from "../script/IScriptService";
 import { EngineType } from "../../models/EngineType";
@@ -36,7 +36,10 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         await this.updateFromServer();
         this.scriptRemoteService.registerScriptChangedEventListener(this);
         this.raiseScriptChangedEvent(undefined);
+        
         this.handleTextDocumentChanges();
+        this.handleDocumentCreation();
+        this.handDocumentDeletion();
     }
 
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
@@ -225,6 +228,8 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     private handleTextDocumentChanges() {
+        
+
         workspace.onDidSaveTextDocument(async document => {
             const scriptId = this.scriptIdService.getIoBrokerId(document.uri);
 
@@ -235,5 +240,26 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
 
             this.raiseScriptChangedEvent(<string>scriptId);
         });
+    }
+
+    private handleDocumentCreation() {
+        workspace.onDidCreateFiles(async createEvent => {
+            this.handleFileEvent(createEvent);
+        });
+    }
+
+    private handDocumentDeletion() {
+        workspace.onDidDeleteFiles(async deleteEvent => {
+            this.handleFileEvent(deleteEvent);
+        });
+    }
+
+    private handleFileEvent(createEvent: FileDeleteEvent) {
+        for (const file of createEvent.files) {
+            const matchingScript = this.scripts.find(script => script.absoluteUri.fsPath === file.fsPath);
+            if (matchingScript) {
+                this.evaluateScriptOnRemote(matchingScript);
+            }
+        }
     }
 }
