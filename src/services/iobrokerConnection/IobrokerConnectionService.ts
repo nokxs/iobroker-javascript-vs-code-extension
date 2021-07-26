@@ -97,6 +97,8 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
           if (answer === "Yes") {
               const scripts = this.scriptRepositoryService.getAllScripts();
               await this.scriptService.saveAllToFile(scripts);
+              await this.scriptRepositoryService.evaluateScriptOnRemoteForAllScripts();
+              await this.scriptRepositoryService.evaluateDirtyStateForAllScripts();
           } 
         }
     } catch (error) {
