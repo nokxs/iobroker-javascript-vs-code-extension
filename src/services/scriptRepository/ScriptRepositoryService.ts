@@ -8,7 +8,7 @@ import { IDirectoryService } from "../directory/IDirectoryService";
 import { IScriptChangedEventListener } from "../scriptRemote/IScriptChangedListener";
 import { RootDirectory } from "../../models/RootDirectory";
 import { ILocalScript } from "../../models/ILocalScript";
-import { FileDeleteEvent, Uri, workspace } from "vscode";
+import { FileCreateEvent, FileDeleteEvent, Uri, workspace } from "vscode";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { IScriptService } from "../script/IScriptService";
 import { EngineType } from "../../models/EngineType";
@@ -254,7 +254,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         });
     }
 
-    private handleFileEvent(createEvent: FileDeleteEvent) {
+    private handleFileEvent(createEvent: FileDeleteEvent | FileCreateEvent) {
         for (const file of createEvent.files) {
             const matchingScript = this.scripts.find(script => script.absoluteUri.fsPath === file.fsPath);
             if (matchingScript) {
