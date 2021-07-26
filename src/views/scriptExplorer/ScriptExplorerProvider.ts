@@ -15,6 +15,7 @@ import { RootDirectory } from '../../models/RootDirectory';
 import { ILocalScript } from '../../models/ILocalScript';
 import { IWorkspaceService } from '../../services/workspace/IWorkspaceService';
 import { OnlyLocalScriptItem } from './OnlyLocalScriptItem';
+import { ILocalOnlyScriptRepositoryService } from '../../services/localOnlyScriptRepository/ILocalOnlyScriptRepositoryService';
 
 @injectable()
 export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | OnlyLocalScriptItem | ScriptDirectory>, IScriptExplorerProvider, IScriptChangedEventListener {
@@ -26,6 +27,7 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
     constructor(
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
         @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
+        @inject(TYPES.services.localOnlyScriptRepository) private localOnlyScriptRepositoryService: ILocalOnlyScriptRepositoryService,
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService
     ) {
         scriptRepositoryService.registerScriptChangedEventListener(this);
@@ -63,10 +65,7 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
 
         const directories = await this.scriptRepositoryService.getDirectoriesIn(directory);
         const scripts = await this.scriptRepositoryService.getScriptsIn(directory);
-        const scriptsOnlyLocal = (await vscode.workspace.fs.readDirectory(directory.absoluteUri))
-                .filter(content => content[1] === vscode.FileType.File)
-                .filter(file => !scripts.some(script => path.basename(script.absoluteUri.fsPath) === file[0]))
-                .map(file => file[0]);
+        const scriptsOnlyLocal = this.localOnlyScriptRepositoryService.getOnlyLocalScriptsInDirectory(directory);
         
         const collapseDirectories = this.shouldDirectoriesBeCollapsed();
         const scriptDirectories = this.convertToScriptDirectories(directories, collapseDirectories);
