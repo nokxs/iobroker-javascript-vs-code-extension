@@ -29,8 +29,10 @@ export class DownloadCommand implements ICommand {
 
         if (localScript) {
             await this.scriptService.saveToFile(localScript);
-            await this.scriptRepositoryService.evaluateDirtyState();
-                      
+
+            await this.scriptRepositoryService.evaluateDirtyState(localScript);
+            await this.scriptRepositoryService.evaluateScriptOnRemote(localScript);
+            
             window.setStatusBarMessage(`ioBroker: Finished downloading script`, CONSTANTS.StatusBarMessageTime);   
         } else {
             window.showWarningMessage("ioBroker: Could not download script.");

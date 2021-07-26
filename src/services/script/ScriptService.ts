@@ -86,4 +86,11 @@ export class ScriptService implements IScriptService {
             await this.saveToFile(script);
         }
     }
+    
+    async existsScriptLocally(absoluteUri: Uri): Promise<boolean> {
+        return new Promise<boolean>((resolve) => {
+            const scriptExistsLocally = this.fileService.fileExists(absoluteUri);
+            resolve(scriptExistsLocally);
+        });
+    }
 }

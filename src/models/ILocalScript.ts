@@ -8,4 +8,5 @@ export interface ILocalScript {
     absoluteUri: Uri
     relativeUri: Uri
     isDirty: boolean
+    isRemoteOnly: boolean
 }

@@ -10,7 +10,11 @@ export interface IScriptRepositoryService {
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void
 
     updateFromServer(): Promise<void>
-    evaluateDirtyState(): Promise<void>
+
+    evaluateDirtyStateForAllScripts(): Promise<void>
+    evaluateDirtyState(script: ILocalScript): Promise<void>
+    evaluateScriptOnRemoteForAllScripts(): Promise<void>
+    evaluateScriptOnRemote(script: ILocalScript): Promise<void>
 
     getAllScripts(): ILocalScript[]
     getAllDirectories(): IDirectory[]

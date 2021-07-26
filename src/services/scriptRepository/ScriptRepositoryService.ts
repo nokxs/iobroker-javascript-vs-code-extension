@@ -8,7 +8,7 @@ import { IDirectoryService } from "../directory/IDirectoryService";
 import { IScriptChangedEventListener } from "../scriptRemote/IScriptChangedListener";
 import { RootDirectory } from "../../models/RootDirectory";
 import { ILocalScript } from "../../models/ILocalScript";
-import { Uri, workspace } from "vscode";
+import { FileCreateEvent, FileDeleteEvent, Uri, workspace } from "vscode";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { IScriptService } from "../script/IScriptService";
 import { EngineType } from "../../models/EngineType";
@@ -36,7 +36,10 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         await this.updateFromServer();
         this.scriptRemoteService.registerScriptChangedEventListener(this);
         this.raiseScriptChangedEvent(undefined);
+        
         this.handleTextDocumentChanges();
+        this.handleDocumentCreation();
+        this.handDocumentDeletion();
     }
 
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
@@ -63,22 +66,42 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
                 ioBrokerScript: script,
                 absoluteUri: absoluteUri,
                 relativeUri: this.getRelativeFileUri(script, this.directories),
-                isDirty: await this.isScriptDirty(script, absoluteUri)
+                isDirty: await this.isScriptDirty(script, absoluteUri),
+                isRemoteOnly: await this.isRemoteOnly(absoluteUri)
             };
         }));
     }
 
-    async evaluateDirtyState(): Promise<void> {
+    async evaluateDirtyStateForAllScripts(): Promise<void> {
         for (const script of this.scripts) {
-            const dirtyStateBefore = script.isDirty;
-            script.isDirty = await this.isScriptDirty(script.ioBrokerScript, script.absoluteUri);
+            await this.evaluateDirtyState(script);
+        }
+    }
 
-            if (dirtyStateBefore !== script.isDirty) {
-                this.raiseScriptChangedEvent(script._id);
-            }
+    async evaluateDirtyState(script: ILocalScript): Promise<void> {
+        const dirtyStateBefore = script.isDirty;
+        script.isDirty = await this.isScriptDirty(script.ioBrokerScript, script.absoluteUri);
+
+        if (dirtyStateBefore !== script.isDirty) {
+            this.raiseScriptChangedEvent(script._id);
+        }
+    }
+
+    async evaluateScriptOnRemoteForAllScripts(): Promise<void> {
+        for (const script of this.scripts) {
+            await this.evaluateScriptOnRemote(script);
         }
     }
     
+    async evaluateScriptOnRemote(script: ILocalScript): Promise<void> {
+        const isRemoteOnlyBefore = script.isRemoteOnly;
+        script.isRemoteOnly = await this.isRemoteOnly(script.absoluteUri);
+
+        if (isRemoteOnlyBefore !== script.isRemoteOnly) {
+            this.raiseScriptChangedEvent(script._id);
+        }
+    }
+
     getAllScripts(): ILocalScript[] {
         return this.scripts;
     }
@@ -200,7 +223,13 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         return !serverScriptBuffer.equals(localScriptBuffer);
     }
 
+    private async isRemoteOnly(absoluteUri: Uri) {
+        return !await this.scriptService.existsScriptLocally(absoluteUri);
+    }
+
     private handleTextDocumentChanges() {
+        
+
         workspace.onDidSaveTextDocument(async document => {
             const scriptId = this.scriptIdService.getIoBrokerId(document.uri);
 
@@ -211,5 +240,27 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
 
             this.raiseScriptChangedEvent(<string>scriptId);
         });
+    }
+
+    private handleDocumentCreation() {
+        workspace.onDidCreateFiles(async createEvent => {
+            this.handleFileEvent(createEvent);
+        });
+    }
+
+    private handDocumentDeletion() {
+        workspace.onDidDeleteFiles(async deleteEvent => {
+            this.handleFileEvent(deleteEvent);
+        });
+    }
+
+    private handleFileEvent(createEvent: FileDeleteEvent | FileCreateEvent) {
+        for (const file of createEvent.files) {
+            const matchingScript = this.scripts.find(script => script.absoluteUri.fsPath === file.fsPath);
+            if (matchingScript) {
+                this.evaluateScriptOnRemote(matchingScript);
+                this.evaluateDirtyState(matchingScript);
+            }
+        }
     }
 }
