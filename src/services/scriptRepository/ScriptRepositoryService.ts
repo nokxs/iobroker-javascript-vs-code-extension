@@ -69,17 +69,36 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         }));
     }
 
-    async evaluateDirtyState(): Promise<void> {
+    async evaluateDirtyStateForAllScripts(): Promise<void> {
         for (const script of this.scripts) {
-            const dirtyStateBefore = script.isDirty;
-            script.isDirty = await this.isScriptDirty(script.ioBrokerScript, script.absoluteUri);
+            await this.evaluateDirtyState(script);
+        }
+    }
 
-            if (dirtyStateBefore !== script.isDirty) {
-                this.raiseScriptChangedEvent(script._id);
-            }
+    async evaluateDirtyState(script: ILocalScript): Promise<void> {
+        const dirtyStateBefore = script.isDirty;
+        script.isDirty = await this.isScriptDirty(script.ioBrokerScript, script.absoluteUri);
+
+        if (dirtyStateBefore !== script.isDirty) {
+            this.raiseScriptChangedEvent(script._id);
+        }
+    }
+
+    async evaluateScriptOnRemoteForAllScripts(): Promise<void> {
+        for (const script of this.scripts) {
+            await this.evaluateScriptOnRemote(script);
         }
     }
     
+    async evaluateScriptOnRemote(script: ILocalScript): Promise<void> {
+        const isRemoteOnlyBefore = script.isRemoteOnly;
+        script.isRemoteOnly = await this.isRemoteOnly(script.absoluteUri);
+
+        if (isRemoteOnlyBefore !== script.isRemoteOnly) {
+            this.raiseScriptChangedEvent(script._id);
+        }
+    }
+
     getAllScripts(): ILocalScript[] {
         return this.scripts;
     }
