@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 
 import { inject, injectable } from 'inversify';
 import TYPES from '../../Types';
@@ -13,13 +14,14 @@ import { IDirectory } from '../../models/IDirectory';
 import { RootDirectory } from '../../models/RootDirectory';
 import { ILocalScript } from '../../models/ILocalScript';
 import { IWorkspaceService } from '../../services/workspace/IWorkspaceService';
+import { OnlyLocalScriptItem } from './OnlyLocalScriptItem';
 
 @injectable()
-export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | ScriptDirectory>, IScriptExplorerProvider, IScriptChangedEventListener {
+export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | OnlyLocalScriptItem | ScriptDirectory>, IScriptExplorerProvider, IScriptChangedEventListener {
 
-    private _onDidChangeTreeData: vscode.EventEmitter<ScriptItem | ScriptDirectory | undefined | null | void> = new vscode.EventEmitter<ScriptItem | ScriptDirectory | undefined | null | void>();
+    private _onDidChangeTreeData: vscode.EventEmitter<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | undefined | null | void> = new vscode.EventEmitter<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | undefined | null | void>();
 
-    onDidChangeTreeData?: vscode.Event<void | ScriptItem | ScriptDirectory | null | undefined> | undefined = this._onDidChangeTreeData.event;
+    onDidChangeTreeData?: vscode.Event<void | ScriptItem | OnlyLocalScriptItem | ScriptDirectory | null | undefined> | undefined = this._onDidChangeTreeData.event;
 
     constructor(
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
@@ -33,7 +35,7 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         return element;
     }
 
-    async getChildren(element?: ScriptItem | ScriptDirectory): Promise<Array<ScriptItem | ScriptDirectory>> {
+    async getChildren(element?: ScriptItem | ScriptDirectory): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory>> {
         if(!element) {
             return this.getRootLevelItems();
         }
@@ -53,21 +55,28 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         this.refresh();
     }
 
-    private async getRootLevelItems(): Promise<Array<ScriptItem | ScriptDirectory>> {
+    private async getRootLevelItems(): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory>> {
         return await this.getChildItems(new RootDirectory(this.workspaceService));
     }
 
-    private async getChildItems(directory: IDirectory): Promise<Array<ScriptItem | ScriptDirectory>> {
+    private async getChildItems(directory: IDirectory): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory>> {
+
         const directories = await this.scriptRepositoryService.getDirectoriesIn(directory);
         const scripts = await this.scriptRepositoryService.getScriptsIn(directory);
-
+        const scriptsOnlyLocal = (await vscode.workspace.fs.readDirectory(directory.absoluteUri))
+                .filter(content => content[1] === vscode.FileType.File)
+                .filter(file => !scripts.some(script => path.basename(script.absoluteUri.fsPath) === file[0]))
+                .map(file => file[0]);
+        
         const collapseDirectories = this.shouldDirectoriesBeCollapsed();
         const scriptDirectories = this.convertToScriptDirectories(directories, collapseDirectories);
         const scriptItems = this.convertToScriptItems(scripts);
+        const onlyLocalScriptItems = scriptsOnlyLocal.map(localScript => new OnlyLocalScriptItem(localScript));
 
-        let items: Array<ScriptItem | ScriptDirectory> = new Array();
+        let items: Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory> = new Array();
         items = items.concat(scriptDirectories);
-        items = items.concat(scriptItems);        
+        items = items.concat(scriptItems);     
+        items = items.concat(onlyLocalScriptItems);   
 
         return items;
     }
