@@ -1,8 +1,8 @@
-import { Uri } from "vscode";
 import { IDirectory } from "../../models/IDirectory";
 import { ILocalScript } from "../../models/ILocalScript";
-import { ScriptId } from "../../models/ScriptId";
 import { IScriptChangedEventListener } from "../scriptRemote/IScriptChangedListener";
+import { ScriptId } from "../../models/ScriptId";
+import { Uri } from "vscode";
 
 export interface IScriptRepositoryService {
     init(): Promise<void>
@@ -10,6 +10,7 @@ export interface IScriptRepositoryService {
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void
 
     updateFromServer(): Promise<void>
+    evaluateDirtyState(): Promise<void>
 
     getAllScripts(): ILocalScript[]
     getAllDirectories(): IDirectory[]

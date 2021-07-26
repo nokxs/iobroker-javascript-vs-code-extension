@@ -68,10 +68,10 @@ export class ScriptService implements IScriptService {
         return script;
     }
     
-    async getFileContentOnDisk(script: ILocalScript): Promise<string | null> {
+    async getFileContentOnDisk(absoluteFileUri: Uri): Promise<string | null> {
         
-        if (this.fileService.fileExists(script.absoluteUri)) {
-            return this.fileService.readFromFile(script.absoluteUri);
+        if (this.fileService.fileExists(absoluteFileUri)) {
+            return this.fileService.readFromFile(absoluteFileUri);
         }
 
         return null;

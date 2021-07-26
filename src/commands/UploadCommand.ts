@@ -55,7 +55,7 @@ export class UploadCommand implements ICommand {
             throw new Error(`Cannot upload script '${script._id}', because it's name is not set`);
         }
 
-        const scriptText = await this.scriptService.getFileContentOnDisk(localScript);
+        const scriptText = await this.scriptService.getFileContentOnDisk(localScript.absoluteUri);
         const existingScript = await this.scriptRemoteService.downloadScriptWithId(script._id);
         
         if (existingScript) {

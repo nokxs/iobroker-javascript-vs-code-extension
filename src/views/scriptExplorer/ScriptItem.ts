@@ -12,6 +12,7 @@ export class ScriptItem extends vscode.TreeItem {
     constructor(public script: ILocalScript) {
         super("", vscode.TreeItemCollapsibleState.None);
         
+        this.description = script.isDirty ? "*" : undefined;
         this.label = this.getScriptName(script.ioBrokerScript);
         this.iconPath = this.getIconPath(script.ioBrokerScript);
         this.command = {

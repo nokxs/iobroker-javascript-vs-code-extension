@@ -8,12 +8,13 @@ import { IDirectoryService } from "../directory/IDirectoryService";
 import { IScriptChangedEventListener } from "../scriptRemote/IScriptChangedListener";
 import { RootDirectory } from "../../models/RootDirectory";
 import { ILocalScript } from "../../models/ILocalScript";
-import { Uri } from "vscode";
+import { Uri, workspace } from "vscode";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { IScriptService } from "../script/IScriptService";
 import { EngineType } from "../../models/EngineType";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { ScriptId } from "../../models/ScriptId";
+import { IScriptIdService } from "../scriptId/IScriptIdService";
 
 @injectable()
 export class ScriptRepositoryService implements IScriptRepositoryService, IScriptChangedEventListener {
@@ -23,6 +24,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
 
     constructor(        
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
+        @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
         @inject(TYPES.services.directory) private directoryService: IDirectoryService,
         @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
         @inject(TYPES.services.script) private scriptService: IScriptService,
@@ -33,7 +35,8 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         this.scriptRemoteService.init();
         await this.updateFromServer();
         this.scriptRemoteService.registerScriptChangedEventListener(this);
-        this.raiseScriptChangedEvent(undefined, undefined);
+        this.raiseScriptChangedEvent(undefined);
+        this.handleTextDocumentChanges();
     }
 
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
@@ -52,14 +55,28 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         });
         
         const ioBrokerScripts = await this.scriptRemoteService.downloadAllScripts();
-        this.scripts = ioBrokerScripts.map(script => {
+        this.scripts = await Promise.all(ioBrokerScripts.map(async script => {
+            const absoluteUri = this.getAbsoluteFileUri(script, this.directories);
+
             return {
                 _id: script._id,
                 ioBrokerScript: script,
-                absoluteUri: this.getAbsoluteFileUri(script, this.directories),
-                relativeUri: this.getRelativeFileUri(script, this.directories)
+                absoluteUri: absoluteUri,
+                relativeUri: this.getRelativeFileUri(script, this.directories),
+                isDirty: await this.isScriptDirty(script, absoluteUri)
             };
-        });
+        }));
+    }
+
+    async evaluateDirtyState(): Promise<void> {
+        for (const script of this.scripts) {
+            const dirtyStateBefore = script.isDirty;
+            script.isDirty = await this.isScriptDirty(script.ioBrokerScript, script.absoluteUri);
+
+            if (dirtyStateBefore !== script.isDirty) {
+                this.raiseScriptChangedEvent(script._id);
+            }
+        }
     }
     
     getAllScripts(): ILocalScript[] {
@@ -94,11 +111,11 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         return this.filterByLength(this.directories, directory, 1);
     }
 
-    async onScriptChanged(id: string, script: IScript): Promise<void> {
+    async onScriptChanged(id: string): Promise<void> {
          // TODO: Currently all scripts are redownloaded every time a single script changes.
          //       Performance could be optimized, if only the changed script is updated.
         await this.updateFromServer();
-        this.raiseScriptChangedEvent(id, script);
+        this.raiseScriptChangedEvent(id);
     }
 
     private getRelativeDirectoryUri(dir: IDirectory, ioBrokerDirectories: IDirectory[]): Uri {
@@ -168,7 +185,31 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         });
     }
 
-    private raiseScriptChangedEvent(id: string | undefined, script: IScript | undefined) {
-        this.scriptEventListeners.forEach(listener => listener.onScriptChanged(id, script));
+    private raiseScriptChangedEvent(id: string | ScriptId | undefined) {
+        this.scriptEventListeners.forEach(listener => listener.onScriptChanged(<string>id));
+    }
+
+    private async isScriptDirty(script: IScript, absoluteScriptUri: Uri): Promise<boolean> {
+        const serverScriptBuffer = Buffer.from(script.common.source ?? "");
+        const localScriptBuffer = Buffer.from(await this.scriptService.getFileContentOnDisk(absoluteScriptUri) ?? "");
+
+        if (!serverScriptBuffer.equals(localScriptBuffer)) {
+            console.log("test");
+        }
+
+        return !serverScriptBuffer.equals(localScriptBuffer);
+    }
+
+    private handleTextDocumentChanges() {
+        workspace.onDidSaveTextDocument(async document => {
+            const scriptId = this.scriptIdService.getIoBrokerId(document.uri);
+
+            var matchingScript = this.scripts.find(script => script._id === scriptId);
+            if (matchingScript) {
+                matchingScript.isDirty = await this.isScriptDirty(matchingScript.ioBrokerScript, document.uri);
+            }
+
+            this.raiseScriptChangedEvent(<string>scriptId);
+        });
     }
 }
