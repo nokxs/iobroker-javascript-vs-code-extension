@@ -26,6 +26,7 @@ export class DownloadAllCommand implements ICommand {
         await this.scriptRepository.updateFromServer();
         const scripts = this.scriptRepository.getAllScripts();
         await this.scriptService.saveAllToFile(scripts);
+        await this.scriptRepository.evaluateDirtyState();
         
         message.dispose();
         window.setStatusBarMessage("ioBroker: Finished downloading all scripts", CONSTANTS.StatusBarMessageTime);

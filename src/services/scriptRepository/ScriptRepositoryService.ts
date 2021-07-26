@@ -67,6 +67,17 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
             };
         }));
     }
+
+    async evaluateDirtyState(): Promise<void> {
+        for (const script of this.scripts) {
+            const dirtyStateBefore = script.isDirty;
+            script.isDirty = await this.isScriptDirty(script.ioBrokerScript, script.absoluteUri);
+
+            if (dirtyStateBefore !== script.isDirty) {
+                this.raiseScriptChangedEvent(script._id);
+            }
+        }
+    }
     
     getAllScripts(): ILocalScript[] {
         return this.scripts;
@@ -174,13 +185,17 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         });
     }
 
-    private raiseScriptChangedEvent(id: string | undefined) {
-        this.scriptEventListeners.forEach(listener => listener.onScriptChanged(id));
+    private raiseScriptChangedEvent(id: string | ScriptId | undefined) {
+        this.scriptEventListeners.forEach(listener => listener.onScriptChanged(<string>id));
     }
 
     private async isScriptDirty(script: IScript, absoluteScriptUri: Uri): Promise<boolean> {
         const serverScriptBuffer = Buffer.from(script.common.source ?? "");
         const localScriptBuffer = Buffer.from(await this.scriptService.getFileContentOnDisk(absoluteScriptUri) ?? "");
+
+        if (!serverScriptBuffer.equals(localScriptBuffer)) {
+            console.log("test");
+        }
 
         return !serverScriptBuffer.equals(localScriptBuffer);
     }

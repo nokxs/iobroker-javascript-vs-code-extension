@@ -130,7 +130,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     private getFixedEngineTypeCasing(engineType: string | undefined): string {
-        switch (engineType) {
+        switch (engineType?.toLowerCase()) {
             case EngineType.typescript:
                 return "TypeScript/ts";
             case EngineType.javascript:
