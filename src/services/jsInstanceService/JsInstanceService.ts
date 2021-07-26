@@ -1,4 +1,3 @@
-
 import { inject, injectable } from "inversify";
 import { IScript } from "../../models/IScript";
 import { ScriptId } from "../../models/ScriptId";
@@ -6,7 +5,6 @@ import TYPES from "../../Types";
 import { IJsInstanceService } from "./IJsInstanceService";
 import { IJsInstance } from "../../models/IJsInstance";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
-
 
 @injectable()
 export class JsInstanceService implements IJsInstanceService {
@@ -29,5 +27,3 @@ export class JsInstanceService implements IJsInstanceService {
         return this.connectionServiceProvider.getConnectionService().extendObject(scriptId, script);
     }
 }
-
-

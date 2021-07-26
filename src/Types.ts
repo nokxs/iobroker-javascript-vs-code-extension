@@ -10,6 +10,7 @@ const TYPES = {
         scriptId: Symbol.for("ScriptIdService"),
         scriptRemote: Symbol.for("ScriptRemoteService"),
         scriptRepository: Symbol.for("ScriptRepositoryService"),
+        localOnlyScriptRepository: Symbol.for("LocalOnlyScriptRepositoryService"),
         directory: Symbol.for("DirectoryService"),
         log: Symbol.for("LogService"),
         typeDefinition: Symbol.for("TypeDefinitionService"),

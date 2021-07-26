@@ -28,6 +28,7 @@ import { IDirectoryService } from './services/directory/IDirectoryService';
 import { IFileService } from './services/file/IFileService';
 import { IIobrokerConnectionService } from './services/iobrokerConnection/IIobrokerConnectionService';
 import { IJsInstanceService } from "./services/jsInstanceService/IJsInstanceService";
+import { ILocalOnlyScriptRepositoryService } from './services/localOnlyScriptRepository/ILocalOnlyScriptRepositoryService';
 import { ILogService } from "./services/log/ILogService";
 import { IScriptExplorerProvider } from "./views/scriptExplorer/IScriptExplorerProvider";
 import { IScriptIdService } from './services/scriptId/IScriptIdService';
@@ -40,6 +41,7 @@ import { ITypeDefinitionService } from "./services/typeDefinition/ITypeDefinitio
 import { IWorkspaceService } from './services/workspace/IWorkspaceService';
 import { IobrokerConnectionService } from './services/iobrokerConnection/IobrokerConnectionService';
 import { JsInstanceService } from './services/jsInstanceService/JsInstanceService';
+import { LocalOnlyScriptRepositoryService } from './services/localOnlyScriptRepository/LocalOnlyScriptRepositoryService';
 import { LogService } from './services/log/LogService';
 import { MoveCommand } from './commands/MoveCommand';
 import { OpenFileCommand } from './commands/OpenFileCommand';
@@ -72,6 +74,7 @@ container.bind<IScriptService>(TYPES.services.script).to(ScriptService).inSingle
 container.bind<IScriptIdService>(TYPES.services.scriptId).to(ScriptIdService).inSingletonScope();
 container.bind<IScriptRemoteService>(TYPES.services.scriptRemote).to(ScriptRemoteService).inSingletonScope();
 container.bind<IScriptRepositoryService>(TYPES.services.scriptRepository).to(ScriptRepositoryService).inSingletonScope();
+container.bind<ILocalOnlyScriptRepositoryService>(TYPES.services.localOnlyScriptRepository).to(LocalOnlyScriptRepositoryService).inSingletonScope();
 container.bind<IDirectoryService>(TYPES.services.directory).to(DirectoryService).inSingletonScope();
 container.bind<ILogService>(TYPES.services.log).to(LogService).inSingletonScope();
 container.bind<ITypeDefinitionService>(TYPES.services.typeDefinition).to(TypeDefinitionService).inSingletonScope();
