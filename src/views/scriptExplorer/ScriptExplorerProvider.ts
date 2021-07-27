@@ -14,13 +14,14 @@ import { ILocalScript } from '../../models/ILocalScript';
 import { IWorkspaceService } from '../../services/workspace/IWorkspaceService';
 import { OnlyLocalScriptItem } from './OnlyLocalScriptItem';
 import { ILocalOnlyScriptRepositoryService } from '../../services/localOnlyScriptRepository/ILocalOnlyScriptRepositoryService';
+import { OnlyLocalDirectoryItem } from './OnlyLocalDirectoryItem';
 
 @injectable()
-export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | OnlyLocalScriptItem | ScriptDirectory>, IScriptExplorerProvider, IScriptChangedEventListener {
+export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>, IScriptExplorerProvider, IScriptChangedEventListener {
 
-    private _onDidChangeTreeData: vscode.EventEmitter<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | undefined | null | void> = new vscode.EventEmitter<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | undefined | null | void>();
+    private _onDidChangeTreeData: vscode.EventEmitter<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem | undefined | null | void> = new vscode.EventEmitter<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | undefined | null | void>();
 
-    onDidChangeTreeData?: vscode.Event<void | ScriptItem | OnlyLocalScriptItem | ScriptDirectory | null | undefined> | undefined = this._onDidChangeTreeData.event;
+    onDidChangeTreeData?: vscode.Event<void | ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem | null | undefined> | undefined = this._onDidChangeTreeData.event;
 
     constructor(
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
@@ -38,7 +39,7 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         return element;
     }
 
-    async getChildren(element?: ScriptItem | ScriptDirectory): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory>> {
+    async getChildren(element?: ScriptItem | ScriptDirectory): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>> {
         if(!element) {
             return this.getRootLevelItems();
         }
@@ -58,23 +59,27 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         this.refresh();
     }
 
-    private async getRootLevelItems(): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory>> {
+    private async getRootLevelItems(): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>> {
         return await this.getChildItems(new RootDirectory(this.workspaceService));
     }
 
-    private async getChildItems(directory: IDirectory): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory>> {
+    private async getChildItems(directory: IDirectory): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>> {
 
         const directories = await this.scriptRepositoryService.getDirectoriesIn(directory);
+        const direcoriesOnlyLocal = await this.localOnlyScriptRepositoryService.getLocalOnlyDirectoriesIn(directory);
+
         const scripts = await this.scriptRepositoryService.getScriptsIn(directory);
-        const scriptsOnlyLocal = await this.localOnlyScriptRepositoryService.getOnlyLocalScriptsInDirectory(directory);
+        const scriptsOnlyLocal = await this.localOnlyScriptRepositoryService.getOnlyLocalScriptsIn(directory);
         
         const collapseDirectories = this.shouldDirectoriesBeCollapsed();
         const scriptDirectories = this.convertToScriptDirectories(directories, collapseDirectories);
         const scriptItems = this.convertToScriptItems(scripts);
         const onlyLocalScriptItems = scriptsOnlyLocal.map(localScript => new OnlyLocalScriptItem(localScript.path));
+        const onlyLocalDirectoryItems = direcoriesOnlyLocal.map(localScript => new OnlyLocalDirectoryItem(localScript.path));
 
-        let items: Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory> = new Array();
+        let items: Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem> = new Array();
         items = items.concat(scriptDirectories);
+        items = items.concat(onlyLocalDirectoryItems);
         items = items.concat(scriptItems);     
         items = items.concat(onlyLocalScriptItems);   
 
