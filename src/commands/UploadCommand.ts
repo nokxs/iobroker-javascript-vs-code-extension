@@ -1,7 +1,7 @@
 import { ICommand } from "./ICommand";
 import { inject, injectable } from "inversify";
 import TYPES from "../Types";
-import { window } from "vscode";
+import { Uri, window } from "vscode";
 import { IScriptService } from "../services/script/IScriptService";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import { IScript } from "../models/IScript";
@@ -9,6 +9,8 @@ import CONSTANTS from "../Constants";
 import { IScriptIdService } from "../services/scriptId/IScriptIdService";
 import { IScriptRemoteService } from '../services/scriptRemote/IScriptRemoteService';
 import { IIobrokerConnectionService } from '../services/iobrokerConnection/IIobrokerConnectionService';
+import { OnlyLocalScriptItem } from "../views/scriptExplorer/OnlyLocalScriptItem";
+import { IFileService } from "../services/file/IFileService";
 
 @injectable()
 export class UploadCommand implements ICommand {
@@ -18,7 +20,8 @@ export class UploadCommand implements ICommand {
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
         @inject(TYPES.services.script) private scriptService: IScriptService,
-        @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService
+        @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
+        @inject(TYPES.services.file) private fileService: IFileService
     ) {}
 
     async execute(...args: any[]) {
@@ -48,6 +51,14 @@ export class UploadCommand implements ICommand {
 
     private async handleScriptFromScriptExplorer(...args: any[]): Promise<IScript | null> {
         const localScript = (<ScriptItem>args[0])?.script ?? (<ScriptItem>args[0][0])?.script ?? (<ScriptItem>args[0][0][0]).script;
+
+        if (!localScript) {
+            const scriptUri = (<OnlyLocalScriptItem>args[0])?.fileUri ?? (<OnlyLocalScriptItem>args[0][0])?.fileUri ?? (<OnlyLocalScriptItem>args[0][0][0]).fileUri;
+            const defaultScript = this.createDefaultScript(scriptUri);
+            defaultScript.common.source = await this.fileService.readFromFile(scriptUri);
+            return defaultScript;
+        }
+
         const script = localScript.ioBrokerScript;
         const scriptName = script.common.name;
 
@@ -75,12 +86,16 @@ export class UploadCommand implements ICommand {
             if (script) {
                 script.common.source = scriptText;
             } else {
-                script = this.scriptService.getDefaultScript(this.scriptIdService.getIoBrokerId(fileUri), this.scriptService.getEngineType(fileUri));
+                script = this.createDefaultScript(fileUri);
             }
             
             return script;
         }
 
         return null;
+    }
+
+    private createDefaultScript(fileUri: Uri): IScript {
+        return this.scriptService.getDefaultScript(this.scriptIdService.getIoBrokerId(fileUri), this.scriptService.getEngineType(fileUri));
     }
 }
