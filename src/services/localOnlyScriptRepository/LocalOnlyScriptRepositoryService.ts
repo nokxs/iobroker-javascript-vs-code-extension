@@ -23,7 +23,6 @@ export class LocalOnlyScriptRepositoryService implements ILocalOnlyScriptReposit
         return this.convertToLocalOnlyScripts(onlyLocalScripts, directory);
     }
     
-
     private convertToLocalOnlyScripts(onlyLocalScripts: string[], directory: IDirectory): ILocalOnlyScript[] | PromiseLike<ILocalOnlyScript[]> {
         return onlyLocalScripts.map(fileName => {
             return {

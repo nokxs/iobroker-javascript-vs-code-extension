@@ -29,6 +29,9 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService
     ) {
         scriptRepositoryService.registerScriptChangedEventListener(this);
+        
+        vscode.workspace.onDidCreateFiles(() => this.refresh());
+        vscode.workspace.onDidDeleteFiles(() => this.refresh());
     }
     
     getTreeItem(element: ScriptItem | ScriptDirectory): vscode.TreeItem | Thenable<vscode.TreeItem> {
