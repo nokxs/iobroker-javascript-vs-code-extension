@@ -1,23 +1,50 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 
 import { IDirectory } from "../../models/IDirectory";
 import { ILocalOnlyScriptRepositoryService } from "./ILocalOnlyScriptRepositoryService";
-import { injectable } from "inversify";
+import { inject, injectable } from "inversify";
+import { IScriptRepositoryService } from '../scriptRepository/IScriptRepositoryService';
+import TYPES from '../../Types';
+import { ILocalOnlyScript } from '../../models/ILocalOnlyScript';
 
 @injectable()
 export class LocalOnlyScriptRepositoryService implements ILocalOnlyScriptRepositoryService {
-    async getOnlyLocalScriptsInDirectory(directory: IDirectory): Promise<string[]> {
+    
+    constructor(
+        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService
+    ) {}
+
+    async getOnlyLocalScriptsInDirectory(directory: IDirectory): Promise<ILocalOnlyScript[]> {
         // TODO: 
-        //   - get scripts from script repository service
-        //   - filter for valid file extensions
         //   - ensure local only files can be uploaded
         //   - ensure uploaded scripts are converted to normal script items
         //   - add posibility to delete all scripts, which are only local
 
-        return (await vscode.workspace.fs.readDirectory(directory.absoluteUri))
-                .filter(content => content[1] === vscode.FileType.File)
-                .filter(file => !scripts.some(script => path.basename(script.absoluteUri.fsPath) === file[0]))
-                .map(file => file[0]);
+        const scriptsIoBroker = this.scriptRepositoryService.getScriptsIn(directory);      
+        const filePathsLocal = (await vscode.workspace.fs.readDirectory(directory.absoluteUri))
+                                    .filter(content => content[1] === vscode.FileType.File)
+                                    .map(content => content[0]);  
+
+        const knownFiles = filePathsLocal.filter(p => {
+            switch (path.extname(p)) {
+                case ".js":
+                case ".ts":
+                case ".rules":
+                case ".block":
+                    return true;
+                default:
+                    return false;
+            }
+        });
+
+        const onlyLocalScripts = knownFiles.filter(filePath => !scriptsIoBroker.some(script => path.basename(script.absoluteUri.fsPath) === filePath));
+
+        return onlyLocalScripts.map(filePath => { 
+            return { 
+                path: filePath 
+            }; 
+        });
     }
     
 }

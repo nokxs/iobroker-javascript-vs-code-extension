@@ -1,6 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
-
 import { inject, injectable } from 'inversify';
 import TYPES from '../../Types';
 import { IScriptExplorerProvider } from './IScriptExplorerProvider';
@@ -65,12 +63,12 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
 
         const directories = await this.scriptRepositoryService.getDirectoriesIn(directory);
         const scripts = await this.scriptRepositoryService.getScriptsIn(directory);
-        const scriptsOnlyLocal = this.localOnlyScriptRepositoryService.getOnlyLocalScriptsInDirectory(directory);
+        const scriptsOnlyLocal = await this.localOnlyScriptRepositoryService.getOnlyLocalScriptsInDirectory(directory);
         
         const collapseDirectories = this.shouldDirectoriesBeCollapsed();
         const scriptDirectories = this.convertToScriptDirectories(directories, collapseDirectories);
         const scriptItems = this.convertToScriptItems(scripts);
-        const onlyLocalScriptItems = scriptsOnlyLocal.map(localScript => new OnlyLocalScriptItem(localScript));
+        const onlyLocalScriptItems = scriptsOnlyLocal.map(localScript => new OnlyLocalScriptItem(localScript.path));
 
         let items: Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory> = new Array();
         items = items.concat(scriptDirectories);
