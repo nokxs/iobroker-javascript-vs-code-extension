@@ -16,19 +16,33 @@ export class LocalOnlyScriptRepositoryService implements ILocalOnlyScriptReposit
     ) {}
 
     async getOnlyLocalScriptsInDirectory(directory: IDirectory): Promise<ILocalOnlyScript[]> {
-        // TODO: 
-        //   - ensure local only files can be uploaded
-        //   - ensure uploaded scripts are converted to normal script items
-        //   - add posibility to delete all scripts, which are only local
-
         const scriptsIoBroker = this.scriptRepositoryService.getScriptsIn(directory);      
-        
+        const supportedFiles = await this.getSupportedFilesIn(directory);
+        const onlyLocalScripts = this.getOnlyLocalFiles(supportedFiles, scriptsIoBroker);
+
+        return this.convertToLocalOnlyScripts(onlyLocalScripts, directory);
+    }
+    
+
+    private convertToLocalOnlyScripts(onlyLocalScripts: string[], directory: IDirectory): ILocalOnlyScript[] | PromiseLike<ILocalOnlyScript[]> {
+        return onlyLocalScripts.map(fileName => {
+            return {
+                path: vscode.Uri.joinPath(directory.absoluteUri, fileName)
+            };
+        });
+    }
+
+    private getOnlyLocalFiles(supportedFiles: string[], scriptsIoBroker: import("e:/Git/iobroker-javascript-vs-code-extension/src/models/ILocalScript").ILocalScript[]) {
+        return supportedFiles.filter(filePath => !scriptsIoBroker.some(script => path.basename(script.absoluteUri.fsPath) === filePath));
+    }
+
+    private async getSupportedFilesIn(directory: IDirectory) {
         const filesInDirectory = await vscode.workspace.fs.readDirectory(directory.absoluteUri);
         const filePathsLocal = filesInDirectory
-                                    .filter(content => content[1] === vscode.FileType.File)
-                                    .map(content => content[0]);  
+            .filter(content => content[1] === vscode.FileType.File)
+            .map(content => content[0]);
 
-        const knownFiles = filePathsLocal.filter(p => {
+        const supportedFiles = filePathsLocal.filter(p => {
             switch (path.extname(p)) {
                 case ".js":
                 case ".ts":
@@ -39,14 +53,6 @@ export class LocalOnlyScriptRepositoryService implements ILocalOnlyScriptReposit
                     return false;
             }
         });
-
-        const onlyLocalScripts = knownFiles.filter(filePath => !scriptsIoBroker.some(script => path.basename(script.absoluteUri.fsPath) === filePath));
-
-        return onlyLocalScripts.map(fileName => { 
-            return { 
-                path: vscode.Uri.joinPath(directory.absoluteUri, fileName)
-            }; 
-        });
+        return supportedFiles;
     }
-    
 }
