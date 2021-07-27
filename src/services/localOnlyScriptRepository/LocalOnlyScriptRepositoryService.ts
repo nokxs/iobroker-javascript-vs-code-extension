@@ -22,7 +22,9 @@ export class LocalOnlyScriptRepositoryService implements ILocalOnlyScriptReposit
         //   - add posibility to delete all scripts, which are only local
 
         const scriptsIoBroker = this.scriptRepositoryService.getScriptsIn(directory);      
-        const filePathsLocal = (await vscode.workspace.fs.readDirectory(directory.absoluteUri))
+        
+        const filesInDirectory = await vscode.workspace.fs.readDirectory(directory.absoluteUri);
+        const filePathsLocal = filesInDirectory
                                     .filter(content => content[1] === vscode.FileType.File)
                                     .map(content => content[0]);  
 
@@ -40,9 +42,9 @@ export class LocalOnlyScriptRepositoryService implements ILocalOnlyScriptReposit
 
         const onlyLocalScripts = knownFiles.filter(filePath => !scriptsIoBroker.some(script => path.basename(script.absoluteUri.fsPath) === filePath));
 
-        return onlyLocalScripts.map(filePath => { 
+        return onlyLocalScripts.map(fileName => { 
             return { 
-                path: filePath 
+                path: vscode.Uri.joinPath(directory.absoluteUri, fileName)
             }; 
         });
     }

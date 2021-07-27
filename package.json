@@ -160,7 +160,7 @@
 				},
 				{
 					"command": "iobroker-javascript.upload",
-					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem || viewItem == onlyLocalScriptItem",
 					"group": "inline@4"
 				},
 				{
