@@ -119,11 +119,11 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     getRootLevelScript(): ILocalScript[] {
-        return this.getScriptsIn(new RootDirectory(this.workspaceService));
+        return this.getScriptsIn(new RootDirectory(this.workspaceService, this.configRepositoryService));
     }
 
     getRootLevelDirectories(): IDirectory[] {
-        return this.getDirectoriesIn(new RootDirectory(this.workspaceService));
+        return this.getDirectoriesIn(new RootDirectory(this.workspaceService, this.configRepositoryService));
     }
 
     getScriptsIn(directory: IDirectory): ILocalScript[] {
@@ -189,7 +189,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         const parents = directories.filter(item => item._id === parentId);
 
         if(parents.length === 0) {
-            return new RootDirectory(this.workspaceService);
+            return new RootDirectory(this.workspaceService, this.configRepositoryService);
         } else if (parents.length === 1) {
             return parents[0];
         }

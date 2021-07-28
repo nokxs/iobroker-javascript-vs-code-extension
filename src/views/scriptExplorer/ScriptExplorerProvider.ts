@@ -16,6 +16,7 @@ import { OnlyLocalScriptItem } from './OnlyLocalScriptItem';
 import { ILocalOnlyScriptRepositoryService } from '../../services/localOnlyScriptRepository/ILocalOnlyScriptRepositoryService';
 import { OnlyLocalDirectoryItem } from './OnlyLocalDirectoryItem';
 import { ILocalOnlyScript } from '../../models/ILocalOnlyScript';
+import { IConfigRepositoryService } from '../../services/configRepository/IConfigRepositoryService';
 
 @injectable()
 export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>, IScriptExplorerProvider, IScriptChangedEventListener {
@@ -28,7 +29,8 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
         @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
         @inject(TYPES.services.localOnlyScriptRepository) private localOnlyScriptRepositoryService: ILocalOnlyScriptRepositoryService,
-        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService
+        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
+        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService
     ) {
         scriptRepositoryService.registerScriptChangedEventListener(this);
         
@@ -65,7 +67,7 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
     }
 
     private async getRootLevelItems(): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>> {
-        return await this.getChildItems(new RootDirectory(this.workspaceService));
+        return await this.getChildItems(new RootDirectory(this.workspaceService, this.configRepositoryService));
     }
 
     private async getChildItems(directory: IDirectory): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>> {

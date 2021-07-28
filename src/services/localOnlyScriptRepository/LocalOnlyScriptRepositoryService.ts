@@ -50,7 +50,7 @@ export class LocalOnlyScriptRepositoryService implements ILocalOnlyScriptReposit
             const localDirectoryNames = localDirectories
                 .filter(content => content[1] === vscode.FileType.Directory)
                 .map(content => content[0]);
-            const filetedLocalDirectoryNames = localDirectoryNames.filter(name => name !== ".iobroker");
+            const filetedLocalDirectoryNames = localDirectoryNames.filter(name => name !== ".iobroker" && name !== ".git");
             return filetedLocalDirectoryNames;
         }
 
