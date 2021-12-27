@@ -4,17 +4,15 @@ import TYPES from '../../Types';
 import { IScriptChangedEventListener } from '../../services/scriptRemote/IScriptChangedListener';
 import { IIobrokerConnectionService } from '../../services/iobrokerConnection/IIobrokerConnectionService';
 import { IScriptRepositoryService } from '../../services/scriptRepository/IScriptRepositoryService';
-import { IDirectory } from '../../models/IDirectory';
-import { RootDirectory } from '../../models/RootDirectory';
 import { ILocalScript } from '../../models/ILocalScript';
 import { IWorkspaceService } from '../../services/workspace/IWorkspaceService';
 import { ILocalOnlyScriptRepositoryService } from '../../services/localOnlyScriptRepository/ILocalOnlyScriptRepositoryService';
 import { IConfigRepositoryService } from '../../services/configRepository/IConfigRepositoryService';
 import { ScriptItem } from '../scriptExplorer/ScriptItem';
-import { IChangedFilesProvider } from './IChangedFilesProvider';
+import { IChangedScriptsProvider } from './IChangedScriptsProvider';
 
 @injectable()
-export class ChangedFilesProvider implements vscode.TreeDataProvider<ScriptItem>, IChangedFilesProvider, IScriptChangedEventListener {
+export class ChangedScriptsProvider implements vscode.TreeDataProvider<ScriptItem>, IChangedScriptsProvider, IScriptChangedEventListener {
 
     private _onDidChangeTreeData: vscode.EventEmitter<ScriptItem | undefined | null | void> = new vscode.EventEmitter<ScriptItem | undefined | null | void>();
 

@@ -44,7 +44,7 @@
 					"name": "Script explorer"
 				},
 				{
-					"id": "iobroker-javascript.changed-files",
+					"id": "iobroker-javascript.changed-scripts",
 					"name": "Changed files"
 				}
 			]
@@ -169,22 +169,22 @@
 				},
 				{
 					"command": "iobroker-javascript.startScript",
-					"when": "view == iobroker-javascript.changed-files && viewItem == scriptItem",
+					"when": "view == iobroker-javascript.changed-scripts && viewItem == scriptItem",
 					"group": "inline@1"
 				},
 				{
 					"command": "iobroker-javascript.stopScript",
-					"when": "view == iobroker-javascript.changed-files && viewItem == scriptItem",
+					"when": "view == iobroker-javascript.changed-scripts && viewItem == scriptItem",
 					"group": "inline@2"
 				},
 				{
 					"command": "iobroker-javascript.download",
-					"when": "view == iobroker-javascript.changed-files && viewItem == scriptItem",
+					"when": "view == iobroker-javascript.changed-scripts && viewItem == scriptItem",
 					"group": "inline@3"
 				},
 				{
 					"command": "iobroker-javascript.upload",
-					"when": "view == iobroker-javascript.changed-files && viewItem == scriptItem || viewItem == onlyLocalScriptItem",
+					"when": "view == iobroker-javascript.changed-scripts && viewItem == scriptItem || viewItem == onlyLocalScriptItem",
 					"group": "inline@4"
 				},
 				{

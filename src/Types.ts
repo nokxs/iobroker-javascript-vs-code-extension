@@ -25,7 +25,7 @@ const TYPES = {
     },
     views: {
         scriptExplorer: Symbol.for("ScriptExplorerView"),
-        changedFiles: Symbol.for("ChangedFielsView")
+        changedScripts: Symbol.for("ChangedScriptView")
     },
     command: Symbol.for("Command"),
     startup: Symbol.for("Startup")
