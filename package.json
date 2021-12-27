@@ -2,7 +2,7 @@
 	"name": "iobroker-javascript",
 	"displayName": "ioBroker.javascript",
 	"description": "Enables you to develop ioBroker scripts completely in Visual Studio Code, without the need of the web interface.",
-	"version": "0.12.1",
+	"version": "0.13.0",
 	"repository": {
 		"url": "https://github.com/nokxs/iobroker-javascript-vs-code-extension",
 		"type": "git"
@@ -42,6 +42,10 @@
 				{
 					"id": "iobroker-javascript.script-explorer",
 					"name": "Script explorer"
+				},
+				{
+					"id": "iobroker-javascript.changed-scripts",
+					"name": "Changed scripts"
 				}
 			]
 		},
@@ -161,6 +165,26 @@
 				{
 					"command": "iobroker-javascript.upload",
 					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem || viewItem == onlyLocalScriptItem",
+					"group": "inline@4"
+				},
+				{
+					"command": "iobroker-javascript.startScript",
+					"when": "view == iobroker-javascript.changed-scripts && viewItem == scriptItem",
+					"group": "inline@1"
+				},
+				{
+					"command": "iobroker-javascript.stopScript",
+					"when": "view == iobroker-javascript.changed-scripts && viewItem == scriptItem",
+					"group": "inline@2"
+				},
+				{
+					"command": "iobroker-javascript.download",
+					"when": "view == iobroker-javascript.changed-scripts && viewItem == scriptItem",
+					"group": "inline@3"
+				},
+				{
+					"command": "iobroker-javascript.upload",
+					"when": "view == iobroker-javascript.changed-scripts && viewItem == scriptItem || viewItem == onlyLocalScriptItem",
 					"group": "inline@4"
 				},
 				{

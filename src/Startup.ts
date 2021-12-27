@@ -6,6 +6,7 @@ import { ExtensionContext, window } from "vscode";
 import { ScriptExplorerProvider } from "./views/scriptExplorer/ScriptExplorerProvider";
 import { IIobrokerConnectionService } from "./services/iobrokerConnection/IIobrokerConnectionService";
 import { IWorkspaceService } from "./services/workspace/IWorkspaceService";
+import { ChangedScriptsProvider as ChangedScriptsProvider } from "./views/changedScripts/ChangedScriptsProvider";
 
 @injectable()
 export class Startup implements IStartup {
@@ -13,7 +14,8 @@ export class Startup implements IStartup {
         @inject(TYPES.services.command) private commandService: ICommandService,
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
         @inject(TYPES.services.workspace) private workSpaceService: IWorkspaceService,
-        @inject(TYPES.views.scriptExplorer) private scriptExplorerProvider: ScriptExplorerProvider
+        @inject(TYPES.views.scriptExplorer) private scriptExplorerProvider: ScriptExplorerProvider,
+        @inject(TYPES.views.changedScripts) private changedScriptsProvider: ChangedScriptsProvider
     ) {}
 
     async init(context: ExtensionContext): Promise<void> {
@@ -26,7 +28,7 @@ export class Startup implements IStartup {
             window.setStatusBarMessage("ioBroker: No auto connect possible. Multiple 'iobroker-config.json' found.");
         }
         
-        // TODO: Move to own service
         window.registerTreeDataProvider("iobroker-javascript.script-explorer", this.scriptExplorerProvider);
+        window.registerTreeDataProvider("iobroker-javascript.changed-scripts", this.changedScriptsProvider);
     }
 }

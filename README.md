@@ -22,13 +22,18 @@ If you choose to configure ioBroker type definitions, the current defintions are
 (if it does not exist yet) with the necessary settings. This enables Visual Studio Code to know
 the [ioBroker specific javascript functions](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/javascript.md).
 
-### Script explorer
+### View: Script explorer
 The script explorer can be found in the activity bar behind the ioBroker logo. It shows all scripts, which are on the configured iobroker server. If the script content differs on the local disk from the remote version on the
 ioBroker server, a star (*) is shown next to the script name.
 
 Click on script to show its contents. If the script is not downloaded yet, only a preview is openend. 
 
 Every time a script object is changed, the script explorer refreshes its view.
+
+### View: Changed scripts
+The *Changed scripts* view can be found in the activity bar behind the ioBroker logo. It shows all scripts, where the local version differs from the server version. Only scripts which are already uploaded to the server are shown *(This might change in the future)*.
+
+The same scripts are also shown in the script explorer marked with a star.
 
 ### Download scripts
 Either download only one script (`iobroker: Download script`) or all scripts at once (`iobroker: Download all scripts`). To download a single script you have to following options:

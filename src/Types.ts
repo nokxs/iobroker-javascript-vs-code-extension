@@ -24,7 +24,8 @@ const TYPES = {
         connectionAdmin5: Symbol.for("ConnectionServiceAdmin5"),
     },
     views: {
-        scriptExplorer: Symbol.for("ScriptExplorerView")
+        scriptExplorer: Symbol.for("ScriptExplorerView"),
+        changedScripts: Symbol.for("ChangedScriptView")
     },
     command: Symbol.for("Command"),
     startup: Symbol.for("Startup")

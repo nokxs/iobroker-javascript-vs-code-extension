@@ -2,6 +2,7 @@ import 'reflect-metadata';
 
 import { AdminVersionDetector } from './services/adminVersionDetector/AdminVersionDetector';
 import { ChangeJsInstanceCommand } from './commands/ChangeJsInstanceCommand';
+import { ChangedScriptsProvider } from './views/changedScripts/ChangedScriptsProvider';
 import { CommandService } from './services/command/CommandService';
 import { ConfigCreationService } from './services/configCreation/ConfigCreationService';
 import { ConfigRepositoryService } from './services/configRepository/ConfigRepositoryService';
@@ -19,6 +20,7 @@ import { DownloadAllCommand } from './commands/DownloadAllCommand';
 import { DownloadCommand } from './commands/DownloadCommand';
 import { FileService } from './services/file/FileService';
 import { IAdminVersionDetector } from './services/adminVersionDetector/IAdminVersionDetector';
+import { IChangedScriptsProvider } from './views/changedScripts/IChangedScriptsProvider';
 import { ICommand } from './commands/ICommand';
 import { ICommandService } from './services/command/ICommandService';
 import { IConfigCreationService } from './services/configCreation/IConfigCreationService';
@@ -107,5 +109,6 @@ container.bind<ICommand>(TYPES.command).to(CreateTypeScriptFileCommandy);
 container.bind<ICommand>(TYPES.command).to(CreateJavaScriptFileCommand);
 
 container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider).inSingletonScope();
+container.bind<IChangedScriptsProvider>(TYPES.views.changedScripts).to(ChangedScriptsProvider).inSingletonScope();
 
 export default container;
