@@ -45,7 +45,7 @@
 				},
 				{
 					"id": "iobroker-javascript.changed-scripts",
-					"name": "Changed files"
+					"name": "Changed scripts"
 				}
 			]
 		},
