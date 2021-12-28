@@ -102,6 +102,10 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         }
     }
 
+    getAllChangedScripts(): ILocalScript[] {
+        return this.scripts.filter(s => s.isDirty && !s.isRemoteOnly);
+    }
+
     getAllScripts(): ILocalScript[] {
         return this.scripts;
     }

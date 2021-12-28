@@ -16,6 +16,7 @@ export interface IScriptRepositoryService {
     evaluateScriptOnRemoteForAllScripts(): Promise<void>
     evaluateScriptOnRemote(script: ILocalScript): Promise<void>
 
+    getAllChangedScripts(): ILocalScript[]
     getAllScripts(): ILocalScript[]
     getAllDirectories(): IDirectory[]
 
