@@ -24,7 +24,9 @@
 	],
 	"homepage": "https://github.com/nokxs/iobroker-javascript-vs-code-extension",
 	"activationEvents": [
-		"*"
+		"workspaceContains:.iobroker-config.json",
+		"onView:iobroker-javascript.script-explorer",
+		"onView:iobroker-javascript.changed-scripts"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
