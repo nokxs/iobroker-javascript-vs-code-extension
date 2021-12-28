@@ -54,6 +54,7 @@ import { ScriptRemoteService } from './services/scriptRemote/ScriptRemoteService
 import { ScriptRenameCommand } from './commands/ScriptRenameCommand';
 import { ScriptRepositoryService } from './services/scriptRepository/ScriptRepositoryService';
 import { ScriptService } from './services/script/ScriptService';
+import { ShowLocalToServerDiffCommand } from './commands/ShowLocalToServerDiffCommand';
 import { SocketIoClient } from './services/socketIoClient/SocketIoClient';
 import { StartCurrentScriptCommand } from './commands/StartCurrentScriptCommand';
 import { Startup } from './Startup';
@@ -109,6 +110,7 @@ container.bind<ICommand>(TYPES.command).to(RefreshCommand);
 container.bind<ICommand>(TYPES.command).to(CreateDirectoryCommand);
 container.bind<ICommand>(TYPES.command).to(CreateTypeScriptFileCommandy);
 container.bind<ICommand>(TYPES.command).to(CreateJavaScriptFileCommand);
+container.bind<ICommand>(TYPES.command).to(ShowLocalToServerDiffCommand);
 
 container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider).inSingletonScope();
 container.bind<IChangedScriptsProvider>(TYPES.views.changedScripts).to(ChangedScriptsProvider).inSingletonScope();
