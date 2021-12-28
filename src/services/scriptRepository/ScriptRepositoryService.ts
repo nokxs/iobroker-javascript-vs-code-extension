@@ -122,6 +122,25 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         return this.scripts.find(script => script._id === id);
     }
 
+    async getScriptWithLocalContent(localScript: ILocalScript): Promise<IScript | null> {
+        const script = localScript.ioBrokerScript;
+        const scriptName = script.common.name;
+
+        if (!scriptName) {
+            throw new Error(`Cannot upload script '${script._id}', because it's name is not set`);
+        }
+
+        const scriptText = await this.scriptService.getFileContentOnDisk(localScript.absoluteUri);
+        const existingScript = await this.scriptRemoteService.downloadScriptWithId(script._id);
+        
+        if (existingScript) {
+            existingScript.common.source = scriptText ?? "";
+            return existingScript;
+        }
+
+        return null;
+    }
+
     getRootLevelScript(): ILocalScript[] {
         return this.getScriptsIn(new RootDirectory(this.workspaceService, this.configRepositoryService));
     }

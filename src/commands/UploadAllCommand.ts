@@ -1,11 +1,12 @@
 import { ICommand } from "./ICommand";
 import { inject, injectable } from "inversify";
 import TYPES from "../Types";
-import { IScriptService } from "../services/script/IScriptService";
-import { IScriptIdService } from "../services/scriptId/IScriptIdService";
 import { IScriptRemoteService } from '../services/scriptRemote/IScriptRemoteService';
 import { IIobrokerConnectionService } from '../services/iobrokerConnection/IIobrokerConnectionService';
-import { IFileService } from "../services/file/IFileService";
+import { IScriptRepositoryService } from "../services/scriptRepository/IScriptRepositoryService";
+import { window } from "vscode";
+import { ILocalScript } from "../models/ILocalScript";
+import CONSTANTS from "../Constants";
 
 @injectable()
 export class UploadAllCommand implements ICommand {
@@ -13,10 +14,8 @@ export class UploadAllCommand implements ICommand {
     
     constructor(
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
-        @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
-        @inject(TYPES.services.script) private scriptService: IScriptService,
-        @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
-        @inject(TYPES.services.file) private fileService: IFileService
+        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
+        @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService
     ) {}
 
     async execute() {
@@ -24,15 +23,24 @@ export class UploadAllCommand implements ICommand {
             await this.iobrokerConnectionService.connect();
         }
 
-        return;
+        var changedScripts = this.scriptRepositoryService.getAllChangedScripts();
+        var unsuccessfulUploads: Array<ILocalScript> = [];
+        for (const changedScript of changedScripts) {
+            const script = await this.scriptRepositoryService.getScriptWithLocalContent(changedScript);
 
-        // const script = await this.getScriptData(args);
+            if (script) {
+                await this.scriptRemoteService.uploadScript(script);                
+            }
+            else {
+                unsuccessfulUploads.push(changedScript);
+            }
+        }
 
-        // if (script) {
-        //     await this.scriptRemoteService.uploadScript(script);
-        //     window.setStatusBarMessage(`ioBroker: Finished uploading script`, CONSTANTS.StatusBarMessageTime);
-        // } else {
-        //     window.setStatusBarMessage(`ioBroker: Couldn't upload script`, CONSTANTS.StatusBarMessageTime);
-        // }
+        if (unsuccessfulUploads.length === 0) {
+            window.setStatusBarMessage(`ioBroker: Finished uploading all ${changedScripts.length} scripts`, CONSTANTS.StatusBarMessageTime);
+        }
+        else {
+            window.showErrorMessage(`ioBroker: Upload of script(s) ${unsuccessfulUploads.map(s => `'${s.ioBrokerScript.common.name}', `)} was not successful`);
+        }
     }
 }
