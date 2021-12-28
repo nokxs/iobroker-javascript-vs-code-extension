@@ -71,6 +71,11 @@
 				"icon": "$(arrow-up)"
 			},
 			{
+				"command": "iobroker-javascript.uploadAll",
+				"title": "iobroker: Upload all changed files",
+				"icon": "$(cloud-upload)"
+			},
+			{
 				"command": "iobroker-javascript.startScript",
 				"title": "iobroker: Start script",
 				"icon": "$(debug-start)"
@@ -144,6 +149,11 @@
 				{
 					"command": "iobroker-javascript.downloadAll",
 					"when": "view == iobroker-javascript.script-explorer"
+				},
+				{
+					"command": "iobroker-javascript.uploadAll",
+					"when": "view == iobroker-javascript.changed-scripts",
+					"group": "navigation"
 				}
 			],
 			"view/item/context": [

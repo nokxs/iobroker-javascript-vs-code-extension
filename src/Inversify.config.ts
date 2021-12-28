@@ -61,6 +61,7 @@ import { StopCurrentScriptCommand } from './commands/StopCurrentScriptCommand';
 import TYPES from './Types';
 import { TypeDefinitionService } from './services/typeDefinition/TypeDefinitionService';
 import { UpdateTypeDefinitionCommand } from './commands/UpdateTypeDefinitionCommand';
+import { UploadAllCommand } from './commands/UploadAllCommand';
 import { UploadCommand } from './commands/UploadCommand';
 import { WorkspaceService } from './services/workspace/WorkspaceService';
 
@@ -94,6 +95,7 @@ container.bind(TYPES.services.connectionAdmin5).to(ConnectionServiceAdmin5);
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
 container.bind<ICommand>(TYPES.command).to(DownloadCommand);
 container.bind<ICommand>(TYPES.command).to(UploadCommand);
+container.bind<ICommand>(TYPES.command).to(UploadAllCommand);
 container.bind<ICommand>(TYPES.command).to(StartCurrentScriptCommand);
 container.bind<ICommand>(TYPES.command).to(StopCurrentScriptCommand);
 container.bind<ICommand>(TYPES.command).to(UpdateTypeDefinitionCommand);

@@ -11,16 +11,22 @@ import { IScriptRemoteService } from '../services/scriptRemote/IScriptRemoteServ
 import { IIobrokerConnectionService } from '../services/iobrokerConnection/IIobrokerConnectionService';
 import { OnlyLocalScriptItem } from "../views/scriptExplorer/OnlyLocalScriptItem";
 import { IFileService } from "../services/file/IFileService";
+import { IScriptRepositoryService } from "../services/scriptRepository/IScriptRepositoryService";
 
 @injectable()
 export class UploadCommand implements ICommand {
-    id: string = "iobroker-javascript.upload";
+    public static get id(): string {
+        return "iobroker-javascript.upload";
+    }
+
+    id: string = UploadCommand.id;
     
     constructor(
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
         @inject(TYPES.services.script) private scriptService: IScriptService,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
+        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
         @inject(TYPES.services.file) private fileService: IFileService
     ) {}
 
@@ -59,22 +65,7 @@ export class UploadCommand implements ICommand {
             return defaultScript;
         }
 
-        const script = localScript.ioBrokerScript;
-        const scriptName = script.common.name;
-
-        if (!scriptName) {
-            throw new Error(`Cannot upload script '${script._id}', because it's name is not set`);
-        }
-
-        const scriptText = await this.scriptService.getFileContentOnDisk(localScript.absoluteUri);
-        const existingScript = await this.scriptRemoteService.downloadScriptWithId(script._id);
-        
-        if (existingScript) {
-            existingScript.common.source = scriptText ?? "";
-            return existingScript;
-        }
-
-        return null;
+        return this.scriptRepositoryService.getScriptWithLocalContent(localScript);
     }
 
     private async handleScriptFromEditor(): Promise<IScript | null> {

@@ -52,10 +52,8 @@ export class ChangedScriptsProvider implements vscode.TreeDataProvider<ScriptIte
     }
 
     private async getRootLevelItems(): Promise<Array<ScriptItem>> {
-        const scripts = await this.scriptRepositoryService.getAllScripts();
-        const dirtyScripts = scripts.filter(s => s.isDirty && !s.isRemoteOnly);
-        
-        return this.convertToScriptItems(dirtyScripts);
+        const scripts = this.scriptRepositoryService.getAllChangedScripts();        
+        return this.convertToScriptItems(scripts);
     }
     
     private convertToScriptItems(scripts: ILocalScript[]): ScriptItem[] {
