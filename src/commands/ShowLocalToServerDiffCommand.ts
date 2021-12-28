@@ -3,8 +3,7 @@ import { inject, injectable } from "inversify";
 import TYPES from "../Types";
 import { IFileService } from '../services/file/IFileService';
 import { IScriptService } from "../services/script/IScriptService";
-import { ILocalScript } from "../models/ILocalScript";
-import { commands, Uri } from "vscode";
+import { commands } from "vscode";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import { EngineType } from "../models/EngineType";
 
