@@ -133,6 +133,12 @@
 				"command": "iobroker-javascript.view.scriptExplorer.createJavaScriptFile",
 				"title": "Create JavaScript file",
 				"enablement": "view == iobroker-javascript.script-explorer"
+			},
+			{
+				"command": "iobroker-javascript.view.changed-scripts.showLocalToServerDiff",
+				"title": "Show diff between local and server script",
+				"enablement": "view == iobroker-javascript.changed-scripts || view == iobroker-javascript.script-explorer",
+				"icon": "$(diff)"
 			}
 		],
 		"menus": {
@@ -178,6 +184,11 @@
 					"group": "inline@4"
 				},
 				{
+					"command": "iobroker-javascript.view.changed-scripts.showLocalToServerDiff",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem",
+					"group": "inline@5"
+				},
+				{
 					"command": "iobroker-javascript.startScript",
 					"when": "view == iobroker-javascript.changed-scripts && viewItem == scriptItem",
 					"group": "inline@1"
@@ -196,6 +207,11 @@
 					"command": "iobroker-javascript.upload",
 					"when": "view == iobroker-javascript.changed-scripts && viewItem == scriptItem || viewItem == onlyLocalScriptItem",
 					"group": "inline@4"
+				},
+				{
+					"command": "iobroker-javascript.view.changed-scripts.showLocalToServerDiff",
+					"when": "view == iobroker-javascript.changed-scripts && viewItem == scriptItem",
+					"group": "inline@5"
 				},
 				{
 					"command": "iobroker-javascript.view.scriptExplorer.rename",

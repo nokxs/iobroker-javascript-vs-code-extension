@@ -1,4 +1,6 @@
 import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 
 import { Uri, workspace } from "vscode";
 
@@ -53,6 +55,22 @@ export class FileService implements IFileService {
                     resolve();
                 }
             });
+        });
+    }
+
+    createTemporaryFile(fileName: string, content: string): Promise<Uri> {
+        return new Promise((resolve, reject) => {
+            const tempDir = os.tmpdir();
+            fs.mkdtemp(`${tempDir}iobroker-`, (err, directoryPath) => {
+                if (err) {
+                    reject(err);
+                }
+                else {
+                    const filePath = path.join(directoryPath, fileName);
+                    fs.writeFileSync(filePath, content);
+                    resolve(Uri.file(filePath));
+                }
+              });
         });
     }
 }
