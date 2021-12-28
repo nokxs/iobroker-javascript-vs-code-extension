@@ -53,6 +53,9 @@ To start/stop a single script you have the following options:
 * Go to the script explorer and press the start or stop button.
 * Use the command `iobroker: Start script`, respectively `iobroker: Stop script`. This command starts/stops the script in the active text editor.
 
+### Show diff between local and server version of a script
+Use the diff button in either the script explorer or the changed scripts view to show a diff of all the changes made locally.
+
 ### Move scripts
 Scripts can be moved from one directory to another on your ioBroker server. Moving a script over the VS Code file browser is not supported yet.
 
