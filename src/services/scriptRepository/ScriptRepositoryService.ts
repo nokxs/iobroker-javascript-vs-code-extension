@@ -60,12 +60,13 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         const ioBrokerScripts = await this.scriptRemoteService.downloadAllScripts();
         this.scripts = await Promise.all(ioBrokerScripts.map(async script => {
             const absoluteUri = this.getAbsoluteFileUri(script, this.directories);
+            const relativeUri = this.getRelativeFileUri(script, this.directories);
 
             return {
                 _id: script._id,
                 ioBrokerScript: script,
                 absoluteUri: absoluteUri,
-                relativeUri: this.getRelativeFileUri(script, this.directories),
+                relativeUri: relativeUri,
                 isDirty: await this.isScriptDirty(script, absoluteUri),
                 isRemoteOnly: await this.isRemoteOnly(absoluteUri)
             };
@@ -196,8 +197,10 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         const extension = this.scriptService.getFileExtension(engineType);
         
         let parentDirectory = this.getParentDirectory(script, directories);
-                
-        return Uri.parse(`${parentDirectory.relativeUri.path}/${script.common.name}.${extension}`);
+        
+        const parentDirectoryUri = Uri.parse(parentDirectory.relativeUri.path);
+        const relativeUri = Uri.joinPath(parentDirectoryUri, `${script.common.name}.${extension}`);
+        return relativeUri;
     }
 
     private getAbsoluteFileUri(script: IScript, directories: IDirectory[]): Uri {
