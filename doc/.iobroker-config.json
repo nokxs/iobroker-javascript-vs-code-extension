@@ -1,7 +1,7 @@
 {
   "ioBrokerUrl": "http://localhost",
   "socketIoPort": 8081,
-  "workspaceSubPath": "/",
+  "scriptRoot": "/",
   "adminVersion": "admin5",
   "autoReconnect": true,
   "scriptExplorer": {
