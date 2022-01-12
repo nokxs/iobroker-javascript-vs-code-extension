@@ -15,6 +15,6 @@ export class RootDirectory implements IDirectory {
     
     common: IDirectoryCommon = {};
     _id: ScriptId = "script.js";
-    relativeUri = Uri.parse("./");
+    relativeUri = Uri.parse(this.configRepositoryService.config.scriptRoot);
     absoluteUri = Uri.joinPath(this.workspaceService.workspaceToUse.uri, this.configRepositoryService.config.scriptRoot);
 }
