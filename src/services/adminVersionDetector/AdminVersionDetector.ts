@@ -13,12 +13,12 @@ export class AdminVersionDetector implements IAdminVersionDetector {
         @inject(TYPES.services.socketIoClient) private socketIoClient: ISocketIoClient
     ) { }
 
-    async getVersion(iobrokerUrl: string): Promise<AdminVersion> {
+    async getVersion(iobrokerUrl: string, allowSelfSignedCertificate: boolean): Promise<AdminVersion> {
         if (await this.isAdmin4Reachable(iobrokerUrl)) {
             return AdminVersion.admin4;
         }
 
-        if (await this.isAdmin5Reachable(iobrokerUrl)) {
+        if (await this.isAdmin5Reachable(iobrokerUrl, allowSelfSignedCertificate)) {
             return AdminVersion.admin5;
         }
 
@@ -57,9 +57,9 @@ export class AdminVersionDetector implements IAdminVersionDetector {
         });
     }
 
-    private isAdmin5Reachable(iobrokerUrl: string): Promise<boolean> {
+    private isAdmin5Reachable(iobrokerUrl: string, allowSelfSignedCertificate: boolean): Promise<boolean> {
         return new Promise<boolean>((resolve) => {
-            this.socketIoClient.connect(iobrokerUrl, "");
+            this.socketIoClient.connect(iobrokerUrl, "", allowSelfSignedCertificate);
 
             const timeout = setTimeout(() => {
                 if(!this.socketIoClient.connected) {

@@ -62,6 +62,7 @@ export class SocketIoClient implements ISocketIoClient {
     private pending: any = []; // pending requests till connection established
     private url: String = "";
     private options: any;
+    private allowSelfSignedCertificate: boolean = false;
     private pingInterval: any;
     private id = 0;
     private sessionID: any;
@@ -80,7 +81,7 @@ export class SocketIoClient implements ISocketIoClient {
         this.connected = false; // simulate socket.io interface
     }
 
-    async connect(_url: any, _options: any): Promise<ISocketIoClient> {
+    async connect(_url: any, _options: any, _allowSelfSignedCertificate: boolean): Promise<ISocketIoClient> {
         this.log.debug('Try to connect');
         this.id = 0;
         this.connectTimer && clearInterval(this.connectTimer);
@@ -88,6 +89,7 @@ export class SocketIoClient implements ISocketIoClient {
 
         this.url = this.url || _url;
         this.options = this.options || _options;
+        this.allowSelfSignedCertificate = this.allowSelfSignedCertificate || _allowSelfSignedCertificate;
         this.sessionID = Date.now();
         try {
             let u = this.url.replace(/^http/, 'ws').split('?')[0] + '?sid=' + this.sessionID;
@@ -95,7 +97,9 @@ export class SocketIoClient implements ISocketIoClient {
                 u += '&name=' + encodeURIComponent(_options.name);
             }
             // "ws://www.example.com/socketserver"
-            this.socket = new WebSocket(u);
+            this.socket = new WebSocket(u, {
+                rejectUnauthorized: !_allowSelfSignedCertificate
+            });
         } catch (error) {
             this.handlers.error && this.handlers.error.forEach((cb: any) => cb.call(this, error));
             return await this.closeAndReconnect();
@@ -120,6 +124,7 @@ export class SocketIoClient implements ISocketIoClient {
                         return this._garbageCollect();
                     }
                 }
+
                 if (Date.now() - this.lastPong > 15000) {
                     await this.closeAndReconnect();
                 }
@@ -386,7 +391,7 @@ export class SocketIoClient implements ISocketIoClient {
             this.log.debug('Start reconnect');
             this.connectTimer = setTimeout(() => {
                 this.connectTimer = null;
-                this.connect(this.url, this.options);
+                this.connect(this.url, this.options, this.allowSelfSignedCertificate);
             }, RECONNECT_TIMEOUT);
         } else {
             this.log.debug('Reconnect is already running');

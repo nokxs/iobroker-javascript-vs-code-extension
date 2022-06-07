@@ -6,7 +6,7 @@ import { Uri } from "vscode";
 export interface IConnectionService {
     isConnected: boolean;
     
-    connect(uri: Uri, autoReconnect: boolean): Promise<void>
+    connect(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean): Promise<void>
     disconnect(): Promise<void>
     
     registerConnectionEventListener(listener: IConnectionEventListener): void
