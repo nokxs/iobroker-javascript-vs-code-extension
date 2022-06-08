@@ -4,6 +4,7 @@
   "scriptRoot": "/",
   "adminVersion": "admin5",
   "autoReconnect": true,
+  "allowSelfSignedCertificate:": false,
   "scriptExplorer": {
     "collapseDirectoriesOnStartup": true
   }
