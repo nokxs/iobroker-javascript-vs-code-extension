@@ -26,6 +26,7 @@ export class ConfigCreationService implements IConfigCreationService {
         }
 
         let port: string | undefined;
+        let allowSelfSignedCertificate = false;
         const portRegex = new RegExp("(http.*):(\\d+)");
         const portMatch = portRegex.exec(ioBrokerUrl);
         if (portMatch && (portMatch?.length ?? 0) === 3) {
@@ -38,6 +39,10 @@ export class ConfigCreationService implements IConfigCreationService {
         
         if (!port) {
             return new NoConfig();
+        }
+
+        if (ioBrokerUrl.startsWith("https:")) {
+            allowSelfSignedCertificate = (await window.showQuickPick(["No", "Yes"], {canPickMany: false, placeHolder: "Are you using a self signed certificate?", ignoreFocusOut: true})) === "Yes";
         }
 
         const scriptPath = await window.showInputBox({prompt: "The relative path in your workspace to the scripts", value: "/", ignoreFocusOut: true});
@@ -56,21 +61,21 @@ export class ConfigCreationService implements IConfigCreationService {
         }
 
         const statusBarMessage = window.setStatusBarMessage("$(sync~spin) Trying to detect used ioBroker Admin version...");
-        const adminVersion = await this.getAdminVersion(`${ioBrokerUrl}:${port}`);    
+        const adminVersion = await this.getAdminVersion(`${ioBrokerUrl}:${port}`, allowSelfSignedCertificate);    
         statusBarMessage.dispose();
 
         if (adminVersion === AdminVersion.unknown) {
             return new NoConfig();
         }
         
-        return new Config(ioBrokerUrl, Number.parseInt(port), scriptPath, adminVersion);
+        return new Config(ioBrokerUrl, Number.parseInt(port), scriptPath, adminVersion, undefined, undefined, allowSelfSignedCertificate);
     }
 
-    private async getAdminVersion(ioBrokerUrl: string): Promise<AdminVersion> {
+    private async getAdminVersion(ioBrokerUrl: string, allowSelfSignedCertificate: boolean): Promise<AdminVersion> {
         const admin4 = "Admin 4";
         const admin5 = "Admin 5";
 
-        let adminVersion = await this.adminVersionDetector.getVersion(ioBrokerUrl);
+        let adminVersion = await this.adminVersionDetector.getVersion(ioBrokerUrl, allowSelfSignedCertificate);
         
         if (adminVersion === AdminVersion.unknown) {
             const adminVersionPick = await window.showQuickPick(

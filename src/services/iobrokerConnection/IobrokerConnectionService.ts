@@ -88,7 +88,10 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
         this. connectionServiceProvider.getConnectionService().registerConnectionEventListener(this);
         const connectionService = this.connectionServiceProvider.getConnectionService();
         const useAutoReconnect = this.config?.autoReconnect ?? true;
-        await connectionService.connect(Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`), useAutoReconnect);
+        await connectionService.connect(
+          Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`), 
+          useAutoReconnect, 
+          this.config.allowSelfSignedCertificate ?? false);
         await this.logService.startReceiving();
         await this.scriptRepositoryService.init();
 

@@ -99,6 +99,7 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 | `scriptRoot` | Relative directory path, which is used as root of ioBroker scripts. | Yes | |
 | `adminVersion` | The admin version to connect to. Valid values: `Admin4`, `Admin5` | Yes | |
 | `autoReconnect` | Should a lost connection be automatically be restored? | No | true |
+| `allowSelfSignedCertificate` | Is it allowed to connect to a self signed certificate? | No | false |
 | `scriptExplorer.collapseDirectoriesOnStartup` | Should the directories in the script explorer be collapsed on startup. | No | true |
 
 ## Known Issues
@@ -110,8 +111,6 @@ If you got any problems, please open a GitHub issue.
 Support (not in the listed order)
 * password protected ioBroker installations
 * syncing of workspace with remote scripts (correctly, delete and remove scirpts)
-* upload multiple changed scripts with an `upload all` command
-* showing which scripts were updated and need to be uploaded
 
 ## Release Notes
 

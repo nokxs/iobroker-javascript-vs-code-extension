@@ -5,7 +5,8 @@ export class Config {
         readonly scriptRoot: string,
         readonly adminVersion: AdminVersion,
         readonly autoReconnect?: boolean,
-        readonly scriptExplorer?: ScriptExplorerConfig) {}
+        readonly scriptExplorer?: ScriptExplorerConfig,
+        readonly allowSelfSignedCertificate?: boolean) {}
 }
 
 export class ScriptExplorerConfig {

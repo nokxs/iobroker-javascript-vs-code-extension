@@ -22,7 +22,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
         this.connectionEventListeners.push(listener);
     }
     
-    async connect(uri: Uri, autoReconnect: boolean): Promise<void> {
+    async connect(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean): Promise<void> {
         const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
 
         if (this.client && this.client.connected) {
@@ -36,7 +36,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
             const timeout = setTimeout(() => {
                 if (!this.isConnected) {
                     message.dispose();
-                    reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
+                    reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds. Allow self signed certificate ${allowSelfSignedCertificate}`));
                 }
             }, this.connectionTimeout);
 
