@@ -8,8 +8,8 @@ import CONSTANTS from "../Constants";
 import { IFileService } from "../services/file/IFileService";
 
 @injectable()
-export class DeleteCommand implements ICommand {
-    id: string = "iobroker-javascript.view.scriptExplorer.delete";
+export class DeleteScriptCommand implements ICommand {
+    id: string = "iobroker-javascript.view.scriptExplorer.deleteScript";
 
     constructor(        
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
@@ -19,7 +19,7 @@ export class DeleteCommand implements ICommand {
     async execute(...args: any[]) {
         if (args) {
             const scriptItem = <ScriptItem>args[0] ?? <ScriptItem>args[0][0];
-            const pickResult = await window.showQuickPick(["No", "Yes"], {canPickMany: false,placeHolder: `Delete '${scriptItem.script.ioBrokerScript.common.name}'?`});
+            const pickResult = await window.showQuickPick(["No", "Yes"], {canPickMany: false, placeHolder: `Delete '${scriptItem.script.ioBrokerScript.common.name}'?`});
 
             if (pickResult === "Yes") {
                 await this.scriptRemoteService.delete(scriptItem.script._id);

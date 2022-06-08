@@ -117,7 +117,12 @@
 				"enablement": "view == iobroker-javascript.script-explorer"
 			},
 			{
-				"command": "iobroker-javascript.view.scriptExplorer.delete",
+				"command": "iobroker-javascript.view.scriptExplorer.deleteScript",
+				"title": "Delete",
+				"enablement": "view == iobroker-javascript.script-explorer"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.deleteDirectory",
 				"title": "Delete",
 				"enablement": "view == iobroker-javascript.script-explorer"
 			},
@@ -228,7 +233,7 @@
 					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem"
 				},
 				{
-					"command": "iobroker-javascript.view.scriptExplorer.delete",
+					"command": "iobroker-javascript.view.scriptExplorer.deleteScript",
 					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem"
 				},
 				{
@@ -241,6 +246,10 @@
 				},
 				{
 					"command": "iobroker-javascript.view.scriptExplorer.createJavaScriptFile",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptDirectory"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.deleteDirectory",
 					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptDirectory"
 				}
 			]
