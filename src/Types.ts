@@ -14,6 +14,7 @@ const TYPES = {
         directory: Symbol.for("DirectoryService"),
         log: Symbol.for("LogService"),
         typeDefinition: Symbol.for("TypeDefinitionService"),
+        login: Symbol.for("LoginService"),
         iobrokerConnection: Symbol.for("IobrokerConnection"),
         jsInstance: Symbol.for("JsInstanceService"),
         socketIoClient: Symbol.for("SocketIoClient"),

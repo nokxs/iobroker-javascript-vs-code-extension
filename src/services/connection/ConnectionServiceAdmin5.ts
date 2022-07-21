@@ -1,4 +1,5 @@
 import { Uri, window } from "vscode";
+import * as https from 'https';
 
 import { IConnectionEventListener } from "./IConnectionEventListener";
 import { IConnectionService } from "./IConnectionService";
@@ -7,6 +8,7 @@ import { ScriptId } from "../../models/ScriptId";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { ISocketIoClient } from "../socketIoClient/ISocketIoClient";
+import { ILoginService } from "../loginHttpClient/ILoginService";
 
 @injectable()
 export class ConnectionServiceAdmin5 implements IConnectionService {
@@ -18,13 +20,14 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     private client: ISocketIoClient | undefined = undefined;
 
     constructor(
-        @inject(TYPES.services.socketIoClient) private socketIoClient: ISocketIoClient
-    ) {}
-    
+        @inject(TYPES.services.socketIoClient) private socketIoClient: ISocketIoClient,
+        @inject(TYPES.services.login) private loginService: ILoginService
+    ) { }
+
     registerConnectionEventListener(listener: IConnectionEventListener): void {
         this.connectionEventListeners.push(listener);
     }
-    
+
     async connect(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean): Promise<void> {
         const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
 
@@ -32,9 +35,12 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
             await this.client.close();
             this.isConnected = false;
         }
-        
+
         this.socketIoClient.autoReconnect = autoReconnect;
-        this.client = await this.socketIoClient.connect(uri.toString(), {name: "vsCode"}, allowSelfSignedCertificate);
+
+        // TODO: Ask for username
+        const loginToken = await this.loginService.login("admin", "dummy");
+        this.client = await this.socketIoClient.connect(uri.toString(), {name: "admin", cookie: loginToken}, allowSelfSignedCertificate);
 
         return new Promise<void>((resolve, reject) => {
             this.registerSocketEvents();
@@ -76,7 +82,7 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
             });
         });
     }
-    
+
     registerForLogs(logAction: (logMessage: ILogMessage) => void): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
@@ -84,13 +90,13 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                 this.client.on("log", (message: ILogMessage) => {
                     logAction(message);
                 });
-    
+
                 this.client.emit("requireLog", true, (err: any) => {
                     if (err) {
                         reject(new Error(`Could not register for logs: ${err}`));
                     } else {
                         resolve();
-                    }                    
+                    }
                 });
             }
         });
@@ -100,7 +106,7 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
         return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
 
-                this.client.off("log");    
+                this.client.off("log");
                 this.client.emit("requireLog", false, (err: any) => {
                     if (err) {
                         reject(new Error(`Could not unregister for logs: ${err}`));
@@ -114,7 +120,7 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
 
     registerForObjectChange(pattern: string, onChangeAction: (id: string, value: any) => void): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            if (this.client && this.isConnected) {          
+            if (this.client && this.isConnected) {
                 this.client.on("objectChange", (id: string, value: any) => {
                     // TODO: This will be called for all registered patterns!
                     onChangeAction(id, value);
@@ -126,7 +132,7 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                     } else {
                         resolve();
                     }
-                });  
+                });
             } else {
                 reject(new Error(`Could not subscribe for pattern '${pattern}': Client is not connect`));
             }
@@ -142,7 +148,7 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                     } else {
                         resolve();
                     }
-                });  
+                });
             } else {
                 resolve();
             }
@@ -214,7 +220,7 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     getSystemObjectView<TResult>(type: string, startKey: string, endKey: string): Promise<TResult[]> {
         return new Promise<TResult[]>((resolve, reject) => {
             if (this.client && this.isConnected) {
-                this.client.emit("getObjectView", "system", type,{"startkey": startKey,"endkey": `${endKey}\u9999`}, (err: any, doc: { rows: {id: string, value: TResult}[] }) => {
+                this.client.emit("getObjectView", "system", type, { "startkey": startKey, "endkey": `${endKey}\u9999` }, (err: any, doc: { rows: { id: string, value: TResult }[] }) => {
                     if (err) {
                         reject(new Error(`Error while retreiving object view: Type: ${type} | startKey: ${startKey} | endKey: ${endKey}`));
                     }
@@ -237,7 +243,7 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                 this.isConnected = true;
                 this.connectionEventListeners.forEach(listener => listener.onConnected());
             });
-            
+
             this.client.on("disconnect", () => {
                 this.isConnected = false;
                 this.connectionEventListeners.forEach(listener => listener.onDisconnected());
