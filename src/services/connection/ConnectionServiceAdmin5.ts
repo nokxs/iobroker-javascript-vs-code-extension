@@ -39,7 +39,11 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
         this.socketIoClient.autoReconnect = autoReconnect;
 
         // TODO: Ask for username
-        const loginToken = await this.loginService.login("admin", "dummy");
+        if (await this.loginService.isLoginNecessary(uri, allowSelfSignedCertificate)) {
+            console.log("");
+        }
+
+        const loginToken = await this.loginService.login(uri, allowSelfSignedCertificate, "admin", "dummy");
         this.client = await this.socketIoClient.connect(uri.toString(), {name: "admin", cookie: loginToken}, allowSelfSignedCertificate);
 
         return new Promise<void>((resolve, reject) => {
