@@ -91,7 +91,7 @@ container.bind<IConfigRepositoryService>(TYPES.services.configRepository).to(Con
 container.bind<IJsInstanceService>(TYPES.services.jsInstance).to(JsInstanceService).inSingletonScope();
 container.bind<IConnectionServiceProvider>(TYPES.services.connectionServiceProvider).to(ConnectionServiceProvider).inSingletonScope();
 container.bind<ILoginService>(TYPES.services.login).to(LoginService).inSingletonScope();
-container.bind<ILoginCredentialsService>(TYPES.services.login).to(LoginCredentialsService).inSingletonScope();
+container.bind<ILoginCredentialsService>(TYPES.services.loginCredentials).to(LoginCredentialsService).inSingletonScope();
 
 container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inTransientScope();
 container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inTransientScope();

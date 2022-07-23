@@ -7,6 +7,7 @@ import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { LoginCredentialsService } from '../loginCredentialsService/LoginCredentialsService';
 import { Uri } from 'vscode';
+import { IAccessToken } from '../loginCredentialsService/IAccessToken';
 
 @injectable()
 export class LoginService implements ILoginService {
@@ -96,7 +97,9 @@ export class LoginService implements ILoginService {
             requestCert: true,
             agent: false,
             headers: {
+                // eslint-disable-next-line @typescript-eslint/naming-convention
                 'Content-Type': 'application/x-www-form-urlencoded',
+                // eslint-disable-next-line @typescript-eslint/naming-convention
                 'Content-Length': postData.length
             }
         };

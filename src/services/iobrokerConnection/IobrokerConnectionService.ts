@@ -15,7 +15,6 @@ import { IScriptService } from "../script/IScriptService";
 import { IScriptRepositoryService } from "../scriptRepository/IScriptRepositoryService";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { ILoginService } from "../loginHttpClient/ILoginService";
-import { url } from "inspector";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
