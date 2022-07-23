@@ -1,8 +1,9 @@
-import { IAccessToken } from "./IAccessToken"
+import { IAccessToken } from "./IAccessToken";
 
 export interface ILoginCredentialsService {
     
     getPassword(): Promise<string | undefined>
+    updatePasswordFromUser(): Promise<string | undefined>
 
     getAccessToken(): Promise<IAccessToken | undefined>
     updateAccessToken(accessToken: IAccessToken): Promise<void>

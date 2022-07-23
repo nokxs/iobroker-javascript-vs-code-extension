@@ -58,7 +58,7 @@ export class LoginService implements ILoginService {
     private async getServerTime(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<Date> {
         const httpsAgent = this.createHttpsAgent(allowSelfSignedCertificate);
         const response = await axios.get(baseUri.toString(), { httpsAgent: httpsAgent });
-        const dateHeader = response.headers.get("Date");
+        const dateHeader = response.headers.date;
 
         if (dateHeader) {
             return new Date(dateHeader);
@@ -120,15 +120,19 @@ export class LoginService implements ILoginService {
 
         const cookie = cookies[0];
 
-        const startIndex = cookie.indexOf("connect.sid");
-        const startSubString = cookie.substring(startIndex);
-        const endIndex = startSubString.indexOf(";");
-        const connectToken = startSubString.substring(0, endIndex);
+        const connectToken = `connect.sid=${this.getCookieValue(cookie, "connect.sid")}`;
+        const expires = new Date(this.getCookieValue(cookie, "Expires"));
 
-        // TODO: parse date
-        const accessToken: IAccessToken = { token: connectToken, expires: new Date() };
+        const accessToken: IAccessToken = { token: connectToken, expires: expires };
 
         resolve(accessToken);
+    }
+
+    private getCookieValue(cookie: string, identifier: string): string {
+        const startIndex = cookie.indexOf(identifier);
+        const startSubString = cookie.substring(startIndex + identifier.length + 1); // +1 is the equal sign
+        const endIndex = startSubString.indexOf(";");
+        return startSubString.substring(0, endIndex);
     }
 
     private createRequest(uri: Uri, options: http.RequestOptions, resolve: (value: IAccessToken) => void, reject: (reason?: any) => void): http.ClientRequest {

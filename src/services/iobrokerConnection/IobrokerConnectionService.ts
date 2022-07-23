@@ -95,7 +95,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
 
       if (await this.loginService.isLoginNecessary(uri, allowSelfSignedCertificate)) {
         if (!this.config.username) {
-          window.showWarningMessage("ioBroker: Login to ioBroker necessary, but no user name is set. Add property 'username' to config and try again!");
+          window.showWarningMessage("ioBroker: Login to ioBroker necessary, but no user name is set. Add property 'username' to .iobroker-config.json and try again!");
           return;
         }
 

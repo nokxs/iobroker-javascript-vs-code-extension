@@ -21,14 +21,30 @@ export class LoginCredentialsService implements ILoginCredentialsService {
         const passwordFromUser = await this.getPasswordFromUser();
 
         if (passwordFromUser) {
-            this.updatePassword(passwordFromUser);
+            this.updatePasswordInStorage(passwordFromUser);
         }
 
         return passwordFromUser;
     }
 
-    private async updatePassword(password: string): Promise<void> {
+    async updatePasswordFromUser(): Promise<string | undefined> {
+        const password = await this.getPasswordFromUser();
+        if (password) {
+            await this.updatePasswordInStorage(password);            
+        }
+        else {
+            await this.invalidatePasswordInStorage();
+        }
+
+        return password;
+    }
+
+    private async updatePasswordInStorage(password: string): Promise<void> {
         await this.extensionContext.secrets.store("password", password);
+    }
+
+    private async invalidatePasswordInStorage(): Promise<void>  {
+        await this.extensionContext.secrets.delete("password");
     }
 
     private async getPasswordFromStorage(): Promise<string | undefined> {
