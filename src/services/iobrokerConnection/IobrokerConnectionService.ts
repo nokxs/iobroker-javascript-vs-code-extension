@@ -100,11 +100,18 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
           return;
         }
 
-        const username = this.config.username ?? "";
-        const token = await this.loginService.getAccessToken(uri, allowSelfSignedCertificate, username);
+        const token = await this.loginService.getAccessToken(uri, allowSelfSignedCertificate, this.config.username);
+        if (!token) {
+          window.showWarningMessage("ioBroker: Could not login to ioBroker. Is user name and password correct?");
+          return;
+        }
+
+        await connectionService.connectWithToken(uri, useAutoReconnect, allowSelfSignedCertificate, token);
+      }
+      else {
+        await connectionService.connect(uri, useAutoReconnect, allowSelfSignedCertificate);
       }
 
-      await connectionService.connect(uri, useAutoReconnect, allowSelfSignedCertificate);
       await this.logService.startReceiving();
       await this.scriptRepositoryService.init();
 
