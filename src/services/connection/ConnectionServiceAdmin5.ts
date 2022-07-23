@@ -39,11 +39,11 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
         this.socketIoClient.autoReconnect = autoReconnect;
 
         // TODO: Ask for username
+        var loginToken = "";
         if (await this.loginService.isLoginNecessary(uri, allowSelfSignedCertificate)) {
-            console.log("");
+            loginToken = await this.loginService.login(uri, allowSelfSignedCertificate, "admin", "dummy");
         }
-
-        const loginToken = await this.loginService.login(uri, allowSelfSignedCertificate, "admin", "dummy");
+        
         this.client = await this.socketIoClient.connect(uri.toString(), {name: "admin", cookie: loginToken}, allowSelfSignedCertificate);
 
         return new Promise<void>((resolve, reject) => {
@@ -74,6 +74,10 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                 reject(new Error(`The connection to ioBroker was not possible. Reason: ${err}`));
             });
         });
+    }
+
+    async connectWithPassword(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<void> {
+        throw new Error("Not implemented yet");
     }
 
     async disconnect(): Promise<void> {

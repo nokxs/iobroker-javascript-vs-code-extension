@@ -70,6 +70,10 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
             });
         });
     }
+
+    async connectWithPassword(): Promise<void> {
+        throw new Error("Password protected ioBroker installations are not supported for Admin 4. Use Admin 5 or higher.");
+    }
     
     disconnect(): Promise<void> {
         return new Promise<void>((resolve) => {
