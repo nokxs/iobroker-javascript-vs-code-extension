@@ -7,7 +7,7 @@ export interface IConnectionService {
     isConnected: boolean;
     
     connect(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean): Promise<void>
-    connectWithPassword(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<void>
+    connectWithToken(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean, accessToken: string): Promise<void>
     
     disconnect(): Promise<void>
     

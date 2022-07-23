@@ -1,5 +1,4 @@
 import { Uri, window } from "vscode";
-import * as https from 'https';
 
 import { IConnectionEventListener } from "./IConnectionEventListener";
 import { IConnectionService } from "./IConnectionService";
@@ -8,7 +7,6 @@ import { ScriptId } from "../../models/ScriptId";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { ISocketIoClient } from "../socketIoClient/ISocketIoClient";
-import { ILoginService } from "../loginHttpClient/ILoginService";
 
 @injectable()
 export class ConnectionServiceAdmin5 implements IConnectionService {
@@ -20,8 +18,7 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     private client: ISocketIoClient | undefined = undefined;
 
     constructor(
-        @inject(TYPES.services.socketIoClient) private socketIoClient: ISocketIoClient,
-        @inject(TYPES.services.login) private loginService: ILoginService
+        @inject(TYPES.services.socketIoClient) private socketIoClient: ISocketIoClient
     ) { }
 
     registerConnectionEventListener(listener: IConnectionEventListener): void {
@@ -29,55 +26,13 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     }
 
     async connect(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean): Promise<void> {
-        const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
-
-        if (this.client && this.client.connected) {
-            await this.client.close();
-            this.isConnected = false;
-        }
-
-        this.socketIoClient.autoReconnect = autoReconnect;
-
-        // TODO: Ask for username
-        var loginToken = "";
-        if (await this.loginService.isLoginNecessary(uri, allowSelfSignedCertificate)) {
-            loginToken = await this.loginService.login(uri, allowSelfSignedCertificate, "admin", "dummy");
-        }
-        
-        this.client = await this.socketIoClient.connect(uri.toString(), {name: "admin", cookie: loginToken}, allowSelfSignedCertificate);
-
-        return new Promise<void>((resolve, reject) => {
-            this.registerSocketEvents();
-
-            const timeout = setTimeout(() => {
-                if (!this.isConnected) {
-                    message.dispose();
-                    reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
-                }
-            }, this.connectionTimeout);
-
-            this.client!.on("connect", () => {
-                this.isConnected = true;
-                message.dispose();
-                resolve();
-            });
-
-            this.client!.on("reconnect", () => {
-                this.isConnected = true;
-                message.dispose();
-                resolve();
-            });
-
-            this.client!.on("error", (err: any) => {
-                message.dispose();
-                clearTimeout(timeout);
-                reject(new Error(`The connection to ioBroker was not possible. Reason: ${err}`));
-            });
-        });
+        const options = {};
+        await this.connectInternal(uri, autoReconnect, allowSelfSignedCertificate, options);
     }
 
-    async connectWithPassword(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<void> {
-        throw new Error("Not implemented yet");
+    async connectWithToken(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean, accessToken: string): Promise<void> {
+        const options = {cookie: accessToken};        
+        await this.connectInternal(uri, autoReconnect, allowSelfSignedCertificate, options);
     }
 
     async disconnect(): Promise<void> {
@@ -257,5 +212,46 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                 this.connectionEventListeners.forEach(listener => listener.onDisconnected());
             });
         }
+    }
+
+    private async connectInternal(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean, options: any): Promise<void> {
+        const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
+
+        if (this.client && this.client.connected) {
+            await this.client.close();
+            this.isConnected = false;
+        }
+
+        this.socketIoClient.autoReconnect = autoReconnect;       
+        this.client = await this.socketIoClient.connect(uri.toString(), options, allowSelfSignedCertificate);
+
+        return new Promise<void>((resolve, reject) => {
+            this.registerSocketEvents();
+
+            const timeout = setTimeout(() => {
+                if (!this.isConnected) {
+                    message.dispose();
+                    reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
+                }
+            }, this.connectionTimeout);
+
+            this.client!.on("connect", () => {
+                this.isConnected = true;
+                message.dispose();
+                resolve();
+            });
+
+            this.client!.on("reconnect", () => {
+                this.isConnected = true;
+                message.dispose();
+                resolve();
+            });
+
+            this.client!.on("error", (err: any) => {
+                message.dispose();
+                clearTimeout(timeout);
+                reject(new Error(`The connection to ioBroker was not possible. Reason: ${err}`));
+            });
+        });
     }
 }

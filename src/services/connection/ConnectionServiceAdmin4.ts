@@ -71,7 +71,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
         });
     }
 
-    async connectWithPassword(): Promise<void> {
+    async connectWithToken(): Promise<void> {
         throw new Error("Password protected ioBroker installations are not supported for Admin 4. Use Admin 5 or higher.");
     }
     
