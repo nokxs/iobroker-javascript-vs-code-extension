@@ -5,8 +5,9 @@ export interface ILoginService {
     isLoginNecessary(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<boolean>
     
     /**
-     * Returns the login token.
+     * Tries to retreive the token from SecretStorage. If this fails, the user will be logged in.
+     * Returns undefined if no valid token could be retreived.
      */
-    login(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<string>
+    getAccessToken(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string): Promise<string | undefined>
 
 }

@@ -15,6 +15,7 @@ const TYPES = {
         log: Symbol.for("LogService"),
         typeDefinition: Symbol.for("TypeDefinitionService"),
         login: Symbol.for("LoginService"),
+        loginCredentials: Symbol.for("LoginServiceCredentials"),
         iobrokerConnection: Symbol.for("IobrokerConnection"),
         jsInstance: Symbol.for("JsInstanceService"),
         socketIoClient: Symbol.for("SocketIoClient"),
@@ -29,7 +30,8 @@ const TYPES = {
         changedScripts: Symbol.for("ChangedScriptView")
     },
     command: Symbol.for("Command"),
-    startup: Symbol.for("Startup")
+    startup: Symbol.for("Startup"),
+    extensionContext: Symbol.for("ExtensionContext")
 };
 
 export default TYPES;

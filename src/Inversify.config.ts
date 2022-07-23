@@ -32,6 +32,7 @@ import { IIobrokerConnectionService } from './services/iobrokerConnection/IIobro
 import { IJsInstanceService } from "./services/jsInstanceService/IJsInstanceService";
 import { ILocalOnlyScriptRepositoryService } from './services/localOnlyScriptRepository/ILocalOnlyScriptRepositoryService';
 import { ILogService } from "./services/log/ILogService";
+import { ILoginCredentialsService } from './services/loginCredentialsService/ILoginCredentialsService';
 import { ILoginService } from './services/loginHttpClient/ILoginService';
 import { IScriptExplorerProvider } from "./views/scriptExplorer/IScriptExplorerProvider";
 import { IScriptIdService } from './services/scriptId/IScriptIdService';
@@ -46,6 +47,7 @@ import { IobrokerConnectionService } from './services/iobrokerConnection/Iobroke
 import { JsInstanceService } from './services/jsInstanceService/JsInstanceService';
 import { LocalOnlyScriptRepositoryService } from './services/localOnlyScriptRepository/LocalOnlyScriptRepositoryService';
 import { LogService } from './services/log/LogService';
+import { LoginCredentialsService } from './services/loginCredentialsService/LoginCredentialsService';
 import { LoginService } from './services/loginHttpClient/LoginService';
 import { MoveCommand } from './commands/MoveCommand';
 import { OpenFileCommand } from './commands/OpenFileCommand';
@@ -89,6 +91,7 @@ container.bind<IConfigRepositoryService>(TYPES.services.configRepository).to(Con
 container.bind<IJsInstanceService>(TYPES.services.jsInstance).to(JsInstanceService).inSingletonScope();
 container.bind<IConnectionServiceProvider>(TYPES.services.connectionServiceProvider).to(ConnectionServiceProvider).inSingletonScope();
 container.bind<ILoginService>(TYPES.services.login).to(LoginService).inSingletonScope();
+container.bind<ILoginCredentialsService>(TYPES.services.login).to(LoginCredentialsService).inSingletonScope();
 
 container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inTransientScope();
 container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inTransientScope();
