@@ -22,6 +22,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
 
   config: Config = new NoConfig();
 
+  private isReAuthenticationRunning = false;
   private statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 250);
 
   constructor(
@@ -48,7 +49,6 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
     this.statusBarItem.text = "$(warning) ioBroker disconnected";
   }
 
-  private isReAuthenticationRunning = false;
   async onReAuthenticate(): Promise<void> {
     
     if (!this.isReAuthenticationRunning) {

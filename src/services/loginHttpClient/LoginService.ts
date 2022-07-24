@@ -14,8 +14,7 @@ export class LoginService implements ILoginService {
 
     constructor(
         @inject(TYPES.services.loginCredentials) private loginCredentialService: ILoginCredentialsService
-    ) {
-    }
+    ) { }
 
     async isLoginNecessary(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<boolean> {
         const httpsAgent = this.createHttpsAgent(allowSelfSignedCertificate);
@@ -26,15 +25,11 @@ export class LoginService implements ILoginService {
             if (result.status === 200) {
                 return true;
             }
-            else if (result.status === 302) {
-                return false;
-            }
         } catch (error) {
-            xreturn false;
+            return false;
         }
 
         return false;
-        // throw new Error(`Could not determine if login was needed, because of unhandled status code ${result.status}`);
     }
 
     async getAccessToken(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string): Promise<string | undefined> {
@@ -64,7 +59,7 @@ export class LoginService implements ILoginService {
             return undefined;
         }
 
-        // get a new token with the updated password
+        // try to get a new token with the updated password
         const updatedAccessToken = await this.getAndUpdateToken(baseUri, allowSelfSignedCertificate, username, password, serverTime);
         return updatedAccessToken?.token ?? undefined;
 

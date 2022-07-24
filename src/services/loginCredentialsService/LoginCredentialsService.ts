@@ -7,10 +7,12 @@ import { ILoginCredentialsService } from "./ILoginCredentialsService";
 @injectable()
 export class LoginCredentialsService implements ILoginCredentialsService {
 
+    private static readonly secretPassword = "password";
+    private static readonly secretToken = "accessToken";
+
     constructor(
         @inject(TYPES.extensionContext) private extensionContext: ExtensionContext
-    ) {
-    }
+    ) { }
 
     async getPassword(): Promise<string | undefined> {
         const passwordFromStorage = await this.getPasswordFromStorage();
@@ -19,7 +21,6 @@ export class LoginCredentialsService implements ILoginCredentialsService {
         }
 
         const passwordFromUser = await this.getPasswordFromUser();
-
         if (passwordFromUser) {
             this.updatePasswordInStorage(passwordFromUser);
         }
@@ -29,6 +30,7 @@ export class LoginCredentialsService implements ILoginCredentialsService {
 
     async updatePasswordFromUser(): Promise<string | undefined> {
         await this.invalidateCredentialsInStorage();
+        
         const password = await this.getPasswordFromUser();
         if (password) {
             await this.updatePasswordInStorage(password);            
@@ -38,16 +40,16 @@ export class LoginCredentialsService implements ILoginCredentialsService {
     }
 
     private async updatePasswordInStorage(password: string): Promise<void> {
-        await this.extensionContext.secrets.store("password", password);
+        await this.extensionContext.secrets.store(LoginCredentialsService.secretPassword, password);
     }
 
     private async invalidateCredentialsInStorage(): Promise<void>  {
-        await this.extensionContext.secrets.delete("password");
-        await this.extensionContext.secrets.delete("accessToken");
+        await this.extensionContext.secrets.delete(LoginCredentialsService.secretPassword);
+        await this.extensionContext.secrets.delete(LoginCredentialsService.secretToken);
     }
 
     private async getPasswordFromStorage(): Promise<string | undefined> {
-        return await this.extensionContext.secrets.get("password");
+        return await this.extensionContext.secrets.get(LoginCredentialsService.secretPassword);
     }
 
     private async getPasswordFromUser(): Promise<string | undefined> {
@@ -55,7 +57,7 @@ export class LoginCredentialsService implements ILoginCredentialsService {
     }
 
     async getAccessToken(): Promise<IAccessToken | undefined> {
-        const json = await this.extensionContext.secrets.get("accessToken");
+        const json = await this.extensionContext.secrets.get(LoginCredentialsService.secretToken);
 
         if (json) {
             return JSON.parse(json);
@@ -65,7 +67,7 @@ export class LoginCredentialsService implements ILoginCredentialsService {
     }
 
     async updateAccessToken(accessToken: IAccessToken): Promise<void> {
-        await this.extensionContext.secrets.store("accessToken", JSON.stringify(accessToken));
+        await this.extensionContext.secrets.store(LoginCredentialsService.secretToken, JSON.stringify(accessToken));
     }
 
     isValidAccessToken(accessToken: IAccessToken | undefined, serverTime: Date): boolean {

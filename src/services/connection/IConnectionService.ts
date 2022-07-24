@@ -19,8 +19,6 @@ export interface IConnectionService {
     registerForObjectChange(pattern: string, onChangeAction: (id: string, value: any) => void): Promise<void>
     unregisterObjectChange(pattern: string): Promise<void>
 
-    
-
     getObject<TObject>(objectId: string | ScriptId): Promise<TObject>
     setObject(objectId: string | ScriptId, obj: any): Promise<void>
     deleteObject(objectId: string| ScriptId): Promise<void>
