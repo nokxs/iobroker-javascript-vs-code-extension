@@ -106,6 +106,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
 
     onDisconnected(): void {
         this.unregisterSocketEvents();
+        this.scriptEventListeners.forEach(listener => listener.onNoScriptAvailable());
     }
 
     onReAuthenticate(): void {

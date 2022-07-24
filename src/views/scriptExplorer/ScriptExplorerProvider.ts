@@ -70,6 +70,10 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         this.refresh();
     }
 
+    onNoScriptAvailable(): void {
+        this.refresh();
+    }
+
     private async getRootLevelItems(): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>> {
         return await this.getChildItems(new RootDirectory(this.workspaceService, this.configRepositoryService));
     }

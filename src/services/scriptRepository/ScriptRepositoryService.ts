@@ -165,6 +165,12 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         this.raiseScriptChangedEvent(id);
     }
 
+    onNoScriptAvailable(): void {
+        this.directories = [];
+        this.scripts = [];
+        this.raiseScriptChangedEvent(undefined);
+    }
+
     private getRelativeDirectoryUri(dir: IDirectory, ioBrokerDirectories: IDirectory[]): Uri {
         let currentDirectory: IDirectory = dir;
         let parentPath: string[] = [dir.common?.name ?? "unkown"];
