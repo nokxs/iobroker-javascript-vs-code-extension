@@ -10,11 +10,13 @@ This extension for [Visual Studio Code](https://code.visualstudio.com/) enables 
 
 Open the command pallet (<kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> OR <kbd>F1</kbd>) and type `iobroker: ` to see all available commands.
 
-Connect to your ioBroker instance by invoking the command `iobroker: Connect to ioBroker`. You can see the process in the gif above. If your connection fails, check the created file `.iobroker-config.json` and re-run the command `iobroker: Connect to ioBroker` for another connection attempt.
+Connect to your ioBroker instance by invoking the command `iobroker: Connect to ioBroker`. You can see the process in the gif above. If your connection fails, check the created file `.iobroker-config.json` and re-run the command `iobroker: Connect to ioBroker` for another connection attempt. 
 
 If `.iobroker-config.json` is found in the root of your workspace, the extension automatically starts a connection attempt.
 
-> Current limitation: ioBroker instances with a password are not supported yet!
+### Password protected ioBroker installations
+
+If your ioBroker installation is protected via password, the extension will ask for it during the connection attempt. The username is stored in the config file `.iobroker-config.jon` and the password is stored in the VS Code internal secret storage. If the password was changed, the extions will automtically ask for the new one. It might be necessary to restart VS Code in the case supplying the new password fails.
 
 ### Type definitions
 
@@ -100,7 +102,14 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 | `adminVersion` | The admin version to connect to. Valid values: `Admin4`, `Admin5` | Yes | |
 | `autoReconnect` | Should a lost connection be automatically be restored? | No | true |
 | `allowSelfSignedCertificate` | Is it allowed to connect to a self signed certificate? | No | false |
+| `username` | The user name for ioBroker. Only necessary for password protected ioBroker installations | No | |
 | `scriptExplorer.collapseDirectoriesOnStartup` | Should the directories in the script explorer be collapsed on startup. | No | true |
+
+### Admin versions
+The extension currently supports the following Admin versions:
+
+- Admin4 (password protected installations are not supported)
+- Admin5
 
 ## Known Issues
 
@@ -109,7 +118,6 @@ If you got any problems, please open a GitHub issue.
 ## Planned features
 
 Support (not in the listed order)
-* password protected ioBroker installations
 * syncing of workspace with remote scripts (correctly, delete and remove scirpts)
 
 ## Release Notes
