@@ -2,7 +2,7 @@
 	"name": "iobroker-javascript",
 	"displayName": "ioBroker.javascript",
 	"description": "Enables you to develop ioBroker scripts completely in Visual Studio Code, without the need of the web interface.",
-	"version": "0.13.4",
+	"version": "1.0.0",
 	"repository": {
 		"url": "https://github.com/nokxs/iobroker-javascript-vs-code-extension",
 		"type": "git"
@@ -270,7 +270,7 @@
 		"@types/btoa": "^1.2.3",
 		"@types/glob": "^7.2.0",
 		"@types/mocha": "^8.2.3",
-		"@types/node": "^12.20.39",
+		"@types/node": "^12.20.55",
 		"@types/socket.io": "^2.1.13",
 		"@types/socket.io-client": "^1.4.36",
 		"@types/vscode": "^1.52.0",

@@ -5,6 +5,7 @@
   "adminVersion": "admin5",
   "autoReconnect": true,
   "allowSelfSignedCertificate:": false,
+  "username": "admin",
   "scriptExplorer": {
     "collapseDirectoriesOnStartup": true
   }
