@@ -50,7 +50,13 @@ export class FileService implements IFileService {
         return new Promise((resolve, reject) => {
             fs.mkdir(uri.fsPath, (err) => {
                 if(err) {
-                    reject(err);
+                    if (err.code === "EEXIST") {
+                        // Directory already exists
+                        resolve();
+                    }
+                    else {
+                        reject(err);
+                    }
                 } else {
                     resolve();
                 }
