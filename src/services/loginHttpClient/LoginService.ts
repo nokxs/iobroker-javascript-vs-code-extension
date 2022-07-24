@@ -20,16 +20,21 @@ export class LoginService implements ILoginService {
     async isLoginNecessary(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<boolean> {
         const httpsAgent = this.createHttpsAgent(allowSelfSignedCertificate);
         const loginUri = baseUri.with({ path: "login" }).toString();
-        const result = await axios.get(loginUri, { httpsAgent: httpsAgent });
 
-        if (result.status === 200) {
-            return true;
-        }
-        else if (result.status === 302) {
-            return false;
+        try {
+            const result = await axios.get(loginUri, { httpsAgent: httpsAgent });
+            if (result.status === 200) {
+                return true;
+            }
+            else if (result.status === 302) {
+                return false;
+            }
+        } catch (error) {
+            xreturn false;
         }
 
-        throw new Error(`Could not determine if login was needed, because of unhandled status code ${result.status}`);
+        return false;
+        // throw new Error(`Could not determine if login was needed, because of unhandled status code ${result.status}`);
     }
 
     async getAccessToken(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string): Promise<string | undefined> {

@@ -96,11 +96,18 @@ export class SocketIoClient implements ISocketIoClient {
             if (_options && _options.name) {
                 u += '&name=' + encodeURIComponent(_options.name);
             }
-            // "ws://www.example.com/socketserver"
-            this.socket = new WebSocket(u, {
-                rejectUnauthorized: !_allowSelfSignedCertificate,
-                headers: { "cookie": _options.cookie}
-            });
+            if (_options.cookie) {
+                this.socket = new WebSocket(u, {
+                    rejectUnauthorized: !_allowSelfSignedCertificate,
+                    headers: { "cookie": _options.cookie}
+                });
+            }
+            else {
+                // "ws://www.example.com/socketserver"
+                this.socket = new WebSocket(u, {
+                    rejectUnauthorized: !_allowSelfSignedCertificate
+                });
+            }
         } catch (error) {
             this.handlers.error && this.handlers.error.forEach((cb: any) => cb.call(this, error));
             return await this.closeAndReconnect();

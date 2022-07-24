@@ -2,7 +2,7 @@
 
 [ioBroker](https://www.iobroker.net/) is a mighty IoT platform and enables you to write custom scripts with its [JavaScript adapter](https://github.com/ioBroker/ioBroker.javascript). 
 
-This extension for [Visual Studio Code](https://code.visualstudio.com/) enables you to develop the scripts completely in Visual Studio Code, without the need of the web interface. 
+This extension for [Visual Studio Code](https://code.visualstudio.com/) enables you to develop the scripts completely in Visual Studio Code, without the need of the web interface.
 
 ![Script Explorer](https://media.githubusercontent.com/media/nokxs/iobroker-javascript-vs-code-extension/main/doc/script-explorer.gif)
 
