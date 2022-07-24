@@ -87,9 +87,9 @@ export class SocketIoClient implements ISocketIoClient {
         this.connectTimer && clearInterval(this.connectTimer);
         this.connectTimer = null;
 
-        this.url = this.url || _url;
-        this.options = this.options || _options;
-        this.allowSelfSignedCertificate = this.allowSelfSignedCertificate || _allowSelfSignedCertificate;
+        this.url = _url || this.url;
+        this.options = _options || this.options;
+        this.allowSelfSignedCertificate = _allowSelfSignedCertificate || this.allowSelfSignedCertificate;
         this.sessionID = Date.now();
         try {
             let u = this.url.replace(/^http/, 'ws').split('?')[0] + '?sid=' + this.sessionID;
