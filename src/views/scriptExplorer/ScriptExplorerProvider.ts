@@ -43,6 +43,10 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
     }
 
     async getChildren(element?: ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>> {
+        if (!this.iobrokerConnectionService.isConnected()) {
+            return Promise.resolve([]);
+        }
+        
         if(!element) {
             return this.getRootLevelItems();
         }
