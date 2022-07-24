@@ -22,7 +22,7 @@ export class LoginService implements ILoginService {
 
         try {
             const result = await axios.get(loginUri, { httpsAgent: httpsAgent });
-            if (result.status === 200) {
+            if (result.status === 200 && result.headers["set-cookie"]) {
                 return true;
             }
         } catch (error) {
