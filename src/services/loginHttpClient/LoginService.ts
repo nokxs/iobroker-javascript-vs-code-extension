@@ -36,23 +36,42 @@ export class LoginService implements ILoginService {
         const accessToken = await this.loginCredentialService.getAccessToken();
         const serverTime = await this.getServerTime(baseUri, allowSelfSignedCertificate);
 
+        // check if the retreived token is still valid
         if (accessToken && this.loginCredentialService.isValidAccessToken(accessToken, serverTime)) {
             return accessToken.token;
         }
 
+        // token was not valid. Get password form store or user
         const password = await this.loginCredentialService.getPassword();
         if (!password) {
             return undefined;
         }
 
+        // get new token with retreived password
+        const newAccessToken = await this.getAndUpdateToken(baseUri, allowSelfSignedCertificate, username, password, serverTime);
+        if (newAccessToken) {
+            return newAccessToken.token;
+        }
+
+        // could not get new token with the password. Ask the user to supply a new one
+        const newPassword = await this.loginCredentialService.updatePasswordFromUser();
+        if (!newPassword) {
+            return undefined;
+        }
+
+        // get a new token with the updated password
+        const updatedAccessToken = await this.getAndUpdateToken(baseUri, allowSelfSignedCertificate, username, password, serverTime);
+        return updatedAccessToken?.token ?? undefined;
+
+    }
+
+    private async getAndUpdateToken(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string, serverTime: Date): Promise<IAccessToken | undefined> {
         const newAccessToken = await this.login(baseUri, allowSelfSignedCertificate, username, password);
 
         if (this.loginCredentialService.isValidAccessToken(newAccessToken, serverTime)) {
             this.loginCredentialService.updateAccessToken(newAccessToken);
-            return newAccessToken.token;
+            return newAccessToken;
         }
-
-        return undefined;
     }
 
     private async getServerTime(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<Date> {
