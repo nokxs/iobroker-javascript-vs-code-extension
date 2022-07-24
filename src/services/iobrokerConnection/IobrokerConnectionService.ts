@@ -15,6 +15,7 @@ import { IScriptService } from "../script/IScriptService";
 import { IScriptRepositoryService } from "../scriptRepository/IScriptRepositoryService";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { ILoginService } from "../loginHttpClient/ILoginService";
+import { ILoginCredentialsService } from "../loginCredentialsService/ILoginCredentialsService";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
@@ -31,7 +32,8 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
     @inject(TYPES.services.log) private logService: ILogService,
     @inject(TYPES.services.script) private scriptService: IScriptService,
     @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
-    @inject(TYPES.services.login) private loginService: ILoginService
+    @inject(TYPES.services.login) private loginService: ILoginService,
+    @inject(TYPES.services.loginCredentials) private loginCredentialService: ILoginCredentialsService
   ) {
     this.statusBarItem.text = "$(warning) ioBroker disconnected";
     this.statusBarItem.command = "iobroker-javascript.connect";
@@ -44,6 +46,18 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
 
   onDisconnected(): void {
     this.statusBarItem.text = "$(warning) ioBroker disconnected";
+  }
+
+  private isReAuthenticationRunning = false;
+  async onReAuthenticate(): Promise<void> {
+    
+    if (!this.isReAuthenticationRunning) {
+      this.isReAuthenticationRunning = true;
+      this.statusBarItem.text = "$(warning) ioBroker disconnected (authentication required)";
+      await this.loginCredentialService.updatePasswordFromUser();
+      await this.connect();
+      this.isReAuthenticationRunning = false;
+    }
   }
 
   isConnected(): boolean {

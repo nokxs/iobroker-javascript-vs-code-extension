@@ -28,12 +28,10 @@ export class LoginCredentialsService implements ILoginCredentialsService {
     }
 
     async updatePasswordFromUser(): Promise<string | undefined> {
+        await this.invalidateCredentialsInStorage();
         const password = await this.getPasswordFromUser();
         if (password) {
             await this.updatePasswordInStorage(password);            
-        }
-        else {
-            await this.invalidatePasswordInStorage();
         }
 
         return password;
@@ -43,8 +41,9 @@ export class LoginCredentialsService implements ILoginCredentialsService {
         await this.extensionContext.secrets.store("password", password);
     }
 
-    private async invalidatePasswordInStorage(): Promise<void>  {
+    private async invalidateCredentialsInStorage(): Promise<void>  {
         await this.extensionContext.secrets.delete("password");
+        await this.extensionContext.secrets.delete("accessToken");
     }
 
     private async getPasswordFromStorage(): Promise<string | undefined> {

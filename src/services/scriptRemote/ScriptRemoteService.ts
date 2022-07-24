@@ -108,6 +108,9 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         this.unregisterSocketEvents();
     }
 
+    onReAuthenticate(): void {
+    }
+
     private registerSocketEvents(): void {
         this.connectionServiceProvider.getConnectionService().registerForObjectChange("script.js.*", (id: string) => {
             this.scriptEventListeners.forEach(listener => listener.onScriptChanged(id));

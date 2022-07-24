@@ -211,6 +211,11 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                 this.isConnected = false;
                 this.connectionEventListeners.forEach(listener => listener.onDisconnected());
             });
+
+            this.client.on("reauthenticate", () => {
+                this.isConnected = false;
+                this.connectionEventListeners.forEach(listener => listener.onReAuthenticate());
+            });
         }
     }
 

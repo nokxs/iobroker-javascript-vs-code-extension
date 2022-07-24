@@ -5,15 +5,15 @@ import { ILoginService } from "./ILoginService";
 import axios from 'axios';
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
-import { LoginCredentialsService } from '../loginCredentialsService/LoginCredentialsService';
 import { Uri } from 'vscode';
 import { IAccessToken } from '../loginCredentialsService/IAccessToken';
+import { ILoginCredentialsService } from '../loginCredentialsService/ILoginCredentialsService';
 
 @injectable()
 export class LoginService implements ILoginService {
 
     constructor(
-        @inject(TYPES.services.loginCredentials) private loginCredentialService: LoginCredentialsService
+        @inject(TYPES.services.loginCredentials) private loginCredentialService: ILoginCredentialsService
     ) {
     }
 
@@ -72,6 +72,8 @@ export class LoginService implements ILoginService {
             this.loginCredentialService.updateAccessToken(newAccessToken);
             return newAccessToken;
         }
+
+        return undefined;
     }
 
     private async getServerTime(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<Date> {
