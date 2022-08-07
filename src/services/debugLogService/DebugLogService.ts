@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 
-import { IDebugLogService } from "./IDebugLogService";
+import DEBUG_LOG_SEVERITY, { IDebugLogService } from "./IDebugLogService";
 import { inject, injectable } from "inversify";
 import { env, extensions, Uri, version, window } from 'vscode';
 import TYPES from '../../Types';
@@ -37,14 +37,26 @@ export class DebugLogService implements IDebugLogService {
         return this.collecting;
     }
     
-    log(message: string, source?: string): void {
+    log(message: string, source?: string, severity?: string): void {
         if (!source) {
             source = "";
         }
 
-        if (this.collecting) {
-            this.logFileStream?.write(`${new Date().toISOString()} ${source} ${message}\n`);
+        if (!severity) {
+            severity = DEBUG_LOG_SEVERITY.info;
         }
+
+        if (this.collecting) {
+            this.logFileStream?.write(`${new Date().toISOString()} ${severity} ${source} ${message}\n`);
+        }
+    }
+
+    logWarning(message: string, source?: string | undefined): void {
+        this.log(message, source, DEBUG_LOG_SEVERITY.warning);
+    }
+
+    logError(message: string, source?: string | undefined): void {
+        this.log(message, source, DEBUG_LOG_SEVERITY.error);
     }
 
     private endLogFileStream() {
