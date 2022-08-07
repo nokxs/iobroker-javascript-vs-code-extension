@@ -178,15 +178,16 @@ export class SocketIoClient implements ISocketIoClient {
         };
 
         this.socket.onmessage = (message: any) => {
+            this.log.debug(`type: ${message?.type}, data: ${message?.data}`);
             this.lastPong = Date.now();
             if (!message || !message.data || typeof message.data !== 'string') {
-                return console.error('Received invalid message: ' + JSON.stringify(message));
+                return this.log.error('Received invalid message: ' + JSON.stringify(message));
             }
             let data;
             try {
                 data = JSON.parse(message.data);
             } catch (e) {
-                return console.error('Received invalid message: ' + JSON.stringify(message.data));
+                return this.log.error('Received invalid message: ' + JSON.stringify(message.data));
             }
 
             const [type, id, name, args] = data;
@@ -336,7 +337,7 @@ export class SocketIoClient implements ISocketIoClient {
                 this.socket.send(JSON.stringify([MESSAGE_TYPES.message, this.id, name, [arg1, arg2, arg3, arg4, arg5]]));
             }
         } catch (e) {
-            console.error('Cannot send: ' + e);
+            this.log.error('Cannot send: ' + e);
             this.closeAndReconnect();
         }
     }

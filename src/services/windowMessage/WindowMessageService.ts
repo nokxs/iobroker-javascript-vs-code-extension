@@ -13,16 +13,16 @@ export class WindowMessageService implements IWindowMessageService {
 
     showInformation(message: string): void {
         window.showInformationMessage(message);
-        this.debugLogService.log(message, "Message(Info)");
+        this.debugLogService.log(message, "Message");
     }
 
     showWarning(message: string): void {
         window.showWarningMessage(message);
-        this.debugLogService.log(message, "Message(Warn)");
+        this.debugLogService.logWarning(message, "Message");
     }
 
     showError(message: string): void {
         window.showErrorMessage(message);
-        this.debugLogService.log(message, "Message(Error)");
+        this.debugLogService.logError(message, "Message");
     }       
 }
