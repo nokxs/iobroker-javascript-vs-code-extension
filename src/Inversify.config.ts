@@ -43,6 +43,7 @@ import { IScriptRepositoryService } from './services/scriptRepository/IScriptRep
 import { IScriptService } from './services/script/IScriptService';
 import { ISocketIoClient } from './services/socketIoClient/ISocketIoClient';
 import { IStartup } from './IStartup';
+import { IStatusBarService } from './services/statusBar/IStatusBarService';
 import { ITypeDefinitionService } from "./services/typeDefinition/ITypeDefinitionService";
 import { IWorkspaceService } from './services/workspace/IWorkspaceService';
 import { IobrokerConnectionService } from './services/iobrokerConnection/IobrokerConnectionService';
@@ -66,6 +67,7 @@ import { SocketIoClient } from './services/socketIoClient/SocketIoClient';
 import { StartCurrentScriptCommand } from './commands/StartCurrentScriptCommand';
 import { StartStopCollectingDebugLog } from './commands/StartStopCollectingDebugLog';
 import { Startup } from './Startup';
+import { StatusBarService } from './services/statusBar/StatusBarService';
 import { StopCurrentScriptCommand } from './commands/StopCurrentScriptCommand';
 import TYPES from './Types';
 import { TypeDefinitionService } from './services/typeDefinition/TypeDefinitionService';
@@ -97,6 +99,7 @@ container.bind<IConnectionServiceProvider>(TYPES.services.connectionServiceProvi
 container.bind<ILoginService>(TYPES.services.login).to(LoginService).inSingletonScope();
 container.bind<ILoginCredentialsService>(TYPES.services.loginCredentials).to(LoginCredentialsService).inSingletonScope();
 container.bind<IDebugLogService>(TYPES.services.debugLogService).to(DebugLogService).inSingletonScope();
+container.bind<IStatusBarService>(TYPES.services.statusBarService).to(StatusBarService).inSingletonScope();
 
 container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inTransientScope();
 container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inTransientScope();

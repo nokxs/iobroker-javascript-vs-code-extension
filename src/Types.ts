@@ -21,6 +21,7 @@ const TYPES = {
         socketIoClient: Symbol.for("SocketIoClient"),
         adminVersionDetector: Symbol.for("AdminVersionDetector"),
         debugLogService: Symbol.for("DebugLogService"),
+        statusBarService: Symbol.for("StatusBarService"),
         
         connectionServiceProvider: Symbol.for("ConnectionServiceProvider"),
         connectionAdmin4: Symbol.for("ConnectionServiceAdmin4"),

@@ -24,7 +24,7 @@ export class DebugLogService implements IDebugLogService {
 
         this.logFileStream = fs.createWriteStream(logFilePath.fsPath, {flags:'a'});
         this.writeHeaderData();
-        window.showInformationMessage("Start collecting debug log...");
+        window.showInformationMessage(`Start collecting debug log in ${logFilePath.fsPath}...`);
     }
 
     stopCollecting(): void {
@@ -53,7 +53,7 @@ export class DebugLogService implements IDebugLogService {
     private writeHeaderData() {
         const extension = extensions.getExtension("nokxs.iobroker-javascript");
 
-        this.logFileStream?.write("#################################");
+        this.logFileStream?.write("#################################\n");
         this.logFileStream?.write(`VSCode Version: ${version}\n`);
         this.logFileStream?.write(`Is new app install: ${env.isNewAppInstall}\n`);
         this.logFileStream?.write(`Is telemetry enabled: ${env.isTelemetryEnabled}\n`);
@@ -62,7 +62,5 @@ export class DebugLogService implements IDebugLogService {
         this.logFileStream?.write(`Is extension active: ${extension?.isActive}\n`);
         this.logFileStream?.write(`Extension version: ${extension?.packageJSON?.version}\n`);
         this.logFileStream?.write(`\n`);
-
-        
     }
 }
