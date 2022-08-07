@@ -52,16 +52,16 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
   }
 
   async onReAuthenticate(): Promise<void> {
-    this.debugLogService.log("start reAuthentication");
+    this.debugLogService.log("start reAuthentication", "IobrokerConnectionService");
     
     if (!this.isReAuthenticationRunning) {
-      this.debugLogService.log("reAuthentication not running");
+      this.debugLogService.log("reAuthentication not running", "IobrokerConnectionService");
       this.isReAuthenticationRunning = true;
       this.statusBarService.setText("$(warning) ioBroker disconnected (authentication required)");
       await this.loginCredentialService.updatePasswordFromUser();
       await this.connect();
       this.isReAuthenticationRunning = false;
-      this.debugLogService.log("reAuthentication done");
+      this.debugLogService.log("reAuthentication done", "IobrokerConnectionService");
     }
   }
 
@@ -80,10 +80,13 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
       }
 
       this.config = await this.configReaderWriterService.read(workspaceFolder);
+      this.debugLogService.log(`read config: ${JSON.stringify(this.config)}`, "IobrokerConnectionService");
 
       if (!(this.config instanceof NoConfig) && !this.isConfigValid()) {
+        this.debugLogService.log("Config is invalid", "IobrokerConnectionService");
         const pickAnswer = await window.showQuickPick(["Yes", "No", "No, open documentation"], { placeHolder: "ioBroker: Your config is missing mandatory items. Recreate config?", ignoreFocusOut: true });
         if (pickAnswer === "Yes") {
+          this.debugLogService.log("Config shall be recreated", "IobrokerConnectionService");
           this.config = new NoConfig();
         }
         else if (pickAnswer === "No, open documentation") {
@@ -94,6 +97,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
       }
 
       if (this.config instanceof NoConfig) {
+        this.debugLogService.log("Creating config interactively", "IobrokerConnectionService");
         this.config = await this.configCreationService.createConfigInteractivly();
         if (this.config instanceof NoConfig) {
           this.windowMessageService.showWarning("ioBroker: Config not saved. Execute command 'iobroker: Connect to ioBroker' to start another connection attempt.");
@@ -112,7 +116,9 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
       const allowSelfSignedCertificate = this.config.allowSelfSignedCertificate ?? false;
       const uri = Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`);
 
-      if (await this.loginService.isLoginNecessary(uri, allowSelfSignedCertificate)) {
+      if (await this.loginService.isLoginNecessary(uri, allowSelfSignedCertificate)) {      
+        this.debugLogService.log(`Login is necessary`, "IobrokerConnectionService");
+
         if (!this.config.username) {
           this.windowMessageService.showWarning("ioBroker: Login to ioBroker necessary, but no user name is set. Add property 'username' to .iobroker-config.json and try again!");
           return;

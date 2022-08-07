@@ -83,7 +83,7 @@ export class SocketIoClient implements ISocketIoClient {
     }
 
     async connect(_url: any, _options: any, _allowSelfSignedCertificate: boolean): Promise<ISocketIoClient> {
-        this.log.debug('Try to connect');
+        this.log.debug(`Try to connect to ${_url}`);
         this.id = 0;
         this.connectTimer && clearInterval(this.connectTimer);
         this.connectTimer = null;
@@ -112,7 +112,7 @@ export class SocketIoClient implements ISocketIoClient {
                 });
             }
         } catch (error) {
-            this.debugLogService.log(`Exception while creating websocket: ${error}`, "SocketIoClient");
+            this.debugLogService.logError(`Exception while creating websocket: ${error}`, "SocketIoClient");
             this.handlers.error && this.handlers.error.forEach((cb: any) => cb.call(this, error));
             return await this.closeAndReconnect();
         }
