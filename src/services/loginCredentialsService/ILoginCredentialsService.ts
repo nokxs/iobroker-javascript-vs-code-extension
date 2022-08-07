@@ -8,4 +8,6 @@ export interface ILoginCredentialsService {
     getAccessToken(): Promise<IAccessToken | undefined>
     updateAccessToken(accessToken: IAccessToken): Promise<void>
     isValidAccessToken(accessToken: IAccessToken | undefined, serverTime: Date): boolean
+
+    deleteCredentials(): Promise<void>
 }

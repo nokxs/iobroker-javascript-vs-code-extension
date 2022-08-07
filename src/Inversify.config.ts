@@ -49,6 +49,7 @@ import { LocalOnlyScriptRepositoryService } from './services/localOnlyScriptRepo
 import { LogService } from './services/log/LogService';
 import { LoginCredentialsService } from './services/loginCredentialsService/LoginCredentialsService';
 import { LoginService } from './services/loginHttpClient/LoginService';
+import { LogoutCommand } from './commands/LogoutCommand';
 import { MoveCommand } from './commands/MoveCommand';
 import { OpenFileCommand } from './commands/OpenFileCommand';
 import { RefreshCommand } from './commands/RefreshCommand';
@@ -108,6 +109,7 @@ container.bind<ICommand>(TYPES.command).to(StopCurrentScriptCommand);
 container.bind<ICommand>(TYPES.command).to(UpdateTypeDefinitionCommand);
 container.bind<ICommand>(TYPES.command).to(OpenFileCommand);
 container.bind<ICommand>(TYPES.command).to(ConnectCommand);
+container.bind<ICommand>(TYPES.command).to(LogoutCommand);
 container.bind<ICommand>(TYPES.command).to(ScriptRenameCommand);
 container.bind<ICommand>(TYPES.command).to(ChangeJsInstanceCommand);
 container.bind<ICommand>(TYPES.command).to(MoveCommand);
