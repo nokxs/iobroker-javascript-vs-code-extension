@@ -59,6 +59,10 @@
 		],
 		"commands": [
 			{
+				"command": "iobroker-javascript.startStopDebugLog",
+				"title": "iobroker: Start/stop collecting debug log"
+			},
+			{
 				"command": "iobroker-javascript.downloadAll",
 				"title": "iobroker: Download all scripts"
 			},

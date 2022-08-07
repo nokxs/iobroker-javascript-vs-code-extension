@@ -20,6 +20,7 @@ const TYPES = {
         jsInstance: Symbol.for("JsInstanceService"),
         socketIoClient: Symbol.for("SocketIoClient"),
         adminVersionDetector: Symbol.for("AdminVersionDetector"),
+        debugLogService: Symbol.for("DebugLogService"),
         
         connectionServiceProvider: Symbol.for("ConnectionServiceProvider"),
         connectionAdmin4: Symbol.for("ConnectionServiceAdmin4"),

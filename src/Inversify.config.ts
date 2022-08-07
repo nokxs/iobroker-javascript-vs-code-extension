@@ -14,6 +14,7 @@ import { Container } from 'inversify';
 import { CreateDirectoryCommand } from './commands/CreateDirectoryCommand';
 import { CreateJavaScriptFileCommand } from './commands/CreateJavaScriptFileCommand';
 import { CreateTypeScriptFileCommandy } from './commands/CreateTypeScriptFileCommandy';
+import { DebugLogService } from './services/debugLogService/DebugLogService';
 import { DeleteCommand } from './commands/DeleteCommand';
 import { DirectoryService } from './services/directory/DirectorytService';
 import { DownloadAllCommand } from './commands/DownloadAllCommand';
@@ -26,6 +27,7 @@ import { ICommandService } from './services/command/ICommandService';
 import { IConfigCreationService } from './services/configCreation/IConfigCreationService';
 import { IConfigRepositoryService } from './services/configRepository/IConfigRepositoryService';
 import { IConnectionServiceProvider } from './services/connectionServiceProvider/IConnectionServiceProvider';
+import { IDebugLogService } from './services/debugLogService/IDebugLogService';
 import { IDirectoryService } from './services/directory/IDirectoryService';
 import { IFileService } from './services/file/IFileService';
 import { IIobrokerConnectionService } from './services/iobrokerConnection/IIobrokerConnectionService';
@@ -62,6 +64,7 @@ import { ScriptService } from './services/script/ScriptService';
 import { ShowLocalToServerDiffCommand } from './commands/ShowLocalToServerDiffCommand';
 import { SocketIoClient } from './services/socketIoClient/SocketIoClient';
 import { StartCurrentScriptCommand } from './commands/StartCurrentScriptCommand';
+import { StartStopCollectingDebugLog } from './commands/StartStopCollectingDebugLog';
 import { Startup } from './Startup';
 import { StopCurrentScriptCommand } from './commands/StopCurrentScriptCommand';
 import TYPES from './Types';
@@ -93,6 +96,7 @@ container.bind<IJsInstanceService>(TYPES.services.jsInstance).to(JsInstanceServi
 container.bind<IConnectionServiceProvider>(TYPES.services.connectionServiceProvider).to(ConnectionServiceProvider).inSingletonScope();
 container.bind<ILoginService>(TYPES.services.login).to(LoginService).inSingletonScope();
 container.bind<ILoginCredentialsService>(TYPES.services.loginCredentials).to(LoginCredentialsService).inSingletonScope();
+container.bind<IDebugLogService>(TYPES.services.debugLogService).to(DebugLogService).inSingletonScope();
 
 container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inTransientScope();
 container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inTransientScope();
@@ -100,6 +104,7 @@ container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(Ad
 container.bind(TYPES.services.connectionAdmin4).to(ConnectionServiceAdmin4);
 container.bind(TYPES.services.connectionAdmin5).to(ConnectionServiceAdmin5);
 
+container.bind<ICommand>(TYPES.command).to(StartStopCollectingDebugLog);
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
 container.bind<ICommand>(TYPES.command).to(DownloadCommand);
 container.bind<ICommand>(TYPES.command).to(UploadCommand);
