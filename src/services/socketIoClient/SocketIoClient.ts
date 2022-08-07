@@ -6,9 +6,11 @@
  */
 
 import { ISocketIoClient } from "./ISocketIoClient";
-import { injectable } from "inversify";
+import { inject, injectable } from "inversify";
 
 import WebSocket = require("ws");
+import TYPES from "../../Types";
+import { IDebugLogService } from "../debugLogService/IDebugLogService";
 
 
 // import btoa = require("btoa");
@@ -72,12 +74,11 @@ export class SocketIoClient implements ISocketIoClient {
     public autoReconnect = true;
 
     log = {
-        debug: (text: String) => DEBUG && console.log(`[${new Date().toISOString()}] ${text}`),
-        warn:  (text: String) => console.warn(`[${new Date().toISOString()}] ${text}`),
-        error: (text: String) => console.error(`[${new Date().toISOString()}] ${text}`),
+        debug: (text: string) => this.debugLogService.log(text, "SocketIoClient"),
+        warn:  (text: string) => this.debugLogService.logWarning(text, "SocketIoClient"),
+        error: (text: string) => this.debugLogService.logError(text, "SocketIoClient")
     };
-
-    constructor() {
+    constructor(@inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService) {
         this.connected = false; // simulate socket.io interface
     }
 
@@ -97,18 +98,21 @@ export class SocketIoClient implements ISocketIoClient {
                 u += '&name=' + encodeURIComponent(_options.name);
             }
             if (_options.cookie) {
+                this.debugLogService.log(`Created websocket with authorization. AllowSelfSignedCertificate: ${this.allowSelfSignedCertificate}. Cooke set: ${_options.cookie ? "yes": "no"}`, "SocketIoClient");
                 this.socket = new WebSocket(u, {
                     rejectUnauthorized: !_allowSelfSignedCertificate,
                     headers: { "cookie": _options.cookie}
-                });
+                });                
             }
             else {
+                this.debugLogService.log(`Created websocket without authorization. AllowSelfSignedCertificate: ${this.allowSelfSignedCertificate}. Cooke set: ${_options.cookie ? "yes": "no"}`, "SocketIoClient");
                 // "ws://www.example.com/socketserver"
                 this.socket = new WebSocket(u, {
                     rejectUnauthorized: !_allowSelfSignedCertificate
                 });
             }
         } catch (error) {
+            this.debugLogService.log(`Exception while creating websocket: ${error}`, "SocketIoClient");
             this.handlers.error && this.handlers.error.forEach((cb: any) => cb.call(this, error));
             return await this.closeAndReconnect();
         }
