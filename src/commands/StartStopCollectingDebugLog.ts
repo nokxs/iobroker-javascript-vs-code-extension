@@ -16,7 +16,7 @@ export class StartStopCollectingDebugLog implements ICommand {
             this.debugLogService.stopCollecting();
         }
         else {
-            this.debugLogService.startCollecting();
+            await this.debugLogService.startCollecting();
         }
     }
 }

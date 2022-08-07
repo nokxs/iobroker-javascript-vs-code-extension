@@ -16,6 +16,7 @@ import { IScriptRepositoryService } from "../scriptRepository/IScriptRepositoryS
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { ILoginService } from "../loginHttpClient/ILoginService";
 import { ILoginCredentialsService } from "../loginCredentialsService/ILoginCredentialsService";
+import { IDebugLogService } from "../debugLogService/IDebugLogService";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
@@ -34,7 +35,8 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
     @inject(TYPES.services.script) private scriptService: IScriptService,
     @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
     @inject(TYPES.services.login) private loginService: ILoginService,
-    @inject(TYPES.services.loginCredentials) private loginCredentialService: ILoginCredentialsService
+    @inject(TYPES.services.loginCredentials) private loginCredentialService: ILoginCredentialsService,
+    @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService
   ) {
     this.statusBarItem.text = "$(warning) ioBroker disconnected";
     this.statusBarItem.command = "iobroker-javascript.connect";
@@ -43,20 +45,25 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
 
   onConnected(): void {
     this.statusBarItem.text = "$(check) ioBroker connected";
+    this.debugLogService.log("connected");
   }
 
   onDisconnected(): void {
     this.statusBarItem.text = "$(warning) ioBroker disconnected";
+    this.debugLogService.log("disconnected");
   }
 
   async onReAuthenticate(): Promise<void> {
+    this.debugLogService.log("start reAuthentication");
     
     if (!this.isReAuthenticationRunning) {
+      this.debugLogService.log("reAuthentication not running");
       this.isReAuthenticationRunning = true;
       this.statusBarItem.text = "$(warning) ioBroker disconnected (authentication required)";
       await this.loginCredentialService.updatePasswordFromUser();
       await this.connect();
       this.isReAuthenticationRunning = false;
+      this.debugLogService.log("reAuthentication done");
     }
   }
 

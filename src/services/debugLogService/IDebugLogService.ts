@@ -1,6 +1,6 @@
 
 export interface IDebugLogService {
-    startCollecting(): void
+    startCollecting(): Promise<void>
     stopCollecting(): void
     isCollecting(): boolean
 
