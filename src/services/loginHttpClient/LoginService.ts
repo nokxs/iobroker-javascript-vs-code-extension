@@ -8,12 +8,14 @@ import TYPES from '../../Types';
 import { Uri } from 'vscode';
 import { IAccessToken } from '../loginCredentialsService/IAccessToken';
 import { ILoginCredentialsService } from '../loginCredentialsService/ILoginCredentialsService';
+import { IDebugLogService } from '../debugLogService/IDebugLogService';
 
 @injectable()
 export class LoginService implements ILoginService {
 
     constructor(
-        @inject(TYPES.services.loginCredentials) private loginCredentialService: ILoginCredentialsService
+        @inject(TYPES.services.loginCredentials) private loginCredentialService: ILoginCredentialsService,
+        @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService
     ) { }
 
     async isLoginNecessary(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<boolean> {
@@ -23,12 +25,15 @@ export class LoginService implements ILoginService {
         try {
             const result = await axios.get(loginUri, { httpsAgent: httpsAgent });
             if (result.status === 200 && result.headers["set-cookie"]) {
+                this.debugLogService.log("Login is necessary, because 'set-cookie' exists as header", "LoginService");
                 return true;
             }
         } catch (error) {
+            this.debugLogService.logWarning("Login failed, because of exception. Login not necessary", "LoginService");
             return false;
         }
 
+        this.debugLogService.log("Login not necessary");
         return false;
     }
 
@@ -38,24 +43,29 @@ export class LoginService implements ILoginService {
 
         // check if the retreived token is still valid
         if (accessToken && this.loginCredentialService.isValidAccessToken(accessToken, serverTime)) {
+            this.debugLogService.log("Found valid access token. Using it", "LoginService");
             return accessToken.token;
         }
 
         // token was not valid. Get password form store or user
         const password = await this.loginCredentialService.getPassword();
         if (!password) {
+            this.debugLogService.log("User did not provide password. Cannot get access token", "LoginService");
             return undefined;
         }
 
         // get new token with retreived password
         const newAccessToken = await this.getAndUpdateToken(baseUri, allowSelfSignedCertificate, username, password, serverTime);
         if (newAccessToken) {
+            this.debugLogService.log("Successfuly got new access token. Using it", "LoginService");
             return newAccessToken.token;
         }
 
         // could not get new token with the password. Ask the user to supply a new one
         const newPassword = await this.loginCredentialService.updatePasswordFromUser();
+        this.debugLogService.log("Could not get new token with the password. Ask the user to supply a new one", "LoginService");
         if (!newPassword) {
+            this.debugLogService.log("User did not provide password. Cannot get access token", "LoginService");
             return undefined;
         }
 
@@ -143,6 +153,8 @@ export class LoginService implements ILoginService {
 
         const connectToken = `connect.sid=${this.getCookieValue(cookie, "connect.sid")}`;
         const expires = new Date(this.getCookieValue(cookie, "Expires"));
+
+        this.debugLogService.log(`Got new access token which expires on ${expires}`, "LoginService");
 
         const accessToken: IAccessToken = { token: connectToken, expires: expires };
 

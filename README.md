@@ -103,6 +103,7 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 | `autoReconnect` | Should a lost connection be automatically be restored? | No | true |
 | `allowSelfSignedCertificate` | Is it allowed to connect to a self signed certificate? | No | false |
 | `username` | The user name for ioBroker. Only necessary for password protected ioBroker installations | No | |
+| `collectDebugLog` | Should the debug log be created directly on start up? | No | false |
 | `scriptExplorer.collapseDirectoriesOnStartup` | Should the directories in the script explorer be collapsed on startup. | No | true |
 
 ### Admin versions

@@ -6,9 +6,11 @@
  */
 
 import { ISocketIoClient } from "./ISocketIoClient";
-import { injectable } from "inversify";
+import { inject, injectable } from "inversify";
 
 import WebSocket = require("ws");
+import TYPES from "../../Types";
+import { IDebugLogService } from "../debugLogService/IDebugLogService";
 
 
 // import btoa = require("btoa");
@@ -72,17 +74,16 @@ export class SocketIoClient implements ISocketIoClient {
     public autoReconnect = true;
 
     log = {
-        debug: (text: String) => DEBUG && console.log(`[${new Date().toISOString()}] ${text}`),
-        warn:  (text: String) => console.warn(`[${new Date().toISOString()}] ${text}`),
-        error: (text: String) => console.error(`[${new Date().toISOString()}] ${text}`),
+        debug: (text: string) => this.debugLogService.log(text, "SocketIoClient"),
+        warn:  (text: string) => this.debugLogService.logWarning(text, "SocketIoClient"),
+        error: (text: string) => this.debugLogService.logError(text, "SocketIoClient")
     };
-
-    constructor() {
+    constructor(@inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService) {
         this.connected = false; // simulate socket.io interface
     }
 
     async connect(_url: any, _options: any, _allowSelfSignedCertificate: boolean): Promise<ISocketIoClient> {
-        this.log.debug('Try to connect');
+        this.log.debug(`Try to connect to ${_url}`);
         this.id = 0;
         this.connectTimer && clearInterval(this.connectTimer);
         this.connectTimer = null;
@@ -97,18 +98,21 @@ export class SocketIoClient implements ISocketIoClient {
                 u += '&name=' + encodeURIComponent(_options.name);
             }
             if (_options.cookie) {
+                this.debugLogService.log(`Created websocket with authorization. AllowSelfSignedCertificate: ${this.allowSelfSignedCertificate}. Cooke set: ${_options.cookie ? "yes": "no"}`, "SocketIoClient");
                 this.socket = new WebSocket(u, {
                     rejectUnauthorized: !_allowSelfSignedCertificate,
                     headers: { "cookie": _options.cookie}
-                });
+                });                
             }
             else {
+                this.debugLogService.log(`Created websocket without authorization. AllowSelfSignedCertificate: ${this.allowSelfSignedCertificate}. Cooke set: ${_options.cookie ? "yes": "no"}`, "SocketIoClient");
                 // "ws://www.example.com/socketserver"
                 this.socket = new WebSocket(u, {
                     rejectUnauthorized: !_allowSelfSignedCertificate
                 });
             }
         } catch (error) {
+            this.debugLogService.logError(`Exception while creating websocket: ${error}`, "SocketIoClient");
             this.handlers.error && this.handlers.error.forEach((cb: any) => cb.call(this, error));
             return await this.closeAndReconnect();
         }
@@ -174,15 +178,16 @@ export class SocketIoClient implements ISocketIoClient {
         };
 
         this.socket.onmessage = (message: any) => {
+            this.log.debug(`type: ${message?.type}, data: ${message?.data}`);
             this.lastPong = Date.now();
             if (!message || !message.data || typeof message.data !== 'string') {
-                return console.error('Received invalid message: ' + JSON.stringify(message));
+                return this.log.error('Received invalid message: ' + JSON.stringify(message));
             }
             let data;
             try {
                 data = JSON.parse(message.data);
             } catch (e) {
-                return console.error('Received invalid message: ' + JSON.stringify(message.data));
+                return this.log.error('Received invalid message: ' + JSON.stringify(message.data));
             }
 
             const [type, id, name, args] = data;
@@ -332,7 +337,7 @@ export class SocketIoClient implements ISocketIoClient {
                 this.socket.send(JSON.stringify([MESSAGE_TYPES.message, this.id, name, [arg1, arg2, arg3, arg4, arg5]]));
             }
         } catch (e) {
-            console.error('Cannot send: ' + e);
+            this.log.error('Cannot send: ' + e);
             this.closeAndReconnect();
         }
     }

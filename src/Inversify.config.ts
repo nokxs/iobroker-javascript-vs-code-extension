@@ -14,6 +14,7 @@ import { Container } from 'inversify';
 import { CreateDirectoryCommand } from './commands/CreateDirectoryCommand';
 import { CreateJavaScriptFileCommand } from './commands/CreateJavaScriptFileCommand';
 import { CreateTypeScriptFileCommandy } from './commands/CreateTypeScriptFileCommandy';
+import { DebugLogService } from './services/debugLogService/DebugLogService';
 import { DeleteCommand } from './commands/DeleteCommand';
 import { DirectoryService } from './services/directory/DirectorytService';
 import { DownloadAllCommand } from './commands/DownloadAllCommand';
@@ -26,6 +27,7 @@ import { ICommandService } from './services/command/ICommandService';
 import { IConfigCreationService } from './services/configCreation/IConfigCreationService';
 import { IConfigRepositoryService } from './services/configRepository/IConfigRepositoryService';
 import { IConnectionServiceProvider } from './services/connectionServiceProvider/IConnectionServiceProvider';
+import { IDebugLogService } from './services/debugLogService/IDebugLogService';
 import { IDirectoryService } from './services/directory/IDirectoryService';
 import { IFileService } from './services/file/IFileService';
 import { IIobrokerConnectionService } from './services/iobrokerConnection/IIobrokerConnectionService';
@@ -41,7 +43,9 @@ import { IScriptRepositoryService } from './services/scriptRepository/IScriptRep
 import { IScriptService } from './services/script/IScriptService';
 import { ISocketIoClient } from './services/socketIoClient/ISocketIoClient';
 import { IStartup } from './IStartup';
+import { IStatusBarService } from './services/statusBar/IStatusBarService';
 import { ITypeDefinitionService } from "./services/typeDefinition/ITypeDefinitionService";
+import { IWindowMessageService } from './services/windowMessage/IWindowMessageService';
 import { IWorkspaceService } from './services/workspace/IWorkspaceService';
 import { IobrokerConnectionService } from './services/iobrokerConnection/IobrokerConnectionService';
 import { JsInstanceService } from './services/jsInstanceService/JsInstanceService';
@@ -62,13 +66,16 @@ import { ScriptService } from './services/script/ScriptService';
 import { ShowLocalToServerDiffCommand } from './commands/ShowLocalToServerDiffCommand';
 import { SocketIoClient } from './services/socketIoClient/SocketIoClient';
 import { StartCurrentScriptCommand } from './commands/StartCurrentScriptCommand';
+import { StartStopCollectingDebugLog } from './commands/StartStopCollectingDebugLog';
 import { Startup } from './Startup';
+import { StatusBarService } from './services/statusBar/StatusBarService';
 import { StopCurrentScriptCommand } from './commands/StopCurrentScriptCommand';
 import TYPES from './Types';
 import { TypeDefinitionService } from './services/typeDefinition/TypeDefinitionService';
 import { UpdateTypeDefinitionCommand } from './commands/UpdateTypeDefinitionCommand';
 import { UploadAllCommand } from './commands/UploadAllCommand';
 import { UploadCommand } from './commands/UploadCommand';
+import { WindowMessageService } from './services/windowMessage/WindowMessageService';
 import { WorkspaceService } from './services/workspace/WorkspaceService';
 
 const container = new Container();
@@ -93,6 +100,9 @@ container.bind<IJsInstanceService>(TYPES.services.jsInstance).to(JsInstanceServi
 container.bind<IConnectionServiceProvider>(TYPES.services.connectionServiceProvider).to(ConnectionServiceProvider).inSingletonScope();
 container.bind<ILoginService>(TYPES.services.login).to(LoginService).inSingletonScope();
 container.bind<ILoginCredentialsService>(TYPES.services.loginCredentials).to(LoginCredentialsService).inSingletonScope();
+container.bind<IDebugLogService>(TYPES.services.debugLogService).to(DebugLogService).inSingletonScope();
+container.bind<IStatusBarService>(TYPES.services.statusBarService).to(StatusBarService).inSingletonScope();
+container.bind<IWindowMessageService>(TYPES.services.windowMessageService).to(WindowMessageService).inSingletonScope();
 
 container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inTransientScope();
 container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inTransientScope();
@@ -100,6 +110,7 @@ container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(Ad
 container.bind(TYPES.services.connectionAdmin4).to(ConnectionServiceAdmin4);
 container.bind(TYPES.services.connectionAdmin5).to(ConnectionServiceAdmin5);
 
+container.bind<ICommand>(TYPES.command).to(StartStopCollectingDebugLog);
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
 container.bind<ICommand>(TYPES.command).to(DownloadCommand);
 container.bind<ICommand>(TYPES.command).to(UploadCommand);
