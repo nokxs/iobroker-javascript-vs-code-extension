@@ -4,5 +4,5 @@ export interface IDebugLogService {
     stopCollecting(): void
     isCollecting(): boolean
 
-    log(message: string): void
+    log(message: string, source?: string): void
 }

@@ -37,9 +37,13 @@ export class DebugLogService implements IDebugLogService {
         return this.collecting;
     }
     
-    log(message: string): void {
+    log(message: string, source?: string): void {
+        if (!source) {
+            source = "";
+        }
+
         if (this.collecting) {
-            this.logFileStream?.write(`${new Date().toISOString()} ${message}\n`);
+            this.logFileStream?.write(`${new Date().toISOString()} ${source} ${message}\n`);
         }
     }
 

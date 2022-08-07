@@ -4,6 +4,7 @@ import { IStatusBarService } from "./IStatusBarService";
 import { inject, injectable } from "inversify";
 import TYPES from "../../Types";
 import { IDebugLogService } from "../debugLogService/IDebugLogService";
+import CONSTANTS from "../../Constants";
 
 @injectable()
 export class StatusBarService implements IStatusBarService {
@@ -21,6 +22,11 @@ export class StatusBarService implements IStatusBarService {
 
     setText(text: string): void {
         this.statusBarItem.text = text;
-        this.debugLogService.log(text);
+        this.debugLogService.log(text, "StatusBar");
+    }
+
+    setStatusBarMessage(text: string): void {
+        window.setStatusBarMessage(text, CONSTANTS.StatusBarMessageTime);
+        this.debugLogService.log(text, "StatusBarMessage");
     }
 }

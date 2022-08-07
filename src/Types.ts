@@ -22,6 +22,7 @@ const TYPES = {
         adminVersionDetector: Symbol.for("AdminVersionDetector"),
         debugLogService: Symbol.for("DebugLogService"),
         statusBarService: Symbol.for("StatusBarService"),
+        windowMessageService: Symbol.for("WindowMessageService'"),
         
         connectionServiceProvider: Symbol.for("ConnectionServiceProvider"),
         connectionAdmin4: Symbol.for("ConnectionServiceAdmin4"),

@@ -45,6 +45,7 @@ import { ISocketIoClient } from './services/socketIoClient/ISocketIoClient';
 import { IStartup } from './IStartup';
 import { IStatusBarService } from './services/statusBar/IStatusBarService';
 import { ITypeDefinitionService } from "./services/typeDefinition/ITypeDefinitionService";
+import { IWindowMessageService } from './services/windowMessage/IWindowMessageService';
 import { IWorkspaceService } from './services/workspace/IWorkspaceService';
 import { IobrokerConnectionService } from './services/iobrokerConnection/IobrokerConnectionService';
 import { JsInstanceService } from './services/jsInstanceService/JsInstanceService';
@@ -74,6 +75,7 @@ import { TypeDefinitionService } from './services/typeDefinition/TypeDefinitionS
 import { UpdateTypeDefinitionCommand } from './commands/UpdateTypeDefinitionCommand';
 import { UploadAllCommand } from './commands/UploadAllCommand';
 import { UploadCommand } from './commands/UploadCommand';
+import { WindowMessageService } from './services/windowMessage/WindowMessageService';
 import { WorkspaceService } from './services/workspace/WorkspaceService';
 
 const container = new Container();
@@ -100,6 +102,7 @@ container.bind<ILoginService>(TYPES.services.login).to(LoginService).inSingleton
 container.bind<ILoginCredentialsService>(TYPES.services.loginCredentials).to(LoginCredentialsService).inSingletonScope();
 container.bind<IDebugLogService>(TYPES.services.debugLogService).to(DebugLogService).inSingletonScope();
 container.bind<IStatusBarService>(TYPES.services.statusBarService).to(StatusBarService).inSingletonScope();
+container.bind<IWindowMessageService>(TYPES.services.windowMessageService).to(WindowMessageService).inSingletonScope();
 
 container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inTransientScope();
 container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inTransientScope();
