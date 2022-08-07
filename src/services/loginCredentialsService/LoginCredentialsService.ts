@@ -39,6 +39,10 @@ export class LoginCredentialsService implements ILoginCredentialsService {
         return password;
     }
 
+    async deleteCredentials(): Promise<void> {
+        await this.invalidateCredentialsInStorage();
+    }
+
     private async updatePasswordInStorage(password: string): Promise<void> {
         await this.extensionContext.secrets.store(LoginCredentialsService.secretPassword, password);
     }
