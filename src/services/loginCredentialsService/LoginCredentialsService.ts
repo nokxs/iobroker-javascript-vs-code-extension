@@ -1,6 +1,7 @@
 import { injectable, inject } from "inversify";
 import { ExtensionContext, window } from "vscode";
 import TYPES from "../../Types";
+import { IDebugLogService } from "../debugLogService/IDebugLogService";
 import { IAccessToken } from "./IAccessToken";
 import { ILoginCredentialsService } from "./ILoginCredentialsService";
 
@@ -11,12 +12,14 @@ export class LoginCredentialsService implements ILoginCredentialsService {
     private static readonly secretToken = "accessToken";
 
     constructor(
-        @inject(TYPES.extensionContext) private extensionContext: ExtensionContext
+        @inject(TYPES.extensionContext) private extensionContext: ExtensionContext,
+        @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService
     ) { }
 
     async getPassword(): Promise<string | undefined> {
         const passwordFromStorage = await this.getPasswordFromStorage();
         if (passwordFromStorage) {
+            this.debugLogService.log("GetPassword: Get password from storage", "LoginCredentials");
             return passwordFromStorage;
         }
 
@@ -25,6 +28,7 @@ export class LoginCredentialsService implements ILoginCredentialsService {
             this.updatePasswordInStorage(passwordFromUser);
         }
 
+        this.debugLogService.log("GetPassword: Return password from user", "LoginCredentials");
         return passwordFromUser;
     }
 
@@ -44,10 +48,12 @@ export class LoginCredentialsService implements ILoginCredentialsService {
     }
 
     private async updatePasswordInStorage(password: string): Promise<void> {
+        this.debugLogService.log("Update password in storage", "LoginCredentials");
         await this.extensionContext.secrets.store(LoginCredentialsService.secretPassword, password);
     }
 
     private async invalidateCredentialsInStorage(): Promise<void>  {
+        this.debugLogService.log("Invalidate credentials", "LoginCredentials");
         await this.extensionContext.secrets.delete(LoginCredentialsService.secretPassword);
         await this.extensionContext.secrets.delete(LoginCredentialsService.secretToken);
     }
@@ -57,6 +63,7 @@ export class LoginCredentialsService implements ILoginCredentialsService {
     }
 
     private async getPasswordFromUser(): Promise<string | undefined> {
+        this.debugLogService.log("Get password from user", "LoginCredentials");
         return await window.showInputBox({prompt: "Enter ioBroker password", password: true, ignoreFocusOut: true});
     }
 
