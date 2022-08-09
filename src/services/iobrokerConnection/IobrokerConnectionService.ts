@@ -59,7 +59,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
       this.isReAuthenticationRunning = true;
       this.statusBarService.setText("$(warning) ioBroker disconnected (authentication required)");
       await this.loginCredentialService.updatePasswordFromUser();
-      await this.connect();
+      await this.connect(true); // force login
       this.isReAuthenticationRunning = false;
       this.debugLogService.log("reAuthentication done", "IobrokerConnectionService");
     }
@@ -69,7 +69,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
     return this.connectionServiceProvider.isConnectionServiceAvailable() && this.connectionServiceProvider.getConnectionService().isConnected;
   }
 
-  async connect(): Promise<void> {
+  async connect(forceLogin: boolean = false): Promise<void> {
     try {
       let isInitialConnect = false;
       let workspaceFolder = await this.workspaceService.getWorkspaceToUse();
@@ -116,8 +116,8 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
       const allowSelfSignedCertificate = this.config.allowSelfSignedCertificate ?? false;
       const uri = Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`);
 
-      if (await this.loginService.isLoginNecessary(uri, allowSelfSignedCertificate)) {      
-        this.debugLogService.log(`Login is necessary`, "IobrokerConnectionService");
+      if (forceLogin || await this.loginService.isLoginNecessary(uri, allowSelfSignedCertificate)) {      
+        this.debugLogService.log(`Login is necessary. Force login: ${forceLogin}`, "IobrokerConnectionService");
 
         if (!this.config.username) {
           this.windowMessageService.showWarning("ioBroker: Login to ioBroker necessary, but no user name is set. Add property 'username' to .iobroker-config.json and try again!");

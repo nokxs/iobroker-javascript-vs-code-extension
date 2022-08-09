@@ -25,17 +25,17 @@ export class LoginService implements ILoginService {
 
         try {
             const result = await axios.get(loginUri, { httpsAgent: httpsAgent });
-            if (result.status === 200 && result.headers["set-cookie"]) {
+            if (result.status === 200 && 'set-cookie' in result.headers) {
                 this.debugLogService.log("Login is necessary, because 'set-cookie' exists as header", "LoginService");
                 return true;
             }
+
+            this.debugLogService.log(`Login not necessary. Response: ${JSON.stringify(result)}`);
+            return false;
         } catch (error) {
             this.debugLogService.logWarning(`Login failed, because of exception. Login not necessary. Error: ${JSON.stringify(error)}`, "LoginService");
             return false;
         }
-
-        this.debugLogService.log("Login not necessary");
-        return false;
     }
 
     async getAccessToken(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string): Promise<string | undefined> {
