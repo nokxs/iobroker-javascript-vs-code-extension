@@ -37,4 +37,5 @@ version-resolver:
       - 'bug'
       - 'refactoring'
       - 'documentation'
+      - 'maintenance'
   default: patch
