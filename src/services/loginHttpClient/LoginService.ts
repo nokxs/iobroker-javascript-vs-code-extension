@@ -21,6 +21,7 @@ export class LoginService implements ILoginService {
     async isLoginNecessary(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<boolean> {
         const httpsAgent = this.createHttpsAgent(allowSelfSignedCertificate);
         const loginUri = baseUri.with({ path: "login" }).toString();
+        this.debugLogService.logWarning(`Trying to login to ${loginUri}`, "LoginService");
 
         try {
             const result = await axios.get(loginUri, { httpsAgent: httpsAgent });
@@ -32,7 +33,7 @@ export class LoginService implements ILoginService {
             this.debugLogService.log(`Login not necessary. Response: ${JSON.stringify(result)}`);
             return false;
         } catch (error) {
-            this.debugLogService.logWarning("Login failed, because of exception. Login not necessary", "LoginService");
+            this.debugLogService.logWarning(`Login failed, because of exception. Login not necessary. Error: ${JSON.stringify(error)}`, "LoginService");
             return false;
         }
     }
