@@ -115,6 +115,10 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
       const useAutoReconnect = this.config?.autoReconnect ?? true;
       const allowSelfSignedCertificate = this.config.allowSelfSignedCertificate ?? false;
       const uri = Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`);
+      
+      if(allowSelfSignedCertificate) {
+        process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
+      }
 
       if (forceLogin || await this.loginService.isLoginNecessary(uri, allowSelfSignedCertificate)) {      
         this.debugLogService.log(`Login is necessary. Force login: ${forceLogin}`, "IobrokerConnectionService");
