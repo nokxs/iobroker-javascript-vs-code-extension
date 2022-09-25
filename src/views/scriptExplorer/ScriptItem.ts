@@ -75,7 +75,7 @@ export class ScriptItem extends vscode.TreeItem {
 
     private getDescription(script: ILocalScript): string | undefined {
         if (script.isRemoteOnly) {
-            return "(remote only)";
+            return "(only remote)";
         }
         
         return script.isDirty ? "*" : undefined;
