@@ -21,6 +21,7 @@ export class IoBrokerHoverProvider implements IIobrokerHoverProvider {
                 return undefined;
             }
             
+            // do not fix the formatting or tooltip will be formatted wrongly
             return { contents: [`**${id}**\n\n
 - Value: *${state.val}*
 - Ack: *${state.ack}*
