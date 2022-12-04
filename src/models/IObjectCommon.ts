@@ -1,4 +1,4 @@
-export interface IStateCommon {
+export interface IObjectCommon {
     name?: string;
     role?: boolean;
     type?: string;

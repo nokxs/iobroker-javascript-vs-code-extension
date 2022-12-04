@@ -1,4 +1,4 @@
-import { IStateCommon as IObjectCommon } from "./IObjectCommon";
+import { IObjectCommon } from "./IObjectCommon";
 
 export interface IObject {
     common: IObjectCommon;
