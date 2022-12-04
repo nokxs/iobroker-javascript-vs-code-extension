@@ -29,5 +29,5 @@ export interface IConnectionService {
 
     getSystemObjectView<TResult>(type: string, startKey: string, endKey: string): Promise<TResult[]>
 
-    getState(): Promise<IState>
+    getState(id: string): Promise<IState>
 }

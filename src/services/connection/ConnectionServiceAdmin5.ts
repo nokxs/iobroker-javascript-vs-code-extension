@@ -8,6 +8,7 @@ import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { ISocketIoClient } from "../socketIoClient/ISocketIoClient";
 import { IObject } from "../../models/IObject";
+import { IState } from "../../models/IState";
 
 @injectable()
 export class ConnectionServiceAdmin5 implements IConnectionService {
@@ -208,6 +209,22 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                 });
             } else {
                 reject(`Error while retreiving object view: Type: ${type} | startKey: ${startKey} | endKey: ${endKey}`);
+            }
+        });
+    }
+
+    getState(id: string): Promise<IState> {
+        return new Promise<IState>((resolve, reject) => {
+            if (this.client && this.isConnected) {
+                this.client.emit("getState", id, (err: any, state: IState) => {
+                    if (err) {
+                        reject(new Error(`Could not get state with id '${id}': ${err}`));
+                    } else {
+                        resolve(state);
+                    }
+                });
+            } else {
+                reject(new Error(`Could not get state with id '${id}': Client is not connect`));
             }
         });
     }

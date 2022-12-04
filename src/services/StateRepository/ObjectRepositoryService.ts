@@ -1,11 +1,11 @@
 import { inject, injectable } from "inversify";
 import { IObject } from "../../models/IObject";
 import TYPES from "../../Types";
-import { IStateRemoteService as IStat../stateRemote/IStateAndObjectRemoteService/stateRemote/IStateRemoteService";
-import { IStateRepositorService as IObjectRepositorService } from "./IObjectRepositoryService";
+import { IStateAndObjectRemoteService } from "../stateRemote/IStateAndObjectRemoteService";
+import { IObjectRepositoryService } from "./IObjectRepositoryService";
 
 @injectable()
-export class ObjectRepositoryService implements IObjectRepositorService {
+export class ObjectRepositoryService implements IObjectRepositoryService {
     private _allStates: IObject[] = [];
     
     constructor(

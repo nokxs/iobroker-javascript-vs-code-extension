@@ -4,9 +4,10 @@ import { IConnectionEventListener } from "../connection/IConnectionEventListener
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { IObject } from "../../models/IObject";
 import { IStateAndObjectRemoteService } from "./IStateAndObjectRemoteService";
+import { IState } from "../../models/IState";
 
 @injectable()
-export class StateRemoteService implements IStateAndObjectRemoteService, IConnectionEventListener {
+export class StateAndObjectRemoteService implements IStateAndObjectRemoteService, IConnectionEventListener {
     constructor(
         @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider
     ) {}
@@ -21,6 +22,10 @@ export class StateRemoteService implements IStateAndObjectRemoteService, IConnec
 
     getAllObjects(): Promise<IObject[]> {
         return this.connectionServiceProvider.getConnectionService().getAllObjects();
+    }
+
+    getState(id: string): Promise<IState> {
+        return this.connectionServiceProvider.getConnectionService().getState(id);
     }
 
     onConnected(): void {

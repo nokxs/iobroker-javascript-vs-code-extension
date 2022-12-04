@@ -109,7 +109,7 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 ### Admin versions
 The extension currently supports the following Admin versions:
 
-- Admin4 (password protected installations are not supported)
+- Admin4 (**Deprecated** Some features like password protected installations are not supported)
 - Admin5
 - Admin6
 

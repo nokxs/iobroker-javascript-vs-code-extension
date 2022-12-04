@@ -1,3 +1,3 @@
 
-export interface IStateRepositorService {
+export interface IObjectRepositoryService {
 }

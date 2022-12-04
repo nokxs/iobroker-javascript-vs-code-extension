@@ -77,10 +77,12 @@ import { UploadAllCommand } from './commands/UploadAllCommand';
 import { UploadCommand } from './commands/UploadCommand';
 import { WindowMessageService } from './services/windowMessage/WindowMessageService';
 import { WorkspaceService } from './services/workspace/WorkspaceService';
-import { IStateRemoteService as IStateAndObjectRemoteService } from './services/stateRemote/IStateAndObjectRemoteService';
-import { StateRemoteService as StateAndObjectRemoteService } from './services/stateRemote/StateAndObjectRemoteService';
-import { IStateRepository as IObjectRepository } from './services/StateRepository/IObjectRepositoryService';
+import { IStateAndObjectRemoteService } from './services/stateRemote/IStateAndObjectRemoteService';
+import { IObjectRepositoryService } from './services/StateRepository/IObjectRepositoryService';
 import { ObjectRepositoryService } from './services/StateRepository/ObjectRepositoryService';
+import { IoBrokerHoverProvider } from './providers/IoBrokerHoverProvider';
+import { IIobrokerHoverProvider } from "./providers/IIobrokerHoverProvider";
+import { StateAndObjectRemoteService } from './services/stateRemote/StateAndObjectRemoteService';
 
 const container = new Container();
 
@@ -108,10 +110,12 @@ container.bind<IDebugLogService>(TYPES.services.debugLogService).to(DebugLogServ
 container.bind<IStatusBarService>(TYPES.services.statusBarService).to(StatusBarService).inSingletonScope();
 container.bind<IWindowMessageService>(TYPES.services.windowMessageService).to(WindowMessageService).inSingletonScope();
 container.bind<IStateAndObjectRemoteService>(TYPES.services.StateAndObjectRemoteService).to(StateAndObjectRemoteService).inSingletonScope();
-container.bind<IObjectRepository>(TYPES.services.objectRepositoryService).to(ObjectRepositoryService).inSingletonScope();
+container.bind<IObjectRepositoryService>(TYPES.services.objectRepositoryService).to(ObjectRepositoryService).inSingletonScope();
 
 container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inTransientScope();
 container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inTransientScope();
+
+container.bind<IIobrokerHoverProvider>(TYPES.providers.iobrokerHoverProvider).to(IoBrokerHoverProvider).inSingletonScope();
 
 container.bind(TYPES.services.connectionAdmin4).to(ConnectionServiceAdmin4);
 container.bind(TYPES.services.connectionAdmin5).to(ConnectionServiceAdmin5);

@@ -34,6 +34,9 @@ const TYPES = {
         scriptExplorer: Symbol.for("ScriptExplorerView"),
         changedScripts: Symbol.for("ChangedScriptView")
     },
+    providers: {
+        iobrokerHoverProvider: Symbol.for("IobrokerHoverProvider")
+    },
     command: Symbol.for("Command"),
     startup: Symbol.for("Startup"),
     extensionContext: Symbol.for("ExtensionContext")
