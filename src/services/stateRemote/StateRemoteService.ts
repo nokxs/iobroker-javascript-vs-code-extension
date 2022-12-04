@@ -19,7 +19,7 @@ export class StateRemoteService implements IConnectionEventListener {
     }
 
     getAllStates(): Promise<IState[]> {
-        return this.connectionServiceProvider.getConnectionService().getSystemObjectView<IState>("state", "enum.", "enum.");
+        return this.connectionServiceProvider.getConnectionService().getAllObjects();
     }
 
     onConnected(): void {

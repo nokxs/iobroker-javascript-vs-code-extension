@@ -7,6 +7,7 @@ import { IConnectionService } from "./IConnectionService";
 import { ILogMessage } from '../../models/ILogMessage';
 import { ScriptId } from "../../models/ScriptId";
 import { injectable } from "inversify";
+import { IState } from '../../models/IState';
 
 @injectable()
 export class ConnectionServiceAdmin4 implements IConnectionService {
@@ -155,6 +156,10 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
                 resolve();
             }
         });
+    }
+
+    getAllObjects(): Promise<IState[]> {
+        throw new Error("Not implemented");
     }
 
     getObject<TObject>(objectId: string | ScriptId): Promise<TObject> {

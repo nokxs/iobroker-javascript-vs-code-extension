@@ -7,6 +7,7 @@ import { ScriptId } from "../../models/ScriptId";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { ISocketIoClient } from "../socketIoClient/ISocketIoClient";
+import { IState } from "../../models/IState";
 
 @injectable()
 export class ConnectionServiceAdmin5 implements IConnectionService {
@@ -114,6 +115,22 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                 });
             } else {
                 resolve();
+            }
+        });
+    }
+
+    getAllObjects(): Promise<IState[]> {
+        return new Promise<IState[]>((resolve, reject) => {
+            if (this.client && this.isConnected) {
+                this.client.emit("getAllObjects", (err: any, objects: IState[]) => {
+                    if (err) {
+                        reject(new Error(`Could not get all object: ${err}`));
+                    } else {
+                        resolve(objects);
+                    }
+                });
+            } else {
+                reject(new Error(`Could not get all objects: Client is not connect`));
             }
         });
     }
