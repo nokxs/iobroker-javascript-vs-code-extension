@@ -2,7 +2,7 @@ import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { IConnectionEventListener } from "../connection/IConnectionEventListener";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
-import { IState } from "../../models/IState";
+import { IObject } from "../../models/IObject";
 
 @injectable()
 export class StateRemoteService implements IConnectionEventListener {
@@ -18,7 +18,7 @@ export class StateRemoteService implements IConnectionEventListener {
         }
     }
 
-    getAllStates(): Promise<IState[]> {
+    getAllStates(): Promise<IObject[]> {
         return this.connectionServiceProvider.getConnectionService().getAllObjects();
     }
 

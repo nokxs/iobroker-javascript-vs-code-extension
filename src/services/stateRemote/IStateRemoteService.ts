@@ -1,5 +1,5 @@
-import { IState } from "../../models/IState";
+import { IObject } from "../../models/IObject";
 
 export interface IStateRemoteService {
-    getAllStates(): Promise<IState[]>;
+    getAllStates(): Promise<IObject[]>;
 }
