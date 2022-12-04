@@ -7,6 +7,8 @@ import { IConnectionService } from "./IConnectionService";
 import { ILogMessage } from '../../models/ILogMessage';
 import { ScriptId } from "../../models/ScriptId";
 import { injectable } from "inversify";
+import { IObject } from '../../models/IObject';
+import { IState } from '../../models/IState';
 
 @injectable()
 export class ConnectionServiceAdmin4 implements IConnectionService {
@@ -157,6 +159,10 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
         });
     }
 
+    getAllObjects(): Promise<IObject[]> {
+        throw new Error("Not implemented");
+    }
+
     getObject<TObject>(objectId: string | ScriptId): Promise<TObject> {
         return new Promise<TObject>((resolve, reject) => {
             if (this.client && this.isConnected) {
@@ -232,6 +238,10 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
                 reject(`Error while retreiving object view: Type: ${type} | startKey: ${startKey} | endKey: ${endKey}`);
             }
         });
+    }
+
+    getState(): Promise<IState> {
+        throw new Error("Not implemented");
     }
 
     private registerSocketEvents(): void {

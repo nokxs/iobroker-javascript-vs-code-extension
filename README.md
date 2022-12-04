@@ -84,6 +84,14 @@ Press <kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>U</kbd> to open the "Output" vie
 * `ioBroker (current script)`: As long as a connection to ioBroker exists, this will show only the outputs of the script in the currently active tab. This output gets not cleared, if the tab is changed. If you need to 
 clear the output use Visual Studios feature `Clear Output`.
 
+### Hover over state id string to show value
+
+Hover over any string with a full state id to show current data of the state:
+
+![State Hover Info](https://media.githubusercontent.com/media/nokxs/iobroker-javascript-vs-code-extension/main/doc/state-hover-info.jpg)
+
+This only works for states and not for channels.
+
 ## Extension Settings
 
 After the first activation a `.iobroker-config.json` file is created in the root directory of your workspace. It contains all settings.
@@ -109,7 +117,7 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 ### Admin versions
 The extension currently supports the following Admin versions:
 
-- Admin4 (password protected installations are not supported)
+- Admin4 (**Deprecated** Some features like password protected installations are not supported)
 - Admin5
 - Admin6
 

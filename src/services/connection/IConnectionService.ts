@@ -2,6 +2,8 @@ import { IConnectionEventListener } from "./IConnectionEventListener";
 import { ILogMessage } from "../../models/ILogMessage";
 import { ScriptId } from "../../models/ScriptId";
 import { Uri } from "vscode";
+import { IObject } from "../../models/IObject";
+import { IState } from "../../models/IState";
 
 export interface IConnectionService {
     isConnected: boolean;
@@ -19,10 +21,13 @@ export interface IConnectionService {
     registerForObjectChange(pattern: string, onChangeAction: (id: string, value: any) => void): Promise<void>
     unregisterObjectChange(pattern: string): Promise<void>
 
+    getAllObjects(): Promise<IObject[]>
     getObject<TObject>(objectId: string | ScriptId): Promise<TObject>
     setObject(objectId: string | ScriptId, obj: any): Promise<void>
     deleteObject(objectId: string| ScriptId): Promise<void>
     extendObject(objectId: string | ScriptId, obj: any): Promise<void>
 
     getSystemObjectView<TResult>(type: string, startKey: string, endKey: string): Promise<TResult[]>
+
+    getState(id: string): Promise<IState>
 }
