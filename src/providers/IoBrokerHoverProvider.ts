@@ -20,14 +20,19 @@ export class IoBrokerHoverProvider implements IIobrokerHoverProvider {
             if (!state || token.isCancellationRequested) {
                 return undefined;
             }
-
+            
             return { contents: [`**${id}**\n\n
 - Value: *${state.val}*
 - Ack: *${state.ack}*
-- Last Changed: *${new Date(state.lc).toISOString()}*
-- Timestamp: *${new Date(state.ts).toISOString()}*`] };
+- Last Changed: *${this.formatDate(state.lc)}*
+- Timestamp: *${this.formatDate(state.ts)}*`] };
         }
 
         return undefined;
+    }
+
+    private formatDate(unixDate: number): string {
+        const date = new Date(unixDate);
+        return `${date.toLocaleString()}.${("00" + date.getMilliseconds()).slice(-3)}`;
     }
 }
