@@ -3,9 +3,10 @@ import TYPES from '../../Types';
 import { IConnectionEventListener } from "../connection/IConnectionEventListener";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { IObject } from "../../models/IObject";
+import { IStateAndObjectRemoteService } from "./IStateAndObjectRemoteService";
 
 @injectable()
-export class StateRemoteService implements IConnectionEventListener {
+export class StateRemoteService implements IStateAndObjectRemoteService, IConnectionEventListener {
     constructor(
         @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider
     ) {}
@@ -18,7 +19,7 @@ export class StateRemoteService implements IConnectionEventListener {
         }
     }
 
-    getAllStates(): Promise<IObject[]> {
+    getAllObjects(): Promise<IObject[]> {
         return this.connectionServiceProvider.getConnectionService().getAllObjects();
     }
 

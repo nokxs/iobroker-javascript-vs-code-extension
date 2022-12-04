@@ -77,10 +77,10 @@ import { UploadAllCommand } from './commands/UploadAllCommand';
 import { UploadCommand } from './commands/UploadCommand';
 import { WindowMessageService } from './services/windowMessage/WindowMessageService';
 import { WorkspaceService } from './services/workspace/WorkspaceService';
-import { IStateRemoteService } from './services/stateRemote/IStateRemoteService';
-import { StateRemoteService } from './services/stateRemote/StateRemoteService';
-import { IStateRepository } from './services/StateRepository/IStateRepositoryService';
-import { StateRepositoryService } from './services/StateRepository/StateRepositoryService';
+import { IStateRemoteService as IStateAndObjectRemoteService } from './services/stateRemote/IStateAndObjectRemoteService';
+import { StateRemoteService as StateAndObjectRemoteService } from './services/stateRemote/StateAndObjectRemoteService';
+import { IStateRepository as IObjectRepository } from './services/StateRepository/IObjectRepositoryService';
+import { ObjectRepositoryService } from './services/StateRepository/ObjectRepositoryService';
 
 const container = new Container();
 
@@ -107,8 +107,8 @@ container.bind<ILoginCredentialsService>(TYPES.services.loginCredentials).to(Log
 container.bind<IDebugLogService>(TYPES.services.debugLogService).to(DebugLogService).inSingletonScope();
 container.bind<IStatusBarService>(TYPES.services.statusBarService).to(StatusBarService).inSingletonScope();
 container.bind<IWindowMessageService>(TYPES.services.windowMessageService).to(WindowMessageService).inSingletonScope();
-container.bind<IStateRemoteService>(TYPES.services.stateRemoteService).to(StateRemoteService).inSingletonScope();
-container.bind<IStateRepository>(TYPES.services.stateRepositoryService).to(StateRepositoryService).inSingletonScope();
+container.bind<IStateAndObjectRemoteService>(TYPES.services.StateAndObjectRemoteService).to(StateAndObjectRemoteService).inSingletonScope();
+container.bind<IObjectRepository>(TYPES.services.objectRepositoryService).to(ObjectRepositoryService).inSingletonScope();
 
 container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inTransientScope();
 container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inTransientScope();

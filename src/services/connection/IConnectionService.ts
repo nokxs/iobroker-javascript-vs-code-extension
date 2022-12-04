@@ -3,6 +3,7 @@ import { ILogMessage } from "../../models/ILogMessage";
 import { ScriptId } from "../../models/ScriptId";
 import { Uri } from "vscode";
 import { IObject } from "../../models/IObject";
+import { IState } from "../../models/IState";
 
 export interface IConnectionService {
     isConnected: boolean;
@@ -27,4 +28,6 @@ export interface IConnectionService {
     extendObject(objectId: string | ScriptId, obj: any): Promise<void>
 
     getSystemObjectView<TResult>(type: string, startKey: string, endKey: string): Promise<TResult[]>
+
+    getState(): Promise<IState>
 }

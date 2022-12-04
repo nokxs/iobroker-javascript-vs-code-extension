@@ -9,8 +9,8 @@ import { IWorkspaceService } from "./services/workspace/IWorkspaceService";
 import { ChangedScriptsProvider as ChangedScriptsProvider } from "./views/changedScripts/ChangedScriptsProvider";
 import { IConfigRepositoryService } from "./services/configRepository/IConfigRepositoryService";
 import { IDebugLogService } from "./services/debugLogService/IDebugLogService";
-import { IStateRemoteService } from "./services/stateRemote/IStateRemoteService";
-import { StateRemoteService } from "./services/stateRemote/StateRemoteService";
+import { IStateRemoteService } from "./services/stateRemote/IStateAndObjectRemoteService";
+import { StateRemoteService } from "./services/stateRemote/StateAndObjectRemoteService";
 
 @injectable()
 export class Startup implements IStartup {
@@ -22,7 +22,7 @@ export class Startup implements IStartup {
         @inject(TYPES.views.changedScripts) private changedScriptsProvider: ChangedScriptsProvider,
         @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
         @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,
-        @inject(TYPES.services.stateRemoteService) private stateRemoteService: IStateRemoteService,
+        @inject(TYPES.services.StateAndObjectRemoteService) private stateRemoteService: IStateRemoteService,
     ) { }
 
     async init(context: ExtensionContext): Promise<void> {
@@ -46,7 +46,7 @@ export class Startup implements IStartup {
         const statRemoteService = this.stateRemoteService;
         languages.registerHoverProvider('javascript', {
             async provideHover(document, position, token) {
-                const states = await statRemoteService.getAllStates();
+                const states = await statRemoteService.getAllObjects();
                 const wordRange = document.getWordRangeAtPosition(position, /".*\.[0-9]\..*"/);
                 if (wordRange) {
                     return { contents: [document.getText(wordRange)] };
