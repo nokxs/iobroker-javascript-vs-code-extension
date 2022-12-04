@@ -79,6 +79,8 @@ import { WindowMessageService } from './services/windowMessage/WindowMessageServ
 import { WorkspaceService } from './services/workspace/WorkspaceService';
 import { IStateRemoteService } from './services/stateRemote/IStateRemoteService';
 import { StateRemoteService } from './services/stateRemote/StateRemoteService';
+import { IStateRepository } from './services/StateRepository/IStateRepositoryService';
+import { StateRepositoryService } from './services/StateRepository/StateRepositoryService';
 
 const container = new Container();
 
@@ -106,6 +108,7 @@ container.bind<IDebugLogService>(TYPES.services.debugLogService).to(DebugLogServ
 container.bind<IStatusBarService>(TYPES.services.statusBarService).to(StatusBarService).inSingletonScope();
 container.bind<IWindowMessageService>(TYPES.services.windowMessageService).to(WindowMessageService).inSingletonScope();
 container.bind<IStateRemoteService>(TYPES.services.stateRemoteService).to(StateRemoteService).inSingletonScope();
+container.bind<IStateRepository>(TYPES.services.stateRepositoryService).to(StateRepositoryService).inSingletonScope();
 
 container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inTransientScope();
 container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inTransientScope();

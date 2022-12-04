@@ -24,6 +24,7 @@ const TYPES = {
         statusBarService: Symbol.for("StatusBarService"),
         windowMessageService: Symbol.for("WindowMessageService'"),
         stateRemoteService: Symbol.for("StateRemoteService'"),
+        stateRepositoryService: Symbol.for("StateRepositoryService'"),
         
         connectionServiceProvider: Symbol.for("ConnectionServiceProvider"),
         connectionAdmin4: Symbol.for("ConnectionServiceAdmin4"),
