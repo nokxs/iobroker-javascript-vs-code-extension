@@ -1,5 +1,5 @@
 export interface IObjectCommon {
-    name?: string;
+    name?: string | { en: string };
     role?: boolean;
     type?: string;
     read?: string;

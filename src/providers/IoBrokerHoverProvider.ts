@@ -7,7 +7,7 @@ import { IIobrokerHoverProvider } from "./IIobrokerHoverProvider";
 @injectable()
 export class IoBrokerHoverProvider implements IIobrokerHoverProvider {
     constructor(
-        @inject(TYPES.services.StateAndObjectRemoteService) private stateAndObjectRemoteService: IStateAndObjectRemoteService,
+        @inject(TYPES.services.stateAndObjectRemoteService) private stateAndObjectRemoteService: IStateAndObjectRemoteService,
     ) { }
 
     async provideHover(document: TextDocument, position: Position, token: CancellationToken): Promise<Hover | undefined> {

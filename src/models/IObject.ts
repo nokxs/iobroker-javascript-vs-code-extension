@@ -6,5 +6,4 @@ export interface IObject {
     from?: string;
     user?: string;
     ts?: number;
-    _id: string;
 }

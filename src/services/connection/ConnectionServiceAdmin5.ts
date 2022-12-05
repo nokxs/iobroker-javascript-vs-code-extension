@@ -7,8 +7,8 @@ import { ScriptId } from "../../models/ScriptId";
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { ISocketIoClient } from "../socketIoClient/ISocketIoClient";
-import { IObject } from "../../models/IObject";
 import { IState } from "../../models/IState";
+import { IObjectList } from "../../models/IObjectList";
 
 @injectable()
 export class ConnectionServiceAdmin5 implements IConnectionService {
@@ -120,10 +120,10 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
         });
     }
 
-    getAllObjects(): Promise<IObject[]> {
-        return new Promise<IObject[]>((resolve, reject) => {
+    getAllObjects(): Promise<IObjectList> {
+        return new Promise<IObjectList>((resolve, reject) => {
             if (this.client && this.isConnected) {
-                this.client.emit("getAllObjects", (err: any, objects: IObject[]) => {
+                this.client.emit("getAllObjects", (err: any, objects: IObjectList) => {
                     if (err) {
                         reject(new Error(`Could not get all object: ${err}`));
                     } else {
