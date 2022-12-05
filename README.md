@@ -92,6 +92,18 @@ Hover over any string with a full state id to show current data of the state:
 
 This only works for states and not for channels.
 
+### Auto completion (IntelliSense) of iobroker state ids
+
+Press <kbd>Strg</kbd> + <kbd>.</kbd> in any string to show the IntelliSense menu. If the string contains parts of
+an ioBroker state id (for example `admin.0.`), IntelliSense will show all states/channels/devices/... under the
+given partial state id. In case of `admin.0.` it will look like this:
+
+![State Id auto completion](https://media.githubusercontent.com/media/nokxs/iobroker-javascript-vs-code-extension/main/doc/state-id-auto-completion.jpg)
+
+The whole auto completion process in action:
+
+![State Id auto completion](https://media.githubusercontent.com/media/nokxs/iobroker-javascript-vs-code-extension/main/doc/state-id-auto-completion.gif)
+
 ## Extension Settings
 
 After the first activation a `.iobroker-config.json` file is created in the root directory of your workspace. It contains all settings.
@@ -124,11 +136,6 @@ The extension currently supports the following Admin versions:
 ## Known Issues
 
 If you got any problems, please open a GitHub issue.
-
-## Planned features
-
-Support (not in the listed order)
-* syncing of workspace with remote scripts (correctly, delete and remove scirpts)
 
 ## Release Notes
 
