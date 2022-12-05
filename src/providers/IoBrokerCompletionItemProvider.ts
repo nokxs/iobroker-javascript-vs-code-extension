@@ -1,5 +1,6 @@
 import { inject, injectable } from "inversify";
-import { CancellationToken, CompletionContext, CompletionItem, Position, TextDocument } from "vscode";
+import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, Position, TextDocument } from "vscode";
+import { IObjectList } from "../models/IObjectList";
 import { IObjectRepositoryService } from "../services/StateRepository/IObjectRepositoryService";
 import TYPES from "../Types";
 import { IIobrokerCompletionItemProvider } from "./IIobrokerCompletionItemProvider";
@@ -11,10 +12,9 @@ export class IoBrokerCompletionItemProvider implements IIobrokerCompletionItemPr
     ) { }
 
     async provideCompletionItems(
-        document: TextDocument, 
-        position: Position, 
-        token: CancellationToken, 
-        context: CompletionContext): Promise<CompletionItem[] | undefined> {
+        document: TextDocument,
+        position: Position,
+        token: CancellationToken): Promise<CompletionItem[] | undefined> {
         const wordRange = document.getWordRangeAtPosition(position, /["'].*?["']/);
         if (wordRange) {
             // slice removes first and last char
@@ -23,42 +23,31 @@ export class IoBrokerCompletionItemProvider implements IIobrokerCompletionItemPr
 
             if (token.isCancellationRequested) {
                 return undefined;
-            }           
-
-            const items: CompletionItem[] = [];
-            for (const id in matchingObjects) {
-                const obj = matchingObjects[id];
-                const parts = id.split(".");
-                const name = <any>(obj?.common.name);
-                items.push({
-                            label: parts[parts.length - 1],
-                            detail: name?.en ?? name ?? undefined
-                        });
             }
 
-            return items;
+            return this.createCompletionList(matchingObjects);
         }
 
         return undefined;
     }
+
+    private createCompletionList(matchingObjects: IObjectList | undefined) {
+        const items: CompletionItem[] = [];
+        
+        for (const id in matchingObjects) {
+            const obj = matchingObjects[id];
+            const parts = id.split(".");
+            const name = <any>(obj?.common.name);
+            const isState = obj?.type === "state";
+
+            items.push({
+                label: parts[parts.length - 1],
+                detail: name?.en ?? name ?? undefined,
+                commitCharacters: ["."],
+                kind: isState ? CompletionItemKind.Variable : CompletionItemKind.Folder
+            });
+        }
+
+        return items;
+    }
 }
-
-
-        // class GoCompletionItemProvider implements CompletionItemProvider {
-        //     public provideCompletionItems(
-        //         document: TextDocument, position: Position):
-        //         Promise<CompletionItem[]> | undefined {
-        //         const wordRange = document.getWordRangeAtPosition(position, /".*\.[0-9]\..*"/);
-        //         if (wordRange) {
-        //             const text  = document.getText(wordRange);
-        //             return new Promise<CompletionItem[]>((resolve) => {
-        //                 resolve([{label: text, detail: "Test"}]);
-        //             });
-        //         }
-
-        //         return undefined;
-        //     }
-        // }
-
-        // const provider = new GoCompletionItemProvider();
-        // languages.registerCompletionItemProvider("javascript", provider, '"', "'", "#");

@@ -47,7 +47,7 @@ export class Startup implements IStartup {
         languages.registerHoverProvider({language: "javascript"}, this.hoverProvider);
         languages.registerHoverProvider({language: "typescript"}, this.hoverProvider);
 
-        languages.registerCompletionItemProvider({language: "javascript"}, this.completionItemProvider, "'", '"', ".");
-        languages.registerCompletionItemProvider({language: "typescript"}, this.completionItemProvider, "'", '"', ".");
+        languages.registerCompletionItemProvider({language: "javascript"}, this.completionItemProvider, ".");
+        languages.registerCompletionItemProvider({language: "typescript"}, this.completionItemProvider, ".");
     }
 }
