@@ -1,5 +1,5 @@
 import { inject, injectable } from "inversify";
-import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, Position, TextDocument } from "vscode";
+import { CancellationToken, CompletionItem, CompletionItemKind, Position, TextDocument } from "vscode";
 import { IObjectList } from "../models/IObjectList";
 import { IObjectRepositoryService } from "../services/StateRepository/IObjectRepositoryService";
 import TYPES from "../Types";
