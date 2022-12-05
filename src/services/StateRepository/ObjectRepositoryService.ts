@@ -2,41 +2,62 @@ import { inject, injectable } from "inversify";
 import { IObject } from "../../models/IObject";
 import { IObjectList } from "../../models/IObjectList";
 import TYPES from "../../Types";
+import { IObjectChangedEventListener } from "../stateRemote/IObjectChangedEventListener";
 import { IStateAndObjectRemoteService } from "../stateRemote/IStateAndObjectRemoteService";
+import { IObjectRepositoryItem } from "./IObjectRepositoryItem";
 import { IObjectRepositoryService } from "./IObjectRepositoryService";
-
-type ObjectRepositoryDictionary = {
-    [key: string]: IObjectRepositoryItem;
-};
-
-export interface IObjectRepositoryItem {
-    item: IObject | undefined;
-    children: ObjectRepositoryDictionary;
-}
-
+import { ObjectRepositoryDictionary } from "./ObjectRepositoryDictionary";
 
 @injectable()
-export class ObjectRepositoryService implements IObjectRepositoryService {
-    private _allObjectsPlain: IObjectList = {};
-    private _allObjects: ObjectRepositoryDictionary = {};
+export class ObjectRepositoryService implements IObjectRepositoryService, IObjectChangedEventListener {
+    private allObjectsPlain: IObjectList = {};
+    private allObjects: ObjectRepositoryDictionary = {};
     
     constructor(
         @inject(TYPES.services.stateAndObjectRemoteService) private stateRemoteService: IStateAndObjectRemoteService,
     ) { }
 
     async init(): Promise<void> {
-        this._allObjectsPlain = await this.stateRemoteService.getAllObjects();
+        this.allObjectsPlain = await this.stateRemoteService.getAllObjects();
 
-        for (const id in this._allObjectsPlain) {
-            const idParts = id.split(".");
-            let lastRepositoryItem: IObjectRepositoryItem = { item: undefined, children: this._allObjects};
-
-            for (const idPart of idParts) {
-                lastRepositoryItem = this.handleIdPart(lastRepositoryItem.children, idPart);
-            }
-
-            lastRepositoryItem.item = this._allObjectsPlain[id];
+        for (const id in this.allObjectsPlain) {
+            this.handleId(id);
         }
+
+        this.stateRemoteService.registerObjectChangedEventListener(this);
+    }
+
+    onObjectChanged(id: string | undefined, value: IObject | undefined): void {
+        if(!id) {
+            return;
+        }
+
+        // value was added or changed
+        if (value) {
+            this.allObjectsPlain[id] = value;
+
+            this.handleId(id);            
+        }
+        // value was deleted
+        else {
+            delete this.allObjectsPlain[id];
+            
+            const idParts = id.split(".");
+            for (const idPart of idParts) {
+                // TODO: delete the last part
+            }
+        }
+    }
+
+    private handleId(id: string) {
+        const idParts = id.split(".");
+        let lastRepositoryItem: IObjectRepositoryItem = { item: undefined, children: this.allObjects};
+
+        for (const idPart of idParts) {
+            lastRepositoryItem = this.handleIdPart(lastRepositoryItem.children, idPart);
+        }
+
+        lastRepositoryItem.item = this.allObjectsPlain[id];
     }
 
     private handleIdPart(states: ObjectRepositoryDictionary, part: string): IObjectRepositoryItem {
@@ -57,7 +78,7 @@ export class ObjectRepositoryService implements IObjectRepositoryService {
     findMatchingObjects(partialId: string): IObjectList | undefined {
         const idParts = partialId.split(".");
 
-        let currentObjectDictionary: ObjectRepositoryDictionary = this._allObjects;
+        let currentObjectDictionary: ObjectRepositoryDictionary = this.allObjects;
         for (const idPart of idParts) {
             var item = currentObjectDictionary[idPart];
             

@@ -87,8 +87,11 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
         return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
                 this.client.on("objectChange", (id: string, value: any) => {
-                    // TODO: This will be called for all registered patterns!
-                    onChangeAction(id, value);
+                    // https://stackoverflow.com/questions/52143451/javascript-filter-with-wildcard
+                    const regex = '^' + pattern.replace(".", "\\.").replace(/\*/g, '.*') + '$';
+                    if (new RegExp(regex).test(id)) {
+                        onChangeAction(id, value);
+                    }
                 });
 
                 this.client.emit("subscribeObjects", pattern, (err: any) => {

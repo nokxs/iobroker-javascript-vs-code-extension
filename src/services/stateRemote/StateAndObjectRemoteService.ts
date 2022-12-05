@@ -5,12 +5,19 @@ import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnec
 import { IStateAndObjectRemoteService } from "./IStateAndObjectRemoteService";
 import { IState } from "../../models/IState";
 import { IObjectList } from "../../models/IObjectList";
+import { IObjectChangedEventListener } from "./IObjectChangedEventListener";
 
 @injectable()
 export class StateAndObjectRemoteService implements IStateAndObjectRemoteService, IConnectionEventListener {
+    private objectEventListeners: Array<IObjectChangedEventListener> = [];
+
     constructor(
         @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider
     ) {}
+
+    registerObjectChangedEventListener(listener: IObjectChangedEventListener): void {
+        this.objectEventListeners.push(listener);
+    }
 
     init(): void {
         this.connectionServiceProvider.getConnectionService().registerConnectionEventListener(this);
@@ -40,12 +47,12 @@ export class StateAndObjectRemoteService implements IStateAndObjectRemoteService
     }
 
     private registerSocketEvents(): void {
-        // this.connectionServiceProvider.getConnectionService().registerForObjectChange("script.js.*", (id: string) => {
-        //     this.scriptEventListeners.forEach(listener => listener.onScriptChanged(id));
-        // });
+        this.connectionServiceProvider.getConnectionService().registerForObjectChange("*", (id: string, value:  any) => {
+            this.objectEventListeners.forEach(listener => listener.onObjectChanged(id, value));
+        });
     }
 
     private unregisterSocketEvents(): void {
-        // this.connectionServiceProvider.getConnectionService().unregisterObjectChange("script.js.*");
+        this.connectionServiceProvider.getConnectionService().unregisterObjectChange("*");
     }
 }

@@ -100,6 +100,8 @@ given partial state id. In case of `admin.0.` it will look like this:
 
 ![State Id auto completion](https://media.githubusercontent.com/media/nokxs/iobroker-javascript-vs-code-extension/main/doc/state-id-auto-completion.jpg)
 
+If you press <kbd>.</kbd> instead of <kbd>enter</kbd> to select an item the next item will appear automatically.
+
 The whole auto completion process in action:
 
 ![State Id auto completion](https://media.githubusercontent.com/media/nokxs/iobroker-javascript-vs-code-extension/main/doc/state-id-auto-completion.gif)

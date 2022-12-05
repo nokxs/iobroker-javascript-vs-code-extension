@@ -120,8 +120,8 @@ container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(Ad
 container.bind<IIobrokerHoverProvider>(TYPES.providers.iobrokerHoverProvider).to(IoBrokerHoverProvider).inSingletonScope();
 container.bind<IIobrokerCompletionItemProvider>(TYPES.providers.iobrokerCompletionItemProvider).to(IoBrokerCompletionItemProvider).inSingletonScope();
 
-container.bind(TYPES.services.connectionAdmin4).to(ConnectionServiceAdmin4);
-container.bind(TYPES.services.connectionAdmin5).to(ConnectionServiceAdmin5);
+container.bind(TYPES.services.connectionAdmin4).to(ConnectionServiceAdmin4).inSingletonScope();
+container.bind(TYPES.services.connectionAdmin5).to(ConnectionServiceAdmin5).inSingletonScope();
 
 container.bind<ICommand>(TYPES.command).to(StartStopCollectingDebugLog);
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
