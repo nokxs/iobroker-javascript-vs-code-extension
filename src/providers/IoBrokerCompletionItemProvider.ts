@@ -15,7 +15,7 @@ export class IoBrokerCompletionItemProvider implements IIobrokerCompletionItemPr
         document: TextDocument,
         position: Position,
         token: CancellationToken): Promise<CompletionItem[] | undefined> {
-        const wordRange = document.getWordRangeAtPosition(position, /["'].*?["']/);
+        const wordRange = document.getWordRangeAtPosition(position, /["'`].*?["'`]/);
         if (wordRange) {
             // slice removes first and last char
             const text = document.getText(wordRange).slice(1, -1);
