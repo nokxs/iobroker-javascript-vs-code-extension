@@ -7,8 +7,8 @@ import { IConnectionService } from "./IConnectionService";
 import { ILogMessage } from '../../models/ILogMessage';
 import { ScriptId } from "../../models/ScriptId";
 import { injectable } from "inversify";
-import { IObject } from '../../models/IObject';
 import { IState } from '../../models/IState';
+import { IObjectList } from '../../models/IObjectList';
 
 @injectable()
 export class ConnectionServiceAdmin4 implements IConnectionService {
@@ -159,7 +159,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
         });
     }
 
-    getAllObjects(): Promise<IObject[]> {
+    getAllObjects(): Promise<IObjectList> {
         throw new Error("Not implemented");
     }
 

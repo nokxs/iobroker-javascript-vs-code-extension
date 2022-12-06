@@ -23,7 +23,7 @@ const TYPES = {
         debugLogService: Symbol.for("DebugLogService"),
         statusBarService: Symbol.for("StatusBarService"),
         windowMessageService: Symbol.for("WindowMessageService'"),
-        StateAndObjectRemoteService: Symbol.for("StateAndObjectRemoteService'"),
+        stateAndObjectRemoteService: Symbol.for("StateAndObjectRemoteService'"),
         objectRepositoryService: Symbol.for("ObjectRepositoryService'"),
         
         connectionServiceProvider: Symbol.for("ConnectionServiceProvider"),
@@ -35,7 +35,8 @@ const TYPES = {
         changedScripts: Symbol.for("ChangedScriptView")
     },
     providers: {
-        iobrokerHoverProvider: Symbol.for("IobrokerHoverProvider")
+        iobrokerHoverProvider: Symbol.for("IobrokerHoverProvider"),
+        iobrokerCompletionItemProvider: Symbol.for("IobrokerCompletionItemProvider")
     },
     command: Symbol.for("Command"),
     startup: Symbol.for("Startup"),

@@ -10,6 +10,7 @@ import { ChangedScriptsProvider as ChangedScriptsProvider } from "./views/change
 import { IConfigRepositoryService } from "./services/configRepository/IConfigRepositoryService";
 import { IDebugLogService } from "./services/debugLogService/IDebugLogService";
 import { IIobrokerHoverProvider } from "./providers/IIobrokerHoverProvider";
+import { IIobrokerCompletionItemProvider } from "./providers/IIobrokerCompletionItemProvider";
 
 @injectable()
 export class Startup implements IStartup {
@@ -22,6 +23,7 @@ export class Startup implements IStartup {
         @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
         @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,
         @inject(TYPES.providers.iobrokerHoverProvider) private hoverProvider: IIobrokerHoverProvider,
+        @inject(TYPES.providers.iobrokerCompletionItemProvider) private completionItemProvider: IIobrokerCompletionItemProvider
     ) { }
 
     async init(context: ExtensionContext): Promise<void> {
@@ -44,5 +46,8 @@ export class Startup implements IStartup {
 
         languages.registerHoverProvider({language: "javascript"}, this.hoverProvider);
         languages.registerHoverProvider({language: "typescript"}, this.hoverProvider);
+
+        languages.registerCompletionItemProvider({language: "javascript"}, this.completionItemProvider, ".");
+        languages.registerCompletionItemProvider({language: "typescript"}, this.completionItemProvider, ".");
     }
 }

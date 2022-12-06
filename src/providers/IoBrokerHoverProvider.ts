@@ -7,11 +7,11 @@ import { IIobrokerHoverProvider } from "./IIobrokerHoverProvider";
 @injectable()
 export class IoBrokerHoverProvider implements IIobrokerHoverProvider {
     constructor(
-        @inject(TYPES.services.StateAndObjectRemoteService) private stateAndObjectRemoteService: IStateAndObjectRemoteService,
+        @inject(TYPES.services.stateAndObjectRemoteService) private stateAndObjectRemoteService: IStateAndObjectRemoteService,
     ) { }
 
     async provideHover(document: TextDocument, position: Position, token: CancellationToken): Promise<Hover | undefined> {
-        const wordRange = document.getWordRangeAtPosition(position, /["'].*?\.[0-9]\..*?["']/);
+        const wordRange = document.getWordRangeAtPosition(position, /["'`].*?\.[0-9]\..*?["'`]/);
         if (wordRange) {
             // slice removes first and last char
             const id = document.getText(wordRange).slice(1, -1);

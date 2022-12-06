@@ -18,6 +18,8 @@ import { ILoginCredentialsService } from "../loginCredentialsService/ILoginCrede
 import { IDebugLogService } from "../debugLogService/IDebugLogService";
 import { IStatusBarService } from "../statusBar/IStatusBarService";
 import { IWindowMessageService } from "../windowMessage/IWindowMessageService";
+import { IObjectRepositoryService } from "../StateRepository/IObjectRepositoryService";
+import { IStateAndObjectRemoteService } from "../stateRemote/IStateAndObjectRemoteService";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
@@ -38,7 +40,9 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
     @inject(TYPES.services.loginCredentials) private loginCredentialService: ILoginCredentialsService,
     @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,
     @inject(TYPES.services.statusBarService) private statusBarService: IStatusBarService,
-    @inject(TYPES.services.windowMessageService) private windowMessageService: IWindowMessageService
+    @inject(TYPES.services.windowMessageService) private windowMessageService: IWindowMessageService,
+    @inject(TYPES.services.objectRepositoryService) private objectRepositoryService: IObjectRepositoryService,
+    @inject(TYPES.services.stateAndObjectRemoteService) private stateAndObjectRemoteService: IStateAndObjectRemoteService
   ) {
     statusBarService.init();
   }
@@ -142,6 +146,8 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
 
       await this.logService.startReceiving();
       await this.scriptRepositoryService.init();
+      await this.objectRepositoryService.init();
+      this.stateAndObjectRemoteService.init();
 
       if (isInitialConnect) {
         const answer = await window.showQuickPick(["Yes", "No"], { placeHolder: "Download all scripts" });
