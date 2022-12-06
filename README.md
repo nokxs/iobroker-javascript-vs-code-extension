@@ -127,6 +127,7 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 | `username` | The user name for ioBroker. Only necessary for password protected ioBroker installations | No | |
 | `collectDebugLog` | Should the debug log be created directly on start up? | No | false |
 | `scriptExplorer.collapseDirectoriesOnStartup` | Should the directories in the script explorer be collapsed on startup. | No | true |
+| `autoUpload` | Automatically upload scripts on save? | No | false |
 
 ### Admin versions
 The extension currently supports the following Admin versions:

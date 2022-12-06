@@ -25,6 +25,7 @@ const TYPES = {
         windowMessageService: Symbol.for("WindowMessageService'"),
         stateAndObjectRemoteService: Symbol.for("StateAndObjectRemoteService'"),
         objectRepositoryService: Symbol.for("ObjectRepositoryService'"),
+        autoUploadService: Symbol.for("AutoUploadService'"),
         
         connectionServiceProvider: Symbol.for("ConnectionServiceProvider"),
         connectionAdmin4: Symbol.for("ConnectionServiceAdmin4"),

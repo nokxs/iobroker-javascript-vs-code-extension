@@ -85,6 +85,8 @@ import { IoBrokerCompletionItemProvider } from './providers/IoBrokerCompletionIt
 import { IIobrokerCompletionItemProvider } from "./providers/IIobrokerCompletionItemProvider";
 import { IObjectRepositoryService } from './services/StateRepository/IObjectRepositoryService';
 import { ObjectRepositoryService } from './services/StateRepository/ObjectRepositoryService';
+import { IAutoUploadService } from './services/autoUpload/IAutoUploadService';
+import { AutoUploadService } from './services/autoUpload/AutoUploadService';
 
 const container = new Container();
 
@@ -113,6 +115,7 @@ container.bind<IStatusBarService>(TYPES.services.statusBarService).to(StatusBarS
 container.bind<IWindowMessageService>(TYPES.services.windowMessageService).to(WindowMessageService).inSingletonScope();
 container.bind<IStateAndObjectRemoteService>(TYPES.services.stateAndObjectRemoteService).to(StateAndObjectRemoteService).inSingletonScope();
 container.bind<IObjectRepositoryService>(TYPES.services.objectRepositoryService).to(ObjectRepositoryService).inSingletonScope();
+container.bind<IAutoUploadService>(TYPES.services.autoUploadService).to(AutoUploadService).inSingletonScope();
 
 container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inTransientScope();
 container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inTransientScope();
