@@ -27,6 +27,34 @@ export class ObjectRepositoryService implements IObjectRepositoryService, IObjec
         this.stateRemoteService.registerObjectChangedEventListener(this);
     }
 
+    findMatchingObjects(partialId: string): IObjectList | undefined {
+        const idParts = partialId.split(".");
+
+        let currentObjectDictionary: ObjectRepositoryDictionary = this.allObjects;
+        for (const idPart of idParts) {
+            var item = currentObjectDictionary[idPart];
+            
+            // first, iterate through tree, till no matching part is found
+            if (item) {
+                currentObjectDictionary = item.children;
+            }
+            // then use partial id part for filtering
+            else {
+                const keys = Object.keys(currentObjectDictionary);
+                const matchingKeys = keys.filter(key => key.startsWith(idPart));
+                const result: IObjectList= {};
+                
+                for (const key of matchingKeys) {
+                    result[key] = currentObjectDictionary[key].item;
+                }
+
+                return result;
+            }
+        }
+
+        return undefined;
+    }
+
     onObjectChanged(id: string | undefined, value: IObject | undefined): void {
         if(!id) {
             return;
@@ -35,17 +63,35 @@ export class ObjectRepositoryService implements IObjectRepositoryService, IObjec
         // value was added or changed
         if (value) {
             this.allObjectsPlain[id] = value;
-
             this.handleId(id);            
         }
         // value was deleted
         else {
-            delete this.allObjectsPlain[id];
-            
-            const idParts = id.split(".");
+            this.deleteFromAllObjectsPlain(id);            
+            this.deleteFromAllObjects(id);
+        }
+    }
+
+    private deleteFromAllObjectsPlain(id: string) {
+        delete this.allObjectsPlain[id];
+    }
+
+    private deleteFromAllObjects(id: string) {
+        const idParts = id.split(".");
+        const lastIdPart = idParts.pop();
+
+        if (lastIdPart) {
+            let lastRepositoryItem: IObjectRepositoryItem = { item: undefined, children: this.allObjects };
             for (const idPart of idParts) {
-                // TODO: delete the last part
+                lastRepositoryItem = lastRepositoryItem.children[idPart];
+
+                if(!lastRepositoryItem) {
+                    // there is nothing to delete
+                    return;
+                }
             }
+                
+            delete lastRepositoryItem.children[lastIdPart];
         }
     }
 
@@ -73,33 +119,5 @@ export class ObjectRepositoryService implements IObjectRepositoryService, IObjec
         }
 
         return item;
-    }
-
-    findMatchingObjects(partialId: string): IObjectList | undefined {
-        const idParts = partialId.split(".");
-
-        let currentObjectDictionary: ObjectRepositoryDictionary = this.allObjects;
-        for (const idPart of idParts) {
-            var item = currentObjectDictionary[idPart];
-            
-            // first, iterate through tree, till no matching part is found
-            if (item) {
-                currentObjectDictionary = item.children;
-            }
-            // then use partial id part for filtering
-            else {
-                const keys = Object.keys(currentObjectDictionary);
-                const matchingKeys = keys.filter(key => key.startsWith(idPart));
-                const result: IObjectList= {};
-                
-                for (const key of matchingKeys) {
-                    result[key] = currentObjectDictionary[key].item;
-                }
-
-                return result;
-            }
-        }
-
-        return undefined;
     }
 }
