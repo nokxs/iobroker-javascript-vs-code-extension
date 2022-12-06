@@ -9,7 +9,8 @@ export class Config {
         readonly allowSelfSignedCertificate?: boolean,
         readonly username?: string,
         readonly collectDebugLog?: boolean,
-        readonly autoUpload?: boolean) {}
+        readonly autoUpload?: boolean,
+        readonly scriptAutoRun?: boolean) {}
 }
 
 export class ScriptExplorerConfig {

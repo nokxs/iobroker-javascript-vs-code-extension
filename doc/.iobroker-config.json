@@ -9,5 +9,6 @@
   "scriptExplorer": {
     "collapseDirectoriesOnStartup": true
   },
-  "autoUpload": false
+  "autoUpload": false,
+  "scriptAutoRun": false
 }
