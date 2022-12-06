@@ -84,12 +84,13 @@ export class ConfigCreationService implements IConfigCreationService {
     private async getAdminVersion(ioBrokerUrl: string, allowSelfSignedCertificate: boolean): Promise<AdminVersion> {
         const admin4 = "Admin 4";
         const admin5 = "Admin 5";
+        const admin6 = "Admin 6";
 
         let adminVersion = await this.adminVersionDetector.getVersion(ioBrokerUrl, allowSelfSignedCertificate);
         
         if (adminVersion === AdminVersion.unknown) {
             const adminVersionPick = await window.showQuickPick(
-                [admin4, admin5], 
+                [admin4, admin5, admin6], 
                 { 
                     placeHolder: "Could not determine the used Admin version. Which version are you using?",
                     ignoreFocusOut: true
@@ -100,6 +101,9 @@ export class ConfigCreationService implements IConfigCreationService {
                    return AdminVersion.admin4;
                 case admin5:
                     adminVersion = AdminVersion.admin5;
+                    break;
+                case admin6:
+                    adminVersion = AdminVersion.admin6;
                     break;
                 default:
                     break;

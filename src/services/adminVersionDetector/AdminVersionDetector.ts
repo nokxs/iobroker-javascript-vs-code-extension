@@ -18,11 +18,7 @@ export class AdminVersionDetector implements IAdminVersionDetector {
             return AdminVersion.admin4;
         }
 
-        if (await this.isAdmin5Reachable(iobrokerUrl, allowSelfSignedCertificate)) {
-            return AdminVersion.admin5;
-        }
-
-        return AdminVersion.unknown;
+        return await this.determineAdminVersion(iobrokerUrl, allowSelfSignedCertificate);
     }
 
     private isAdmin4Reachable(iobrokerUrl: string): Promise<boolean> {
@@ -57,13 +53,13 @@ export class AdminVersionDetector implements IAdminVersionDetector {
         });
     }
 
-    private isAdmin5Reachable(iobrokerUrl: string, allowSelfSignedCertificate: boolean): Promise<boolean> {
-        return new Promise<boolean>((resolve) => {
+    private determineAdminVersion(iobrokerUrl: string, allowSelfSignedCertificate: boolean): Promise<AdminVersion> {
+        return new Promise<AdminVersion>((resolve) => {
             this.socketIoClient.connect(iobrokerUrl, "", allowSelfSignedCertificate);
 
             const timeout = setTimeout(() => {
                 if(!this.socketIoClient.connected) {
-                    resolve(false);
+                    resolve(AdminVersion.unknown);
                 }
             }, 5000);
 
@@ -73,13 +69,21 @@ export class AdminVersionDetector implements IAdminVersionDetector {
             };
 
             this.socketIoClient.on("connect", () => {
-                cleanUp();
-                resolve(true);
+                this.socketIoClient.emit("getObject", "system.adapter.admin", (err: any, state: { common?: { version?: string}}) => {
+                    if (state?.common?.version?.startsWith("6")) {
+                        resolve(AdminVersion.admin6);
+                    }
+                    else {
+                        resolve(AdminVersion.admin5);
+                    }
+
+                    cleanUp();
+                });
             });
 
             this.socketIoClient.on("error", () => {
                 cleanUp();
-                resolve(false);
+                resolve(AdminVersion.unknown);
             });
         });
     }
