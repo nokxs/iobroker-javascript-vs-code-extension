@@ -1,6 +1,7 @@
 import { injectable, inject } from "inversify";
-import { ExtensionContext, window } from "vscode";
+import { ExtensionContext, Uri, window } from "vscode";
 import TYPES from "../../Types";
+import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { IDebugLogService } from "../debugLogService/IDebugLogService";
 import { IAccessToken } from "./IAccessToken";
 import { ILoginCredentialsService } from "./ILoginCredentialsService";
@@ -13,11 +14,12 @@ export class LoginCredentialsService implements ILoginCredentialsService {
 
     constructor(
         @inject(TYPES.extensionContext) private extensionContext: ExtensionContext,
-        @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService
+        @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,        
+        @inject(TYPES.services.configRepository) private configRepository: IConfigRepositoryService
     ) { }
 
-    async getPassword(): Promise<string | undefined> {
-        const passwordFromStorage = await this.getPasswordFromStorage();
+    async getPassword(baseUri: Uri): Promise<string | undefined> {
+        const passwordFromStorage = await this.getPasswordFromStorage(baseUri);
         if (passwordFromStorage) {
             this.debugLogService.log("GetPassword: Get password from storage", "LoginCredentials");
             return passwordFromStorage;
@@ -25,19 +27,19 @@ export class LoginCredentialsService implements ILoginCredentialsService {
 
         const passwordFromUser = await this.getPasswordFromUser();
         if (passwordFromUser) {
-            this.updatePasswordInStorage(passwordFromUser);
+            this.updatePasswordInStorage(baseUri, passwordFromUser);
         }
 
         this.debugLogService.log("GetPassword: Return password from user", "LoginCredentials");
         return passwordFromUser;
     }
 
-    async updatePasswordFromUser(): Promise<string | undefined> {
+    async updatePasswordFromUser(baseUri: Uri): Promise<string | undefined> {
         await this.invalidateCredentialsInStorage();
         
         const password = await this.getPasswordFromUser();
         if (password) {
-            await this.updatePasswordInStorage(password);            
+            await this.updatePasswordInStorage(baseUri, password);            
         }
 
         return password;
@@ -47,9 +49,9 @@ export class LoginCredentialsService implements ILoginCredentialsService {
         await this.invalidateCredentialsInStorage();
     }
 
-    private async updatePasswordInStorage(password: string): Promise<void> {
+    private async updatePasswordInStorage(baseUri: Uri, password: string): Promise<void> {
         this.debugLogService.log("Update password in storage", "LoginCredentials");
-        await this.extensionContext.secrets.store(LoginCredentialsService.secretPassword, password);
+        await this.extensionContext.secrets.store(this.getPasswordIdentifier(baseUri), password);
     }
 
     private async invalidateCredentialsInStorage(): Promise<void>  {
@@ -58,13 +60,17 @@ export class LoginCredentialsService implements ILoginCredentialsService {
         await this.extensionContext.secrets.delete(LoginCredentialsService.secretToken);
     }
 
-    private async getPasswordFromStorage(): Promise<string | undefined> {
-        return await this.extensionContext.secrets.get(LoginCredentialsService.secretPassword);
+    private async getPasswordFromStorage(baseUri: Uri): Promise<string | undefined> {
+        return await this.extensionContext.secrets.get(this.getPasswordIdentifier(baseUri));
     }
 
     private async getPasswordFromUser(): Promise<string | undefined> {
         this.debugLogService.log("Get password from user", "LoginCredentials");
         return await window.showInputBox({prompt: "Enter ioBroker password", password: true, ignoreFocusOut: true});
+    }
+
+    private getPasswordIdentifier(baseUri: Uri): string {
+        return LoginCredentialsService.secretPassword + baseUri.toString();
     }
 
     async getAccessToken(): Promise<IAccessToken | undefined> {

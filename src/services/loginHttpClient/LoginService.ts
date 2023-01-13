@@ -49,7 +49,7 @@ export class LoginService implements ILoginService {
         }
 
         // token was not valid. Get password form store or user
-        const password = await this.loginCredentialService.getPassword();
+        const password = await this.loginCredentialService.getPassword(baseUri);
         if (!password) {
             this.debugLogService.log("User did not provide password. Cannot get access token", "LoginService");
             return undefined;
