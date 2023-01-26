@@ -31,7 +31,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
 
     constructor(
         @inject(TYPES.services.configCreation) private configCreationService: IConfigCreationService,
-        @inject(TYPES.services.configRepository) private configReaderWriterService: IConfigRepositoryService,
+        @inject(TYPES.services.configRepository) private configRepository: IConfigRepositoryService,
         @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
         @inject(TYPES.services.log) private logService: ILogService,
@@ -85,7 +85,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
                 return;
             }
 
-            this.config = await this.configReaderWriterService.read(workspaceFolder);
+            this.config = await this.configRepository.read(workspaceFolder);
             this.debugLogService.log(`read config: ${JSON.stringify(this.config)}`, "IobrokerConnectionService");
 
             if (!(this.config instanceof NoConfig) && !this.isConfigValid()) {
@@ -110,7 +110,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
                     return;
                 }
                 else {
-                    await this.configReaderWriterService.write(this.config, workspaceFolder);
+                    await this.configRepository.write(this.config, workspaceFolder);
                     this.statusBarService.setStatusBarMessage("ioBroker: Created new 'iobroker-config.json' in root directory");
                     isInitialConnect = true;
                 }

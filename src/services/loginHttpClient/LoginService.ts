@@ -9,13 +9,15 @@ import { Uri } from 'vscode';
 import { IAccessToken } from '../loginCredentialsService/IAccessToken';
 import { ILoginCredentialsService } from '../loginCredentialsService/ILoginCredentialsService';
 import { IDebugLogService } from '../debugLogService/IDebugLogService';
+import { IConfigRepositoryService } from '../configRepository/IConfigRepositoryService';
 
 @injectable()
 export class LoginService implements ILoginService {
 
     constructor(
         @inject(TYPES.services.loginCredentials) private loginCredentialService: ILoginCredentialsService,
-        @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService
+        @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,
+        @inject(TYPES.services.configRepository) private configRepository: IConfigRepositoryService
     ) { }
 
     async isLoginNecessary(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<boolean> {
@@ -39,6 +41,9 @@ export class LoginService implements ILoginService {
     }
 
     async getAccessToken(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string): Promise<string | undefined> {
+        const config = this.configRepository.config;
+        console.log(config.ioBrokerUrl);
+        
         const accessToken = await this.loginCredentialService.getAccessToken();
         const serverTime = await this.getServerTime(baseUri, allowSelfSignedCertificate);
 
@@ -49,7 +54,7 @@ export class LoginService implements ILoginService {
         }
 
         // token was not valid. Get password form store or user
-        const password = await this.loginCredentialService.getPassword(baseUri);
+        const password = await this.loginCredentialService.getPassword();
         if (!password) {
             this.debugLogService.log("User did not provide password. Cannot get access token", "LoginService");
             return undefined;
