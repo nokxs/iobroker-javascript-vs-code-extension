@@ -1,6 +1,7 @@
 import { injectable, inject } from "inversify";
 import { ExtensionContext, window } from "vscode";
 import TYPES from "../../Types";
+import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { IDebugLogService } from "../debugLogService/IDebugLogService";
 import { IAccessToken } from "./IAccessToken";
 import { ILoginCredentialsService } from "./ILoginCredentialsService";
@@ -13,7 +14,8 @@ export class LoginCredentialsService implements ILoginCredentialsService {
 
     constructor(
         @inject(TYPES.extensionContext) private extensionContext: ExtensionContext,
-        @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService
+        @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,        
+        @inject(TYPES.services.configRepository) private configRepository: IConfigRepositoryService
     ) { }
 
     async getPassword(): Promise<string | undefined> {
@@ -47,28 +49,8 @@ export class LoginCredentialsService implements ILoginCredentialsService {
         await this.invalidateCredentialsInStorage();
     }
 
-    private async updatePasswordInStorage(password: string): Promise<void> {
-        this.debugLogService.log("Update password in storage", "LoginCredentials");
-        await this.extensionContext.secrets.store(LoginCredentialsService.secretPassword, password);
-    }
-
-    private async invalidateCredentialsInStorage(): Promise<void>  {
-        this.debugLogService.log("Invalidate credentials", "LoginCredentials");
-        await this.extensionContext.secrets.delete(LoginCredentialsService.secretPassword);
-        await this.extensionContext.secrets.delete(LoginCredentialsService.secretToken);
-    }
-
-    private async getPasswordFromStorage(): Promise<string | undefined> {
-        return await this.extensionContext.secrets.get(LoginCredentialsService.secretPassword);
-    }
-
-    private async getPasswordFromUser(): Promise<string | undefined> {
-        this.debugLogService.log("Get password from user", "LoginCredentials");
-        return await window.showInputBox({prompt: "Enter ioBroker password", password: true, ignoreFocusOut: true});
-    }
-
     async getAccessToken(): Promise<IAccessToken | undefined> {
-        const json = await this.extensionContext.secrets.get(LoginCredentialsService.secretToken);
+        const json = await this.extensionContext.secrets.get(this.getAccessTokenIdentifier());
 
         if (json) {
             return JSON.parse(json);
@@ -78,7 +60,7 @@ export class LoginCredentialsService implements ILoginCredentialsService {
     }
 
     async updateAccessToken(accessToken: IAccessToken): Promise<void> {
-        await this.extensionContext.secrets.store(LoginCredentialsService.secretToken, JSON.stringify(accessToken));
+        await this.extensionContext.secrets.store(this.getAccessTokenIdentifier(), JSON.stringify(accessToken));
     }
 
     isValidAccessToken(accessToken: IAccessToken | undefined, serverTime: Date): boolean {
@@ -87,5 +69,35 @@ export class LoginCredentialsService implements ILoginCredentialsService {
         }
 
         return false;
+    }
+
+    private async updatePasswordInStorage(password: string): Promise<void> {
+        this.debugLogService.log("Update password in storage", "LoginCredentials");
+        await this.extensionContext.secrets.store(this.getPasswordIdentifier(), password);
+    }
+
+    private async invalidateCredentialsInStorage(): Promise<void>  {
+        this.debugLogService.log("Invalidate credentials", "LoginCredentials");
+        await this.extensionContext.secrets.delete(this.getPasswordIdentifier());
+        await this.extensionContext.secrets.delete(this.getAccessTokenIdentifier());
+    }
+
+    private async getPasswordFromStorage(): Promise<string | undefined> {
+        return await this.extensionContext.secrets.get(this.getPasswordIdentifier());
+    }
+
+    private async getPasswordFromUser(): Promise<string | undefined> {
+        this.debugLogService.log("Get password from user", "LoginCredentials");
+        return await window.showInputBox({prompt: "Enter ioBroker password", password: true, ignoreFocusOut: true});
+    }
+
+    private getPasswordIdentifier(): string {
+        const config = this.configRepository.config;
+        return LoginCredentialsService.secretPassword + config.ioBrokerUrl + config.socketIoPort;
+    }
+
+    private getAccessTokenIdentifier(): string {
+        const config = this.configRepository.config;
+        return LoginCredentialsService.secretToken + config.ioBrokerUrl + config.socketIoPort;
     }
 }
