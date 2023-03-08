@@ -385,6 +385,7 @@ export class SocketIoClient implements ISocketIoClient {
         }
 
         this.callbacks = [];
+        this.handlers = [];
         const client = this;
         return new Promise<ISocketIoClient>((resolve) => {
             if (this.socket?.readyState === WS_READY_STATE.closed) {

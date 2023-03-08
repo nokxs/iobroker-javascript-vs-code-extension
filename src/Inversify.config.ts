@@ -120,8 +120,8 @@ container.bind<IObjectRepositoryService>(TYPES.services.objectRepositoryService)
 container.bind<IAutoUploadService>(TYPES.services.autoUploadService).to(AutoUploadService).inSingletonScope();
 container.bind<IScriptCreationService>(TYPES.services.scriptCreationService).to(ScriptCreationService).inSingletonScope();
 
-container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inTransientScope();
-container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inTransientScope();
+container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inSingletonScope();
+container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inSingletonScope();
 
 container.bind<IIobrokerHoverProvider>(TYPES.providers.iobrokerHoverProvider).to(IoBrokerHoverProvider).inSingletonScope();
 container.bind<IIobrokerCompletionItemProvider>(TYPES.providers.iobrokerCompletionItemProvider).to(IoBrokerCompletionItemProvider).inSingletonScope();

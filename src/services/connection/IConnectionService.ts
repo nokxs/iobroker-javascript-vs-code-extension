@@ -16,7 +16,7 @@ export interface IConnectionService {
     registerConnectionEventListener(listener: IConnectionEventListener): void
 
     registerForLogs(logAction: (logMessage: ILogMessage) => void): Promise<void>
-    unregisterForLogs(): Promise<void>
+    unregisterForLogs(logAction: (logMessage: ILogMessage) => void): Promise<void>
 
     registerForObjectChange(pattern: string, onChangeAction: (id: string, value: any) => void): Promise<void>
     unregisterObjectChange(pattern: string): Promise<void>
