@@ -106,11 +106,11 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
         });
     }
 
-    unregisterForLogs(): Promise<void> {
+    unregisterForLogs(logAction: (logMessage: ILogMessage) => void): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
 
-                this.client.off("log");    
+                this.client.off("log", logAction);    
                 this.client.emit("requireLog", false, (err: any) => {
                     if (err) {
                         reject(new Error(`Could not unregister for logs: ${err}`));
