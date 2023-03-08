@@ -64,6 +64,6 @@ export class CreateTypeScriptFileCommandy implements ICommand {
     }
 
     private async askUserIfFileShouldBeOverriden(script: IScript) {
-        return await window.showQuickPick(["No", "Yes"], { canPickMany: false, placeHolder: `Override '${script._id}'?` });
+        return await window.showQuickPick(["No", "Yes"], { canPickMany: false, placeHolder: `'${script._id}' exists already. Override?` });
     }
 }
