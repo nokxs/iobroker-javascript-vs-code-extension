@@ -23,11 +23,11 @@ export class LogService implements ILogService {
         this.getcurrentScriptOutputChannel();
 
         await this.stopReceiving();
-        await this.connectionServiceProvider.getConnectionService().registerForLogs(this.logCallback);
+        await this.connectionServiceProvider.getConnectionService().registerForLogs(async message => await this.logCallback(message));
     }
     
     async stopReceiving(): Promise<void> {
-        await this.connectionServiceProvider.getConnectionService().unregisterForLogs(this.logCallback);
+        await this.connectionServiceProvider.getConnectionService().unregisterForLogs(async message => await this.logCallback(message));
     }
 
     private async logCallback(logMessage: ILogMessage) {
