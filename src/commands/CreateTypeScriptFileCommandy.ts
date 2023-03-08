@@ -7,6 +7,8 @@ import { ScriptDirectory } from "../views/scriptExplorer/ScriptDirectory";
 import { IScriptService } from "../services/script/IScriptService";
 import { Uri, window } from "vscode";
 import { EngineType } from "../models/EngineType";
+import { IScriptRepositoryService } from "../services/scriptRepository/IScriptRepositoryService";
+import { IScript } from "../models/IScript";
 
 @injectable()
 export class CreateTypeScriptFileCommandy implements ICommand {
@@ -14,6 +16,7 @@ export class CreateTypeScriptFileCommandy implements ICommand {
 
     constructor(        
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
+        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
         @inject(TYPES.services.script) private scriptService: IScriptService,
         @inject(TYPES.services.file) private fileService: IFileService
     ) {}
@@ -29,11 +32,38 @@ export class CreateTypeScriptFileCommandy implements ICommand {
                 }
 
                 const script = this.scriptService.getDefaultScript(`${scriptDirectory.directory._id}.${fileName}`, EngineType.typescript);
-                this.scriptRemoteService.uploadScript(script);
-
                 const fileUri = Uri.joinPath(scriptDirectory.directory.absoluteUri, `${fileName}.ts`);
+
+                if(!await this.shouldFileReallyBeCreated(script, fileUri)) {
+                    return;
+                }
+
+                await this.scriptRemoteService.uploadScript(script);
                 await this.fileService.saveToFile(fileUri, "");
             }
         }
+    }
+
+    private async shouldFileReallyBeCreated(script: IScript, fileUri: Uri): Promise<boolean> {
+        const existingScriptOnServer = this.scriptRepositoryService.getScriptFromId(script._id);
+        if (existingScriptOnServer) {
+            const result = await this.askUserIfFileShouldBeOverriden(script);
+            if (result === "No") {
+                return false;
+            }
+        }
+        
+        if (this.fileService.fileExists(fileUri)) {
+            const result = await this.askUserIfFileShouldBeOverriden(script);
+            if (result === "No") {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private async askUserIfFileShouldBeOverriden(script: IScript) {
+        return await window.showQuickPick(["No", "Yes"], { canPickMany: false, placeHolder: `Override '${script._id}'?` });
     }
 }
