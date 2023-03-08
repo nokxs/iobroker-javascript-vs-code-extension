@@ -26,6 +26,7 @@ const TYPES = {
         stateAndObjectRemoteService: Symbol.for("StateAndObjectRemoteService'"),
         objectRepositoryService: Symbol.for("ObjectRepositoryService'"),
         autoUploadService: Symbol.for("AutoUploadService'"),
+        scriptCreationService: Symbol.for("ScriptCreationService'"),
         
         connectionServiceProvider: Symbol.for("ConnectionServiceProvider"),
         connectionAdmin4: Symbol.for("ConnectionServiceAdmin4"),
