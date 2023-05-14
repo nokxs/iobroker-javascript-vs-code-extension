@@ -18,13 +18,18 @@ import { OnlyLocalDirectoryItem } from './OnlyLocalDirectoryItem';
 import { ILocalOnlyScript } from '../../models/ILocalOnlyScript';
 import { IConfigRepositoryService } from '../../services/configRepository/IConfigRepositoryService';
 import { OnlyRemoteScriptItem } from './OnlyRemoteScriptItem';
+import { ScriptId } from '../../models/ScriptId';
+import { window } from 'vscode';
 
 @injectable()
-export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>, IScriptExplorerProvider, IScriptChangedEventListener {
+export class ScriptExplorerProvider implements IScriptExplorerProvider, IScriptChangedEventListener {
+
+    private allItems = new Map<ScriptId, ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>();
 
     private _onDidChangeTreeData: vscode.EventEmitter<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem | undefined | null | void> = new vscode.EventEmitter<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | undefined | null | void>();
 
     onDidChangeTreeData?: vscode.Event<void | ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem | null | undefined> | undefined = this._onDidChangeTreeData.event;
+    treeView: vscode.TreeView<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>;
 
     constructor(
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
@@ -37,7 +42,13 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         
         vscode.workspace.onDidCreateFiles(() => this.refresh());
         vscode.workspace.onDidDeleteFiles(() => this.refresh());
+
+        this.treeView = window.createTreeView('iobroker-javascript.script-explorer', { treeDataProvider: this });
     }
+
+    getItem(id: string): undefined | ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem {
+        return this.allItems.get(id);
+    } 
     
     getTreeItem(element: ScriptItem | ScriptDirectory): vscode.TreeItem | Thenable<vscode.TreeItem> {
         return element;
@@ -100,6 +111,10 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         items = items.concat(scriptItems);     
         items = items.concat(onlyLocalScriptItems); 
         items = items.concat(onlyRemoteScritpItems); 
+
+        for (const item of items) {
+            this.allItems.set(item.id ?? "", item);
+        }
 
         return items;
     }

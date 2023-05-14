@@ -12,6 +12,7 @@ export class ScriptItem extends vscode.TreeItem {
     constructor(public script: ILocalScript) {
         super("", vscode.TreeItemCollapsibleState.None);
         
+        this.id = <string>script._id;
         this.description = this.getDescription(script);
         this.label = this.getScriptName(script.ioBrokerScript);
         this.iconPath = this.getIconPath(script.ioBrokerScript);

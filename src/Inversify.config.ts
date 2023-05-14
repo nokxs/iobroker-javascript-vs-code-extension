@@ -89,6 +89,7 @@ import { IAutoUploadService } from './services/autoUpload/IAutoUploadService';
 import { AutoUploadService } from './services/autoUpload/AutoUploadService';
 import { ScriptCreationService } from './services/scriptCreation/ScriptCreationService';
 import { IScriptCreationService } from './services/scriptCreation/IScriptCreationService';
+import { SyncCurrentScriptWithScriptExplorerCommand } from './commands/SyncCurrentScriptWithScriptExplorerCommand';
 
 const container = new Container();
 
@@ -149,6 +150,7 @@ container.bind<ICommand>(TYPES.command).to(CreateDirectoryCommand);
 container.bind<ICommand>(TYPES.command).to(CreateTypeScriptFileCommandy);
 container.bind<ICommand>(TYPES.command).to(CreateJavaScriptFileCommand);
 container.bind<ICommand>(TYPES.command).to(ShowLocalToServerDiffCommand);
+container.bind<ICommand>(TYPES.command).to(SyncCurrentScriptWithScriptExplorerCommand);
 
 container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider).inSingletonScope();
 container.bind<IChangedScriptsProvider>(TYPES.views.changedScripts).to(ChangedScriptsProvider).inSingletonScope();

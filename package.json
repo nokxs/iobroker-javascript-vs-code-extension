@@ -98,6 +98,11 @@
 				"icon": "$(debug-disconnect)"
 			},
 			{
+				"command": "iobroker-javascript.syncCurrentScriptWithScriptExplorer",
+				"title": "iobroker: Sync view with Script Explroer",
+				"icon": "$(sync)"
+			},
+			{
 				"command": "iobroker-javascript.logout",
 				"title": "iobroker: Logout from ioBroker"
 			},
@@ -169,6 +174,10 @@
 				},
 				{
 					"command": "iobroker-javascript.downloadAll",
+					"when": "view == iobroker-javascript.script-explorer"
+				},
+				{
+					"command": "iobroker-javascript.syncCurrentScriptWithScriptExplorer",
 					"when": "view == iobroker-javascript.script-explorer"
 				},
 				{

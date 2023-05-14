@@ -119,7 +119,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     getScriptFromAbsolutUri(uri: Uri): ILocalScript | undefined {
-        return this.scripts.find(script => script.absoluteUri === uri);
+        return this.scripts.find(script => script.absoluteUri.fsPath === uri.fsPath);
     }
 
     getScriptFromId(id: ScriptId): ILocalScript | undefined {

@@ -9,5 +9,6 @@ export class ScriptDirectory extends vscode.TreeItem {
 
     constructor(public directory: IDirectory, private collapse: boolean) {
         super(directory.common?.name ?? "INVALID", collapse ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Expanded);
+        this.id = <string>directory._id;
     }
 }
