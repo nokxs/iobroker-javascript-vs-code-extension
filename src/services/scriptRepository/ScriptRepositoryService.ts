@@ -56,6 +56,9 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
                 absoluteUri: this.getAbsoluteDirectoryUri(dir, ioBrokerDirectories)
             };
         });
+        this.fixDirectoryName(unsortedDirectories, "script.js.common", "common");
+        this.fixDirectoryName(unsortedDirectories, "script.js.global", "global");
+
         this.directories = unsortedDirectories.sort((dir1, dir2) => this.compareIds(dir1._id, dir2._id));
 
         const ioBrokerScripts = await this.scriptRemoteService.downloadAllScripts();
@@ -172,6 +175,13 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         this.directories = [];
         this.scripts = [];
         this.raiseScriptChangedEvent(undefined);
+    }
+
+    private fixDirectoryName(directories: IDirectory[], id: string, newName: string){
+        const commonDirectory = directories.find(dir => dir._id === id);
+        if(commonDirectory?.common?.name) {
+            commonDirectory.common.name = newName;
+        }
     }
 
     private compareIds(id1: ScriptId, id2: ScriptId): number {
