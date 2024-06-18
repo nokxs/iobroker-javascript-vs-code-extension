@@ -29,5 +29,6 @@ export enum AdminVersion {
     unknown = "unknown",
     admin4 = "admin4",
     admin5 = "admin5",
-    admin6 = "admin6"
+    admin6 = "admin6",
+    admin7 = "admin7"
 }
