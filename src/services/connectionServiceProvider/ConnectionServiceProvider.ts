@@ -28,7 +28,7 @@ export class ConnectionServiceProvider implements IConnectionServiceProvider {
              return this.connectionServiceAdmin4;
          }
          
-        if (adminVersion === AdminVersion.admin5 || adminVersion === AdminVersion.admin6) {
+        if (adminVersion === AdminVersion.admin5 || adminVersion === AdminVersion.admin6 || adminVersion === AdminVersion.admin7) {
             return this.connectionServiceAdmin5;
         }
 
