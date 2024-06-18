@@ -2,7 +2,7 @@
   "ioBrokerUrl": "http://localhost",
   "socketIoPort": 8081,
   "scriptRoot": "/",
-  "adminVersion": "admin6",
+  "adminVersion": "admin7",
   "autoReconnect": true,
   "allowSelfSignedCertificate:": false,
   "username": "admin",
