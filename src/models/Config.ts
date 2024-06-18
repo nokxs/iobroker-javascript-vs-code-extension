@@ -5,7 +5,12 @@ export class Config {
         readonly scriptRoot: string,
         readonly adminVersion: AdminVersion,
         readonly autoReconnect?: boolean,
-        readonly scriptExplorer?: ScriptExplorerConfig) {}
+        readonly scriptExplorer?: ScriptExplorerConfig,
+        readonly allowSelfSignedCertificate?: boolean,
+        readonly username?: string,
+        readonly collectDebugLog?: boolean,
+        readonly autoUpload?: boolean,
+        readonly scriptAutoRun?: boolean) {}
 }
 
 export class ScriptExplorerConfig {
@@ -23,5 +28,6 @@ export class NoConfig extends Config {
 export enum AdminVersion {
     unknown = "unknown",
     admin4 = "admin4",
-    admin5 = "admin5"
+    admin5 = "admin5",
+    admin6 = "admin6"
 }

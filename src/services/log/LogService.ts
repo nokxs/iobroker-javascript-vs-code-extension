@@ -22,19 +22,22 @@ export class LogService implements ILogService {
         this.getAllOutputChannel();
         this.getcurrentScriptOutputChannel();
 
-        await this.connectionServiceProvider.getConnectionService().registerForLogs(async (logMessage: ILogMessage) => {
-            if (logMessage.from.startsWith("javascript.")) {
-                this.logMessageToChannel(logMessage, this.getAllOutputChannel());
-
-                if (await this.isRelevantMessage(logMessage)) {
-                    this.logMessageToChannel(logMessage, this.getcurrentScriptOutputChannel());
-                }
-            }
-        });
+        await this.stopReceiving();
+        await this.connectionServiceProvider.getConnectionService().registerForLogs(async message => await this.logCallback(message));
     }
     
     async stopReceiving(): Promise<void> {
-        await this.connectionServiceProvider.getConnectionService().unregisterForLogs();
+        await this.connectionServiceProvider.getConnectionService().unregisterForLogs(async message => await this.logCallback(message));
+    }
+
+    private async logCallback(logMessage: ILogMessage) {
+        if (logMessage.from.startsWith("javascript.")) {
+            this.logMessageToChannel(logMessage, this.getAllOutputChannel());
+
+            if (await this.isRelevantMessage(logMessage)) {
+                this.logMessageToChannel(logMessage, this.getcurrentScriptOutputChannel());
+            }
+        }
     }
 
     private logMessageToChannel(message: ILogMessage, channel: OutputChannel) {

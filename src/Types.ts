@@ -14,10 +14,19 @@ const TYPES = {
         directory: Symbol.for("DirectoryService"),
         log: Symbol.for("LogService"),
         typeDefinition: Symbol.for("TypeDefinitionService"),
+        login: Symbol.for("LoginService"),
+        loginCredentials: Symbol.for("LoginServiceCredentials"),
         iobrokerConnection: Symbol.for("IobrokerConnection"),
         jsInstance: Symbol.for("JsInstanceService"),
         socketIoClient: Symbol.for("SocketIoClient"),
         adminVersionDetector: Symbol.for("AdminVersionDetector"),
+        debugLogService: Symbol.for("DebugLogService"),
+        statusBarService: Symbol.for("StatusBarService"),
+        windowMessageService: Symbol.for("WindowMessageService'"),
+        stateAndObjectRemoteService: Symbol.for("StateAndObjectRemoteService'"),
+        objectRepositoryService: Symbol.for("ObjectRepositoryService'"),
+        autoUploadService: Symbol.for("AutoUploadService'"),
+        scriptCreationService: Symbol.for("ScriptCreationService'"),
         
         connectionServiceProvider: Symbol.for("ConnectionServiceProvider"),
         connectionAdmin4: Symbol.for("ConnectionServiceAdmin4"),
@@ -27,8 +36,13 @@ const TYPES = {
         scriptExplorer: Symbol.for("ScriptExplorerView"),
         changedScripts: Symbol.for("ChangedScriptView")
     },
+    providers: {
+        iobrokerHoverProvider: Symbol.for("IobrokerHoverProvider"),
+        iobrokerCompletionItemProvider: Symbol.for("IobrokerCompletionItemProvider")
+    },
     command: Symbol.for("Command"),
-    startup: Symbol.for("Startup")
+    startup: Symbol.for("Startup"),
+    extensionContext: Symbol.for("ExtensionContext")
 };
 
 export default TYPES;

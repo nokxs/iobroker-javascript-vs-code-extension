@@ -2,9 +2,13 @@
   "ioBrokerUrl": "http://localhost",
   "socketIoPort": 8081,
   "scriptRoot": "/",
-  "adminVersion": "admin5",
+  "adminVersion": "admin6",
   "autoReconnect": true,
+  "allowSelfSignedCertificate:": false,
+  "username": "admin",
   "scriptExplorer": {
     "collapseDirectoriesOnStartup": true
-  }
+  },
+  "autoUpload": false,
+  "scriptAutoRun": false
 }

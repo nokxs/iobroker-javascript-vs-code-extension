@@ -17,6 +17,7 @@ import { ILocalOnlyScriptRepositoryService } from '../../services/localOnlyScrip
 import { OnlyLocalDirectoryItem } from './OnlyLocalDirectoryItem';
 import { ILocalOnlyScript } from '../../models/ILocalOnlyScript';
 import { IConfigRepositoryService } from '../../services/configRepository/IConfigRepositoryService';
+import { OnlyRemoteScriptItem } from './OnlyRemoteScriptItem';
 
 @injectable()
 export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>, IScriptExplorerProvider, IScriptChangedEventListener {
@@ -43,6 +44,10 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
     }
 
     async getChildren(element?: ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>> {
+        if (!this.iobrokerConnectionService.isConnected()) {
+            return Promise.resolve([]);
+        }
+        
         if(!element) {
             return this.getRootLevelItems();
         }
@@ -66,6 +71,10 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         this.refresh();
     }
 
+    onNoScriptAvailable(): void {
+        this.refresh();
+    }
+
     private async getRootLevelItems(): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>> {
         return await this.getChildItems(new RootDirectory(this.workspaceService, this.configRepositoryService));
     }
@@ -80,15 +89,17 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         
         const collapseDirectories = this.shouldDirectoriesBeCollapsed();
         const scriptDirectories = this.convertToScriptDirectories(directories, collapseDirectories);
-        const scriptItems = this.convertToScriptItems(scripts);
+        const scriptItems = this.convertToScriptItems(scripts.filter(s => !s.isRemoteOnly));
         const onlyLocalScriptItems = this.convertToOnlyLocalScriptItems(scriptsOnlyLocal);
+        const onlyRemoteScritpItems = this.convertToOnlyRemoteScriptItems(scripts.filter(s => s.isRemoteOnly));
         const onlyLocalDirectoryItems = this.convertToOnlyLocalDirectories(directoriesOnlyLocal, collapseDirectories);
 
         let items: Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem> = new Array();
         items = items.concat(scriptDirectories);
         items = items.concat(onlyLocalDirectoryItems);
         items = items.concat(scriptItems);     
-        items = items.concat(onlyLocalScriptItems);   
+        items = items.concat(onlyLocalScriptItems); 
+        items = items.concat(onlyRemoteScritpItems); 
 
         return items;
     }
@@ -127,6 +138,10 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
     
     private convertToOnlyLocalScriptItems(onlyLocalScripts: ILocalOnlyScript[]): OnlyLocalScriptItem[] {
         return onlyLocalScripts.map(localScript => new OnlyLocalScriptItem(localScript.path));
+    }
+    
+    private convertToOnlyRemoteScriptItems(scripts: ILocalScript[]): OnlyRemoteScriptItem[] {
+        return scripts.map(s => new OnlyRemoteScriptItem(s));
     }
 
     private convertToOnlyLocalDirectories(onlyLocalDirectories: ILocalOnlyScript[], collapse: boolean): OnlyLocalDirectoryItem[] {

@@ -54,7 +54,13 @@ export class FileService implements IFileService {
         return new Promise((resolve, reject) => {
             fs.mkdir(uri.fsPath, (err) => {
                 if(err) {
-                    reject(err);
+                    if (err.code === "EEXIST") {
+                        // Directory already exists
+                        resolve();
+                    }
+                    else {
+                        reject(err);
+                    }
                 } else {
                     resolve();
                 }
@@ -65,7 +71,7 @@ export class FileService implements IFileService {
     createTemporaryFile(fileName: string, content: string): Promise<Uri> {
         return new Promise((resolve, reject) => {
             const tempDir = os.tmpdir();
-            fs.mkdtemp(`${tempDir}iobroker-`, (err, directoryPath) => {
+            fs.mkdtemp(path.join(tempDir, "iobroker-"), (err, directoryPath) => {
                 if (err) {
                     reject(err);
                 }

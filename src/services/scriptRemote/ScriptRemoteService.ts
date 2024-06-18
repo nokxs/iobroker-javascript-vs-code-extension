@@ -11,6 +11,7 @@ import { IDirectory } from "../../models/IDirectory";
 import { IDirectoryService } from "../directory/IDirectoryService";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { EngineType } from "../../models/EngineType";
+import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 
 @injectable()
 export class ScriptRemoteService implements IScriptRemoteService, IConnectionEventListener {
@@ -19,8 +20,9 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     constructor(
         @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
-        @inject(TYPES.services.directory) private directoryService: IDirectoryService
-    ) {}
+        @inject(TYPES.services.directory) private directoryService: IDirectoryService,
+        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService
+    ) { }
 
     init(): void {
         this.connectionServiceProvider.getConnectionService().registerConnectionEventListener(this);
@@ -48,7 +50,11 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     async uploadScript(script: IScript): Promise<void> {
-       script.common.engineType = this.getFixedEngineTypeCasing(script.common.engineType);
+        script.common.engineType = this.getFixedEngineTypeCasing(script.common.engineType);
+
+        if (this.configRepositoryService.config.scriptAutoRun) {
+            script.common.enabled = true;
+        }
 
         await this.directoryService.createDirectoriesRecursively(script._id);
         await this.connectionServiceProvider.getConnectionService().setObject(<string>script._id, script);
@@ -106,6 +112,10 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
 
     onDisconnected(): void {
         this.unregisterSocketEvents();
+        this.scriptEventListeners.forEach(listener => listener.onNoScriptAvailable());
+    }
+
+    onReAuthenticate(): void {
     }
 
     private registerSocketEvents(): void {

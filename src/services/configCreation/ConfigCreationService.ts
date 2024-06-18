@@ -1,18 +1,20 @@
 import { AdminVersion, Config, NoConfig } from "../../models/Config";
-import { window } from "vscode";
+import { Uri, window } from "vscode";
 
 import { inject, injectable } from "inversify";
 import TYPES from '../../Types';
 import { ITypeDefinitionService } from '../typeDefinition/ITypeDefinitionService';
 import { IConfigCreationService } from "./IConfigCreationService";
 import { IAdminVersionDetector } from "../adminVersionDetector/IAdminVersionDetector";
+import { ILoginService } from "../loginHttpClient/ILoginService";
 
 @injectable()
 export class ConfigCreationService implements IConfigCreationService {
     
     constructor(
         @inject(TYPES.services.typeDefinition) private typeDefinitionService: ITypeDefinitionService,
-        @inject(TYPES.services.adminVersionDetector) private adminVersionDetector: IAdminVersionDetector
+        @inject(TYPES.services.adminVersionDetector) private adminVersionDetector: IAdminVersionDetector,
+        @inject(TYPES.services.login) private loginService: ILoginService
     ) {}
 
     async createConfigInteractivly(): Promise<Config> {
@@ -26,6 +28,7 @@ export class ConfigCreationService implements IConfigCreationService {
         }
 
         let port: string | undefined;
+        let allowSelfSignedCertificate = false;
         const portRegex = new RegExp("(http.*):(\\d+)");
         const portMatch = portRegex.exec(ioBrokerUrl);
         if (portMatch && (portMatch?.length ?? 0) === 3) {
@@ -38,6 +41,10 @@ export class ConfigCreationService implements IConfigCreationService {
         
         if (!port) {
             return new NoConfig();
+        }
+
+        if (ioBrokerUrl.startsWith("https:")) {
+            allowSelfSignedCertificate = (await window.showQuickPick(["No", "Yes"], {canPickMany: false, placeHolder: "Are you using a self signed certificate?", ignoreFocusOut: true})) === "Yes";
         }
 
         const scriptPath = await window.showInputBox({prompt: "The relative path in your workspace to the scripts", value: "/", ignoreFocusOut: true});
@@ -55,26 +62,35 @@ export class ConfigCreationService implements IConfigCreationService {
             await this.typeDefinitionService.createConfig();
         }
 
+        const uri = `${ioBrokerUrl}:${port}`;
         const statusBarMessage = window.setStatusBarMessage("$(sync~spin) Trying to detect used ioBroker Admin version...");
-        const adminVersion = await this.getAdminVersion(`${ioBrokerUrl}:${port}`);    
+        const adminVersion = await this.getAdminVersion(uri, allowSelfSignedCertificate);    
         statusBarMessage.dispose();
 
         if (adminVersion === AdminVersion.unknown) {
             return new NoConfig();
         }
+
+        let username: string | undefined = undefined;
+        if (adminVersion === AdminVersion.admin5) {
+            if (await this.loginService.isLoginNecessary(Uri.parse(uri), allowSelfSignedCertificate)) {
+                username = await window.showInputBox({prompt: "Login necessary. Enter user name", value: "admin", ignoreFocusOut: true});
+            }
+        }
         
-        return new Config(ioBrokerUrl, Number.parseInt(port), scriptPath, adminVersion);
+        return new Config(ioBrokerUrl, Number.parseInt(port), scriptPath, adminVersion, undefined, undefined, allowSelfSignedCertificate, username);
     }
 
-    private async getAdminVersion(ioBrokerUrl: string): Promise<AdminVersion> {
+    private async getAdminVersion(ioBrokerUrl: string, allowSelfSignedCertificate: boolean): Promise<AdminVersion> {
         const admin4 = "Admin 4";
         const admin5 = "Admin 5";
+        const admin6 = "Admin 6";
 
-        let adminVersion = await this.adminVersionDetector.getVersion(ioBrokerUrl);
+        let adminVersion = await this.adminVersionDetector.getVersion(ioBrokerUrl, allowSelfSignedCertificate);
         
         if (adminVersion === AdminVersion.unknown) {
             const adminVersionPick = await window.showQuickPick(
-                [admin4, admin5], 
+                [admin4, admin5, admin6], 
                 { 
                     placeHolder: "Could not determine the used Admin version. Which version are you using?",
                     ignoreFocusOut: true
@@ -85,6 +101,9 @@ export class ConfigCreationService implements IConfigCreationService {
                    return AdminVersion.admin4;
                 case admin5:
                     adminVersion = AdminVersion.admin5;
+                    break;
+                case admin6:
+                    adminVersion = AdminVersion.admin6;
                     break;
                 default:
                     break;

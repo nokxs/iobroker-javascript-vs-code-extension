@@ -36,6 +36,10 @@ export class ChangedScriptsProvider implements vscode.TreeDataProvider<ScriptIte
     }
 
     async getChildren(element?: ScriptItem): Promise<Array<ScriptItem>> {
+        if (!this.iobrokerConnectionService.isConnected()) {
+            return Promise.resolve([]);
+        }
+
         if(!element) {
             return this.getRootLevelItems();
         }
@@ -48,6 +52,10 @@ export class ChangedScriptsProvider implements vscode.TreeDataProvider<ScriptIte
     }
     
     onScriptChanged(): void {
+        this.refresh();
+    }
+
+    onNoScriptAvailable(): void {
         this.refresh();
     }
 

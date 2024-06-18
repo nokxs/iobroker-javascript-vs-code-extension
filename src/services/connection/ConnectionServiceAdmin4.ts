@@ -7,6 +7,8 @@ import { IConnectionService } from "./IConnectionService";
 import { ILogMessage } from '../../models/ILogMessage';
 import { ScriptId } from "../../models/ScriptId";
 import { injectable } from "inversify";
+import { IState } from '../../models/IState';
+import { IObjectList } from '../../models/IObjectList';
 
 @injectable()
 export class ConnectionServiceAdmin4 implements IConnectionService {
@@ -22,7 +24,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
         this.connectionEventListeners.push(listener);
     }
     
-    async connect(uri: Uri, autoReconnect: boolean): Promise<void> {
+    async connect(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean): Promise<void> {
         const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
 
         if (this.client && this.client.connected) {
@@ -36,7 +38,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
             const timeout = setTimeout(() => {
                 if (!this.isConnected) {
                     message.dispose();
-                    reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
+                    reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds. Allow self signed certificate ${allowSelfSignedCertificate}`));
                 }
             }, this.connectionTimeout);
 
@@ -70,6 +72,10 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
             });
         });
     }
+
+    async connectWithToken(): Promise<void> {
+        throw new Error("Password protected ioBroker installations are not supported for Admin 4. Use Admin 5 or higher.");
+    }
     
     disconnect(): Promise<void> {
         return new Promise<void>((resolve) => {
@@ -100,11 +106,11 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
         });
     }
 
-    unregisterForLogs(): Promise<void> {
+    unregisterForLogs(logAction: (logMessage: ILogMessage) => void): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
 
-                this.client.off("log");    
+                this.client.off("log", logAction);    
                 this.client.emit("requireLog", false, (err: any) => {
                     if (err) {
                         reject(new Error(`Could not unregister for logs: ${err}`));
@@ -151,6 +157,10 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
                 resolve();
             }
         });
+    }
+
+    getAllObjects(): Promise<IObjectList> {
+        throw new Error("Not implemented");
     }
 
     getObject<TObject>(objectId: string | ScriptId): Promise<TObject> {
@@ -228,6 +238,10 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
                 reject(`Error while retreiving object view: Type: ${type} | startKey: ${startKey} | endKey: ${endKey}`);
             }
         });
+    }
+
+    getState(): Promise<IState> {
+        throw new Error("Not implemented");
     }
 
     private registerSocketEvents(): void {
