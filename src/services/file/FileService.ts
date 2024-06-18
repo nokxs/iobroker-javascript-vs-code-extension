@@ -46,6 +46,14 @@ export class FileService implements IFileService {
         });
     }
 
+    deleteDirectory(uri: Uri): Promise<void> {
+        return new Promise((resolve) => {
+            fs.rmdir(uri.fsPath, { recursive: true }, () => {
+                resolve();
+            });
+        });
+    }
+
     move(oldPath: Uri, newPath: Uri): Promise<void> {
         return this.rename(oldPath, newPath);
     }

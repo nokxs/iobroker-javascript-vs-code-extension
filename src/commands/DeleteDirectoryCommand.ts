@@ -25,7 +25,7 @@ export class DeleteDirectoryCommand implements ICommand {
                 await this.scriptRemoteService.delete(scriptDirectory.directory._id);
                 
                 if (this.fileService.directoryExists(scriptDirectory.directory.absoluteUri)) {
-                    this.fileService.delete(scriptDirectory.directory.absoluteUri);
+                    this.fileService.deleteDirectory(scriptDirectory.directory.absoluteUri);
                 }
 
                 window.setStatusBarMessage(`Successfully deleted '${scriptDirectory.directory.common.name}'`, CONSTANTS.StatusBarMessageTime);
