@@ -19,6 +19,12 @@ export class DeleteDirectoryCommand implements ICommand {
     async execute(...args: any[]) {
         if (args) {
             const scriptDirectory = <ScriptDirectory>args[0] ?? <ScriptDirectory>args[0][0];
+
+            if (scriptDirectory.directory._id === CONSTANTS.skriptIds.global || scriptDirectory.directory._id === CONSTANTS.skriptIds.common) {
+                await window.showErrorMessage("Cannot delete global or common directory, because they are needed by iobroker.");
+                return;
+            }
+
             const pickResult = await window.showQuickPick(["No", "Yes"], {canPickMany: false, placeHolder: `Delete directory '${scriptDirectory.directory.common?.name}' and ALL scripts/directories in this directory?`});
 
             if (pickResult === "Yes") {
@@ -28,7 +34,7 @@ export class DeleteDirectoryCommand implements ICommand {
                     this.fileService.deleteDirectory(scriptDirectory.directory.absoluteUri);
                 }
 
-                window.setStatusBarMessage(`Successfully deleted '${scriptDirectory.directory.common.name}'`, CONSTANTS.StatusBarMessageTime);
+                window.setStatusBarMessage(`Successfully deleted '${scriptDirectory.directory.common.name}'`, CONSTANTS.statusBarMessageTime);
             }
         }
     }

@@ -28,7 +28,7 @@ export class DeleteScriptCommand implements ICommand {
                     this.fileService.delete(scriptItem.script.absoluteUri);
                 }
 
-                window.setStatusBarMessage(`Successfully deleted '${scriptItem.script.ioBrokerScript.common.name}'`, CONSTANTS.StatusBarMessageTime);
+                window.setStatusBarMessage(`Successfully deleted '${scriptItem.script.ioBrokerScript.common.name}'`, CONSTANTS.statusBarMessageTime);
             }
         }
     }

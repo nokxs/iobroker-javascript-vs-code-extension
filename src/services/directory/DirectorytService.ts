@@ -5,6 +5,7 @@ import { IDirectoryService } from "./IDirectoryService";
 import { IDirectory } from "../../models/IDirectory";
 import { ScriptId } from "../../models/ScriptId";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
+import CONSTANTS from "../../Constants";
 
 @injectable()
 export class DirectoryService implements IDirectoryService {
@@ -15,8 +16,8 @@ export class DirectoryService implements IDirectoryService {
     async downloadDirectory(id: ScriptId): Promise<IDirectory> {
         const directory = await this.connectionServiceProvider.getConnectionService().getObject<IDirectory>(id);
 
-        this.fixDirectoryName(directory, "script.js.common", "common");
-        this.fixDirectoryName(directory, "script.js.global", "global");
+        this.fixDirectoryName(directory, CONSTANTS.skriptIds.common, "common");
+        this.fixDirectoryName(directory, CONSTANTS.skriptIds.global, "global");
 
         return directory;
     }
@@ -24,8 +25,8 @@ export class DirectoryService implements IDirectoryService {
     async downloadAllDirectories(): Promise<IDirectory[]> {
         const directories = await this.connectionServiceProvider.getConnectionService().getSystemObjectView<IDirectory>("channel", "script.js.", "script.js.");    
         
-        this.fixDirectoriesName(directories, "script.js.common", "common");
-        this.fixDirectoriesName(directories, "script.js.global", "global");
+        this.fixDirectoriesName(directories, CONSTANTS.skriptIds.common, "common");
+        this.fixDirectoriesName(directories, CONSTANTS.skriptIds.global, "global");
 
         return directories;
     }

@@ -31,6 +31,6 @@ export class DownloadAllCommand implements ICommand {
         await this.scriptRepository.evaluateScriptOnRemoteForAllScripts();
         
         message.dispose();
-        window.setStatusBarMessage("ioBroker: Finished downloading all scripts", CONSTANTS.StatusBarMessageTime);
+        window.setStatusBarMessage("ioBroker: Finished downloading all scripts", CONSTANTS.statusBarMessageTime);
     }
 }

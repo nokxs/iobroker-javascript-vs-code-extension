@@ -29,7 +29,7 @@ export class StopCurrentScriptCommand implements ICommand {
         if (scriptId && scriptId.length > 0) {
             try {
                 await this.scriptRemoteService.stopScript(scriptId);
-                window.setStatusBarMessage(`ioBroker: Stoped script '${scriptId}' sucessfully`, CONSTANTS.StatusBarMessageTime);
+                window.setStatusBarMessage(`ioBroker: Stoped script '${scriptId}' sucessfully`, CONSTANTS.statusBarMessageTime);
             } catch (error) {
                 window.showErrorMessage((<Error>error).message);
             }
