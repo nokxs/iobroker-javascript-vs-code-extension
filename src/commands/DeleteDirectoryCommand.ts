@@ -6,6 +6,8 @@ import { window } from "vscode";
 import CONSTANTS from "../Constants";
 import { IFileService } from "../services/file/IFileService";
 import { ScriptDirectory } from "../views/scriptExplorer/ScriptDirectory";
+import { IScriptRepositoryService } from "../services/scriptRepository/IScriptRepositoryService";
+import { IDirectory } from "../models/IDirectory";
 
 @injectable()
 export class DeleteDirectoryCommand implements ICommand {
@@ -13,7 +15,8 @@ export class DeleteDirectoryCommand implements ICommand {
 
     constructor(        
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
-        @inject(TYPES.services.file) private fileService: IFileService
+        @inject(TYPES.services.file) private fileService: IFileService,
+        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService
     ) {}
     
     async execute(...args: any[]) {
@@ -28,14 +31,26 @@ export class DeleteDirectoryCommand implements ICommand {
             const pickResult = await window.showQuickPick(["No", "Yes"], {canPickMany: false, placeHolder: `Delete directory '${scriptDirectory.directory.common?.name}' and ALL scripts/directories in this directory?`});
 
             if (pickResult === "Yes") {
-                await this.scriptRemoteService.delete(scriptDirectory.directory._id);
+                await this.deleteRecursively(scriptDirectory.directory);
                 
                 if (this.fileService.directoryExists(scriptDirectory.directory.absoluteUri)) {
-                    this.fileService.deleteDirectory(scriptDirectory.directory.absoluteUri);
+                    await this.fileService.deleteDirectory(scriptDirectory.directory.absoluteUri);
                 }
 
                 window.setStatusBarMessage(`Successfully deleted '${scriptDirectory.directory.common.name}'`, CONSTANTS.statusBarMessageTime);
             }
         }
+    }
+
+    async deleteRecursively(directory: IDirectory): Promise<void> {
+        for (const dir of this.scriptRepositoryService.getDirectoriesIn(directory)) {
+            await this.deleteRecursively(dir);
+        }
+
+        for (const script of this.scriptRepositoryService.getScriptsIn(directory)) {
+            await this.scriptRemoteService.delete(script._id);            
+        }
+
+        await this.scriptRemoteService.delete(directory._id);
     }
 }
