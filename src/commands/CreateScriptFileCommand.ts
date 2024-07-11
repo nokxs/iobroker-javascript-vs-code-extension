@@ -1,7 +1,6 @@
 import { ICommand } from "./ICommand";
 import { inject, injectable } from "inversify";
 import TYPES from "../Types";
-import { ScriptDirectory } from "../views/scriptExplorer/ScriptDirectory";
 import { IScriptCreationService } from "../services/scriptCreation/IScriptCreationService";
 import { EngineType } from "../models/EngineType";
 import { IScriptRepositoryService } from "../services/scriptRepository/IScriptRepositoryService";
