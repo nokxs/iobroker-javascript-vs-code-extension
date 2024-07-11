@@ -90,6 +90,8 @@ import { UploadAllCommand } from './commands/UploadAllCommand';
 import { UploadCommand } from './commands/UploadCommand';
 import { WindowMessageService } from './services/windowMessage/WindowMessageService';
 import { WorkspaceService } from './services/workspace/WorkspaceService';
+import { CreateScriptFileCommand } from './commands/CreateScriptFileCommand';
+import { CreateDirectoryInRootCommand } from './commands/CreateDirectoryInRootCommand';
 
 const container = new Container();
 
@@ -148,8 +150,10 @@ container.bind<ICommand>(TYPES.command).to(DeleteScriptCommand);
 container.bind<ICommand>(TYPES.command).to(DeleteDirectoryCommand);
 container.bind<ICommand>(TYPES.command).to(RefreshCommand);
 container.bind<ICommand>(TYPES.command).to(CreateDirectoryCommand);
+container.bind<ICommand>(TYPES.command).to(CreateDirectoryInRootCommand);
 container.bind<ICommand>(TYPES.command).to(CreateTypeScriptFileCommandy);
 container.bind<ICommand>(TYPES.command).to(CreateJavaScriptFileCommand);
+container.bind<ICommand>(TYPES.command).to(CreateScriptFileCommand);
 container.bind<ICommand>(TYPES.command).to(ShowLocalToServerDiffCommand);
 
 container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider).inSingletonScope();
