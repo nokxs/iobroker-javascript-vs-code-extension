@@ -16,7 +16,7 @@ export class CreateTypeScriptFileCommandy implements ICommand {
     async execute(...args: any[]) {
         if (args) {
             const scriptDirectory = <ScriptDirectory>args[0] ?? <ScriptDirectory>args[0][0];
-            this.scriptCreationService.createFile(scriptDirectory, ".ts", EngineType.typescript);
+            this.scriptCreationService.createFileScriptDirectory(scriptDirectory, ".ts", EngineType.typescript);
         }
     }
 }

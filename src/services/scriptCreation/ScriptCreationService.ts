@@ -9,6 +9,7 @@ import { IScriptService } from "../script/IScriptService";
 import { IScriptRemoteService } from "../scriptRemote/IScriptRemoteService";
 import { IScriptRepositoryService } from "../scriptRepository/IScriptRepositoryService";
 import { IScriptCreationService } from "./IScriptCreationService";
+import { IDirectory } from "../../models/IDirectory";
 
 @injectable()
 export class ScriptCreationService implements IScriptCreationService{
@@ -20,7 +21,11 @@ export class ScriptCreationService implements IScriptCreationService{
         @inject(TYPES.services.file) private fileService: IFileService
     ) {}
 
-    async createFile(scriptDirectory: ScriptDirectory, fileExtension: string, engineType: EngineType) {
+    async createFileScriptDirectory(scriptDirectory: ScriptDirectory, fileExtension: string, engineType: EngineType) {
+        await this.createFileIDirectory(scriptDirectory.directory, fileExtension, engineType);
+    }
+
+    async createFileIDirectory(directory: IDirectory, fileExtension: string, engineType: EngineType) {
         let fileName = await window.showInputBox({title: "Enter file name"});
         
         if (fileName) {
@@ -28,8 +33,8 @@ export class ScriptCreationService implements IScriptCreationService{
                 fileName = fileName.substring(0, fileName.lastIndexOf(fileExtension));
             }
 
-            const script = this.scriptService.getDefaultScript(`${scriptDirectory.directory._id}.${fileName}`, engineType);
-            const fileUri = Uri.joinPath(scriptDirectory.directory.absoluteUri, `${fileName}${fileExtension}`);
+            const script = this.scriptService.getDefaultScript(`${directory._id}.${fileName}`, engineType);
+            const fileUri = Uri.joinPath(directory.absoluteUri, `${fileName}${fileExtension}`);
 
             if(!await this.shouldFileReallyBeCreated(script, fileUri)) {
                 return;

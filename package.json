@@ -141,6 +141,18 @@
 				"enablement": "view == iobroker-javascript.script-explorer"
 			},
 			{
+				"command": "iobroker-javascript.view.scriptExplorer.createDirectoryInRoot",
+				"title": "Create directory in root",
+				"enablement": "view == iobroker-javascript.script-explorer",
+				"icon": "$(file-directory-create)"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.createScriptFile",
+				"title": "Create script in root",
+				"enablement": "view == iobroker-javascript.script-explorer",
+				"icon": "$(new-file)"
+			},
+			{
 				"command": "iobroker-javascript.view.scriptExplorer.createTypeScriptFile",
 				"title": "Create TypeScript file",
 				"enablement": "view == iobroker-javascript.script-explorer"
@@ -161,6 +173,16 @@
 			"view/title": [
 				{
 					"command": "iobroker-javascript.view.scriptExplorer.refresh",
+					"when": "view == iobroker-javascript.script-explorer",
+					"group": "navigation"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.createDirectoryInRoot",
+					"when": "view == iobroker-javascript.script-explorer",
+					"group": "navigation"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.createScriptFile",
 					"when": "view == iobroker-javascript.script-explorer",
 					"group": "navigation"
 				},

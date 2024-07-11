@@ -72,6 +72,9 @@ the server as stoped scripts.
 Scripts can be deleted on your ioBroker server via the script explorer. Right click on a script, select `Delete` and confirm that the script shall be really be deleted. If the script is synced to
 your local disk, it will also be deleted there.
 
+### Delete directories recursively
+Directories can be deleted on your ioBroker server via the script explorer. Right click on a directory and select `Delete` and confirm that the directory and ALL of its content shall be deleted. If the directory is synced to your disk it will be deleted with all of its content.
+
 ### Change JS Instance
 The JS Instance for a script can be changed over the script explorer. Right click on a script and select `Change instance` via a quick pick.
 
