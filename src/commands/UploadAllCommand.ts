@@ -37,7 +37,7 @@ export class UploadAllCommand implements ICommand {
         }
 
         if (unsuccessfulUploads.length === 0) {
-            window.setStatusBarMessage(`ioBroker: Finished uploading all ${changedScripts.length} scripts`, CONSTANTS.StatusBarMessageTime);
+            window.setStatusBarMessage(`ioBroker: Finished uploading all ${changedScripts.length} scripts`, CONSTANTS.statusBarMessageTime);
         }
         else {
             window.showErrorMessage(`ioBroker: Upload of script(s) ${unsuccessfulUploads.map(s => `'${s.ioBrokerScript.common.name}', `)} was not successful`);

@@ -103,7 +103,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     async delete(scriptId: ScriptId): Promise<void> {
-        return this.connectionServiceProvider.getConnectionService().deleteObject(scriptId);
+        return await this.connectionServiceProvider.getConnectionService().deleteObject(scriptId);
     }
 
     onConnected(): void {

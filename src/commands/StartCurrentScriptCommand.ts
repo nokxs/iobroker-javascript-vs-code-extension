@@ -29,7 +29,7 @@ export class StartCurrentScriptCommand implements ICommand {
         if (scriptId && scriptId.length > 0) {
             try {
                 await this.scriptRemoteService.startScript(scriptId);
-                window.setStatusBarMessage(`ioBroker: Started script '${scriptId}' sucessfully`, CONSTANTS.StatusBarMessageTime);
+                window.setStatusBarMessage(`ioBroker: Started script '${scriptId}' sucessfully`, CONSTANTS.statusBarMessageTime);
             } catch (error) {
                 window.showErrorMessage((<Error>error).message);
             }

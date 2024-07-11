@@ -39,9 +39,9 @@ export class UploadCommand implements ICommand {
 
         if (script) {
             await this.scriptRemoteService.uploadScript(script);
-            window.setStatusBarMessage(`ioBroker: Finished uploading script`, CONSTANTS.StatusBarMessageTime);
+            window.setStatusBarMessage(`ioBroker: Finished uploading script`, CONSTANTS.statusBarMessageTime);
         } else {
-            window.setStatusBarMessage(`ioBroker: Couldn't upload script`, CONSTANTS.StatusBarMessageTime);
+            window.setStatusBarMessage(`ioBroker: Couldn't upload script`, CONSTANTS.statusBarMessageTime);
         }
     }
 

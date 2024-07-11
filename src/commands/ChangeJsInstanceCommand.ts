@@ -25,7 +25,7 @@ export class ChangeJsInstanceCommand implements ICommand {
             const instanceToUse = await window.showQuickPick(instances.map(instance => instance._id), {placeHolder: "Select the JS Instance to use"});
             if (instanceToUse) {
                 await this.jsInstanceService.changeInstance(script._id, {_id: instanceToUse});
-                await window.setStatusBarMessage(`The js instance was successfuly set to '${instanceToUse}'`, Constants.StatusBarMessageTime);
+                await window.setStatusBarMessage(`The js instance was successfuly set to '${instanceToUse}'`, Constants.statusBarMessageTime);
             }            
         } else {
             window.showInformationMessage("This command can only be invoked over the script explorer!");
