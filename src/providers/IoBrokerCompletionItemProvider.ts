@@ -39,9 +39,12 @@ export class IoBrokerCompletionItemProvider implements IIobrokerCompletionItemPr
             const parts = id.split(".");
             const name = <any>(obj?.common.name);
             const isState = obj?.type === "state";
+            const statePart = parts[parts.length - 1];
 
             items.push({
-                label: parts[parts.length - 1],
+                label: statePart + " (TEST)",
+                insertText: statePart,
+                documentation: "**This is a test**",
                 detail: name?.en ?? name ?? undefined,
                 commitCharacters: ["."],
                 kind: isState ? CompletionItemKind.Variable : CompletionItemKind.Folder
