@@ -1,5 +1,5 @@
 import { inject, injectable } from "inversify";
-import { CancellationToken, CompletionItem, CompletionItemKind, MarkdownString, Position, TextDocument } from "vscode";
+import { CancellationToken, CompletionItem, CompletionItemKind, MarkdownString, Position, Range, TextDocument } from "vscode";
 import { IObjectList } from "../models/IObjectList";
 import { IObjectRepositoryService } from "../services/StateRepository/IObjectRepositoryService";
 import TYPES from "../Types";
@@ -16,23 +16,24 @@ export class IoBrokerCompletionItemProvider implements IIobrokerCompletionItemPr
         document: TextDocument,
         position: Position,
         token: CancellationToken): Promise<CompletionItem[] | undefined> {
-        const wordRange = document.getWordRangeAtPosition(position, /["'`].*?["'`]/);
+        const wordRange = document.getWordRangeAtPosition(position, /["'`].*["'`]/);
         if (wordRange) {
             // slice removes first and last char
-            const text = document.getText(wordRange).slice(1, -1);
+            const text = document.getText(wordRange).slice(1, position.character - wordRange.start.character);
             const matchingObjects = this.objectRepositoryService.findMatchingObjects(text);
 
             if (token.isCancellationRequested) {
                 return undefined;
             }
 
-            return this.createCompletionList(matchingObjects);
+            const currentWordStartPostion = document.getWordRangeAtPosition(position)?.start;
+            return this.createCompletionList(matchingObjects, wordRange, currentWordStartPostion ?? position);
         }
 
         return undefined;
     }
 
-    private createCompletionList(matchingObjects: IObjectList | undefined) {
+    private createCompletionList(matchingObjects: IObjectList | undefined, wordRange: Range, pos: Position) {
         const items: CompletionItem[] = [];
         
         for (const id in matchingObjects) {
@@ -49,6 +50,7 @@ export class IoBrokerCompletionItemProvider implements IIobrokerCompletionItemPr
                     description: nameExpanded
                 },
                 insertText: statePart,
+                range: new Range(pos, new Position(wordRange.end.line, wordRange.end.character - 1)),
                 filterText: statePart + nameExpanded,
                 documentation: this.getDocumentation(<IObject>obj),
                 commitCharacters: ["."],
