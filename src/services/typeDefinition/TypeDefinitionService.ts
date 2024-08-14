@@ -30,6 +30,12 @@ interface MinimalTsConfig {
 @injectable()
 export class TypeDefinitionService implements ITypeDefinitionService {
     
+    private globalTypeDefinitionFile: string = `export {};
+
+declare global {
+    function require(library: string): any;
+}`;
+
     // https://github.com/ioBroker/create-adapter/blob/master/test/baselines/adapter_JS_ESLint_TypeChecking_Spaces_SingleQuotes_Apache-2.0/tsconfig.json
     private tsconfig: MinimalTsConfig = {
         "compileOnSave": true,
@@ -52,7 +58,8 @@ export class TypeDefinitionService implements ITypeDefinitionService {
         "include": [
             "**/*.js",
             "**/*.ts",
-            ".iobroker/types/javascript.d.ts"
+            ".iobroker/types/javascript.d.ts",
+            ".iobroker/types/global.d.ts"
         ],
         "exclude": [
             "node_modules/**"
@@ -81,11 +88,21 @@ export class TypeDefinitionService implements ITypeDefinitionService {
         await this.createTsConfig(workspaceFolder);
     }
 
+    async createGlobalTypeDefinitions(): Promise<void> {
+        const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
+        await this.createGlobalTypeDefinitionFile(workspaceFolder);
+    }
+
     private async createTsConfig(workspaceFolder: WorkspaceFolder): Promise<void> {
         const uri = Uri.joinPath(workspaceFolder.uri, "tsconfig.json");
         const tsConfig = await this.getTsConfig(uri);
                
         await this.fileService.saveToFile(uri, JSON.stringify(tsConfig, null, 2));
+    }
+
+    private async createGlobalTypeDefinitionFile(workspaceFolder: WorkspaceFolder): Promise<void> {
+        const uri = Uri.joinPath(workspaceFolder.uri, ".iobroker/types/global.d.ts");
+        await this.fileService.saveToFile(uri, this.globalTypeDefinitionFile);
     }
 
     private async getTsConfig(uri: Uri): Promise<MinimalTsConfig> {
