@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 
 import { DownloadCommand, DownloadCommandProxy } from './commands/DownloadCommand';
+import { UploadCommand, UploadCommandProxy } from './commands/UploadCommand';
 
 import { AdminVersionDetector } from './services/adminVersionDetector/AdminVersionDetector';
 import { AutoUploadService } from './services/autoUpload/AutoUploadService';
@@ -90,7 +91,6 @@ import TYPES from './Types';
 import { TypeDefinitionService } from './services/typeDefinition/TypeDefinitionService';
 import { UpdateTypeDefinitionCommand } from './commands/UpdateTypeDefinitionCommand';
 import { UploadAllCommand } from './commands/UploadAllCommand';
-import { UploadCommand } from './commands/UploadCommand';
 import { WindowMessageService } from './services/windowMessage/WindowMessageService';
 import { WorkspaceService } from './services/workspace/WorkspaceService';
 
@@ -138,6 +138,7 @@ container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
 container.bind<ICommand>(TYPES.command).to(DownloadCommand);
 container.bind<ICommand>(TYPES.command).to(DownloadCommandProxy);
 container.bind<ICommand>(TYPES.command).to(UploadCommand);
+container.bind<ICommand>(TYPES.command).to(UploadCommandProxy);
 container.bind<ICommand>(TYPES.command).to(UploadAllCommand);
 container.bind<ICommand>(TYPES.command).to(StartCurrentScriptCommand);
 container.bind<ICommand>(TYPES.command).to(StopCurrentScriptCommand);

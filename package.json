@@ -136,6 +136,11 @@
 				"enablement": "view == iobroker-javascript.script-explorer"
 			},
 			{
+				"command": "iobroker-javascript.view.scriptExplorer.uploadScript",
+				"title": "Upload",
+				"enablement": "view == iobroker-javascript.script-explorer"
+			},
+			{
 				"command": "iobroker-javascript.view.scriptExplorer.deleteDirectory",
 				"title": "Delete",
 				"enablement": "view == iobroker-javascript.script-explorer"
@@ -233,6 +238,10 @@
 					"command": "iobroker-javascript.upload",
 					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem || viewItem == onlyLocalScriptItem",
 					"group": "inline@4"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.uploadScript",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem || viewItem == onlyLocalScriptItem"
 				},
 				{
 					"command": "iobroker-javascript.view.changed-scripts.showLocalToServerDiff",
