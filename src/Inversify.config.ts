@@ -1,5 +1,8 @@
 import 'reflect-metadata';
 
+import { DownloadCommand, DownloadCommandProxy } from './commands/DownloadCommand';
+import { UploadCommand, UploadCommandProxy } from './commands/UploadCommand';
+
 import { AdminVersionDetector } from './services/adminVersionDetector/AdminVersionDetector';
 import { AutoUploadService } from './services/autoUpload/AutoUploadService';
 import { ChangeJsInstanceCommand } from './commands/ChangeJsInstanceCommand';
@@ -13,14 +16,15 @@ import { ConnectionServiceAdmin5 } from './services/connection/ConnectionService
 import { ConnectionServiceProvider } from './services/connectionServiceProvider/ConnectionServiceProvider';
 import { Container } from 'inversify';
 import { CreateDirectoryCommand } from './commands/CreateDirectoryCommand';
+import { CreateDirectoryInRootCommand } from './commands/CreateDirectoryInRootCommand';
 import { CreateJavaScriptFileCommand } from './commands/CreateJavaScriptFileCommand';
+import { CreateScriptFileCommand } from './commands/CreateScriptFileCommand';
 import { CreateTypeScriptFileCommandy } from './commands/CreateTypeScriptFileCommandy';
 import { DebugLogService } from './services/debugLogService/DebugLogService';
 import { DeleteDirectoryCommand } from './commands/DeleteDirectoryCommand';
 import { DeleteScriptCommand } from './commands/DeleteScriptCommand';
 import { DirectoryService } from './services/directory/DirectorytService';
 import { DownloadAllCommand } from './commands/DownloadAllCommand';
-import { DownloadCommand } from './commands/DownloadCommand';
 import { FileService } from './services/file/FileService';
 import { IAdminVersionDetector } from './services/adminVersionDetector/IAdminVersionDetector';
 import { IAutoUploadService } from './services/autoUpload/IAutoUploadService';
@@ -87,11 +91,8 @@ import TYPES from './Types';
 import { TypeDefinitionService } from './services/typeDefinition/TypeDefinitionService';
 import { UpdateTypeDefinitionCommand } from './commands/UpdateTypeDefinitionCommand';
 import { UploadAllCommand } from './commands/UploadAllCommand';
-import { UploadCommand } from './commands/UploadCommand';
 import { WindowMessageService } from './services/windowMessage/WindowMessageService';
 import { WorkspaceService } from './services/workspace/WorkspaceService';
-import { CreateScriptFileCommand } from './commands/CreateScriptFileCommand';
-import { CreateDirectoryInRootCommand } from './commands/CreateDirectoryInRootCommand';
 
 const container = new Container();
 
@@ -135,7 +136,9 @@ container.bind(TYPES.services.connectionAdmin5).to(ConnectionServiceAdmin5).inSi
 container.bind<ICommand>(TYPES.command).to(StartStopCollectingDebugLog);
 container.bind<ICommand>(TYPES.command).to(DownloadAllCommand);
 container.bind<ICommand>(TYPES.command).to(DownloadCommand);
+container.bind<ICommand>(TYPES.command).to(DownloadCommandProxy);
 container.bind<ICommand>(TYPES.command).to(UploadCommand);
+container.bind<ICommand>(TYPES.command).to(UploadCommandProxy);
 container.bind<ICommand>(TYPES.command).to(UploadAllCommand);
 container.bind<ICommand>(TYPES.command).to(StartCurrentScriptCommand);
 container.bind<ICommand>(TYPES.command).to(StopCurrentScriptCommand);

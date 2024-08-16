@@ -131,6 +131,16 @@
 				"enablement": "view == iobroker-javascript.script-explorer"
 			},
 			{
+				"command": "iobroker-javascript.view.scriptExplorer.downloadScript",
+				"title": "Download",
+				"enablement": "view == iobroker-javascript.script-explorer"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.uploadScript",
+				"title": "Upload",
+				"enablement": "view == iobroker-javascript.script-explorer"
+			},
+			{
 				"command": "iobroker-javascript.view.scriptExplorer.deleteDirectory",
 				"title": "Delete",
 				"enablement": "view == iobroker-javascript.script-explorer"
@@ -221,9 +231,17 @@
 					"group": "inline@3"
 				},
 				{
+					"command": "iobroker-javascript.view.scriptExplorer.downloadScript",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem || viewItem == onlyRemoteScriptItem"
+				},
+				{
 					"command": "iobroker-javascript.upload",
 					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem || viewItem == onlyLocalScriptItem",
 					"group": "inline@4"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.uploadScript",
+					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptItem || viewItem == onlyLocalScriptItem"
 				},
 				{
 					"command": "iobroker-javascript.view.changed-scripts.showLocalToServerDiff",
@@ -239,11 +257,6 @@
 					"command": "iobroker-javascript.stopScript",
 					"when": "view == iobroker-javascript.changed-scripts && viewItem == scriptItem",
 					"group": "inline@2"
-				},
-				{
-					"command": "iobroker-javascript.download",
-					"when": "view == iobroker-javascript.changed-scripts && viewItem == scriptItem",
-					"group": "inline@3"
 				},
 				{
 					"command": "iobroker-javascript.upload",
