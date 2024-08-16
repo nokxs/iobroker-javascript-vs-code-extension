@@ -13,7 +13,7 @@ export class IoBrokerHoverProvider implements IIobrokerHoverProvider {
     ) { }
 
     async provideHover(document: TextDocument, position: Position, token: CancellationToken): Promise<Hover | undefined> {
-        const wordRange = document.getWordRangeAtPosition(position, /["'`].*?\.[0-9]\..*?["'`]/);
+        const wordRange = document.getWordRangeAtPosition(position, /["'`].*?["'`]/);
         if (wordRange) {
             // slice removes first and last char
             const id = document.getText(wordRange).slice(1, -1);
