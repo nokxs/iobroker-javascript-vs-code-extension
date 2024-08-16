@@ -10,6 +10,25 @@ import { ILocalScript } from "../models/ILocalScript";
 import { IIobrokerConnectionService } from "../services/iobrokerConnection/IIobrokerConnectionService";
 
 @injectable()
+export class DownloadCommandProxy implements ICommand {
+    id: string = "iobroker-javascript.view.scriptExplorer.downloadScript";
+    downloadCommand: DownloadCommand;
+
+    constructor(
+        @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
+        @inject(TYPES.services.script) private scriptService: IScriptService,
+        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService
+    ) {
+        this.downloadCommand = new DownloadCommand(iobrokerConnectionService, scriptService, scriptRepositoryService);
+    }
+    
+    
+    async execute(...args: any[]) {
+        this.downloadCommand.execute(...args);
+    }
+}
+
+@injectable()
 export class DownloadCommand implements ICommand {
     id: string = "iobroker-javascript.download";
 
