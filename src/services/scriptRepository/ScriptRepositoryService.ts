@@ -56,6 +56,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
                 absoluteUri: this.getAbsoluteDirectoryUri(dir, ioBrokerDirectories)
             };
         });
+
         this.directories = unsortedDirectories.sort((dir1, dir2) => this.compareIds(dir1._id, dir2._id));
 
         const ioBrokerScripts = await this.scriptRemoteService.downloadAllScripts();
@@ -146,11 +147,15 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     getRootLevelScript(): ILocalScript[] {
-        return this.getScriptsIn(new RootDirectory(this.workspaceService, this.configRepositoryService));
+        return this.getScriptsIn(this.getRootDirectory());
     }
 
     getRootLevelDirectories(): IDirectory[] {
-        return this.getDirectoriesIn(new RootDirectory(this.workspaceService, this.configRepositoryService));
+        return this.getDirectoriesIn(this.getRootDirectory());
+    }
+
+    getRootDirectory(): IDirectory {
+        return new RootDirectory(this.workspaceService, this.configRepositoryService);
     }
 
     getScriptsIn(directory: IDirectory): ILocalScript[] {

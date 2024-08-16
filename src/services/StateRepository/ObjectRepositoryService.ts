@@ -55,6 +55,24 @@ export class ObjectRepositoryService implements IObjectRepositoryService, IObjec
         return undefined;
     }
 
+    getObjectById(id: string): IObject | undefined {
+        const idParts = id.split(".");
+        let currentObjectDictionary: ObjectRepositoryDictionary = this.allObjects;
+        let foundItem = undefined;
+        for (const idPart of idParts) {
+            foundItem = currentObjectDictionary[idPart];
+
+            if (foundItem?.children) {                
+                currentObjectDictionary = foundItem.children;
+            }
+            else {
+                return undefined;
+            }
+        }
+
+        return foundItem?.item;
+    }
+
     onObjectChanged(id: string | undefined, value: IObject | undefined): void {
         if(!id) {
             return;

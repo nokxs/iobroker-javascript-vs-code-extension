@@ -38,7 +38,7 @@ export class AutoUploadService implements IAutoUploadService {
             
             if (script) {
                 await this.scriptRemoteService.uploadScript(script);
-                window.setStatusBarMessage(`ioBroker: Auto uploaded script ${document.fileName}`, CONSTANTS.StatusBarMessageTime);
+                window.setStatusBarMessage(`ioBroker: Auto uploaded script ${document.fileName}`, CONSTANTS.statusBarMessageTime);
             }
         });
     }

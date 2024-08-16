@@ -13,6 +13,29 @@ import { OnlyLocalScriptItem } from "../views/scriptExplorer/OnlyLocalScriptItem
 import { IFileService } from "../services/file/IFileService";
 import { IScriptRepositoryService } from "../services/scriptRepository/IScriptRepositoryService";
 
+
+@injectable()
+export class UploadCommandProxy implements ICommand {
+    id = "iobroker-javascript.view.scriptExplorer.uploadScript";
+    
+    private uploadCommand: UploadCommand;
+
+    constructor(
+        @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
+        @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
+        @inject(TYPES.services.script) private scriptService: IScriptService,
+        @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
+        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
+        @inject(TYPES.services.file) private fileService: IFileService
+    ) {
+        this.uploadCommand = new UploadCommand(iobrokerConnectionService, scriptRemoteService, scriptService, scriptIdService, scriptRepositoryService, fileService);
+    }
+
+    execute(...args: any[]) {
+        this.uploadCommand.execute(...args);
+    }
+}
+
 @injectable()
 export class UploadCommand implements ICommand {
     public static get id(): string {
@@ -39,9 +62,9 @@ export class UploadCommand implements ICommand {
 
         if (script) {
             await this.scriptRemoteService.uploadScript(script);
-            window.setStatusBarMessage(`ioBroker: Finished uploading script`, CONSTANTS.StatusBarMessageTime);
+            window.setStatusBarMessage(`ioBroker: Finished uploading script`, CONSTANTS.statusBarMessageTime);
         } else {
-            window.setStatusBarMessage(`ioBroker: Couldn't upload script`, CONSTANTS.StatusBarMessageTime);
+            window.setStatusBarMessage(`ioBroker: Couldn't upload script`, CONSTANTS.statusBarMessageTime);
         }
     }
 

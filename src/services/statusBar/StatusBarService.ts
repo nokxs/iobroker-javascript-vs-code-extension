@@ -26,7 +26,7 @@ export class StatusBarService implements IStatusBarService {
     }
 
     setStatusBarMessage(text: string): void {
-        window.setStatusBarMessage(text, CONSTANTS.StatusBarMessageTime);
+        window.setStatusBarMessage(text, CONSTANTS.statusBarMessageTime);
         this.debugLogService.log(text, "StatusBarMessage");
     }
 }

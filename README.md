@@ -72,6 +72,9 @@ the server as stoped scripts.
 Scripts can be deleted on your ioBroker server via the script explorer. Right click on a script, select `Delete` and confirm that the script shall be really be deleted. If the script is synced to
 your local disk, it will also be deleted there.
 
+### Delete directories recursively
+Directories can be deleted on your ioBroker server via the script explorer. Right click on a directory and select `Delete` and confirm that the directory and ALL of its content shall be deleted. If the directory is synced to your disk it will be deleted with all of its content.
+
 ### Change JS Instance
 The JS Instance for a script can be changed over the script explorer. Right click on a script and select `Change instance` via a quick pick.
 
@@ -121,7 +124,7 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 | `ioBrokerUrl` | The url has to be prefixed with http/https. Specify no port here. | Yes |  |
 | `socketIoPort` | Use the port of the admin adapter (usually 8081). Do not use the port of the socket.io Adapter (usually 8084) as this will not work, because of missing permissions. | Yes | |
 | `scriptRoot` | Relative directory path, which is used as root of ioBroker scripts. | Yes | |
-| `adminVersion` | The admin version to connect to. Valid values: `Admin4`, `Admin5`, `Admin6` | Yes | |
+| `adminVersion` | The admin version to connect to. Valid values: `Admin4`, `Admin5`, `Admin6`, `Admin7` | Yes | |
 | `autoReconnect` | Should a lost connection be automatically be restored? | No | true |
 | `allowSelfSignedCertificate` | Is it allowed to connect to a self signed certificate? | No | false |
 | `username` | The user name for ioBroker. Only necessary for password protected ioBroker installations | No | |
@@ -136,6 +139,7 @@ The extension currently supports the following Admin versions:
 - Admin4 (**Deprecated** Some features like password protected installations are not supported)
 - Admin5
 - Admin6
+- Admin7
 
 ## Known Issues
 

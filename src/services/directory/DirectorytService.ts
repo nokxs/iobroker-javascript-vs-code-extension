@@ -5,6 +5,7 @@ import { IDirectoryService } from "./IDirectoryService";
 import { IDirectory } from "../../models/IDirectory";
 import { ScriptId } from "../../models/ScriptId";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
+import CONSTANTS from "../../Constants";
 
 @injectable()
 export class DirectoryService implements IDirectoryService {
@@ -12,12 +13,22 @@ export class DirectoryService implements IDirectoryService {
         @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
     ) {}
 
-    downloadDirectory(id: ScriptId): Promise<IDirectory> {
-        return this.connectionServiceProvider.getConnectionService().getObject(id);
+    async downloadDirectory(id: ScriptId): Promise<IDirectory> {
+        const directory = await this.connectionServiceProvider.getConnectionService().getObject<IDirectory>(id);
+
+        this.fixDirectoryName(directory, CONSTANTS.skriptIds.common, "common");
+        this.fixDirectoryName(directory, CONSTANTS.skriptIds.global, "global");
+
+        return directory;
     }
         
-    downloadAllDirectories(): Promise<IDirectory[]> {
-        return this.connectionServiceProvider.getConnectionService().getSystemObjectView<IDirectory>("channel", "script.js.", "script.js.");
+    async downloadAllDirectories(): Promise<IDirectory[]> {
+        const directories = await this.connectionServiceProvider.getConnectionService().getSystemObjectView<IDirectory>("channel", "script.js.", "script.js.");    
+        
+        this.fixDirectoriesName(directories, CONSTANTS.skriptIds.common, "common");
+        this.fixDirectoriesName(directories, CONSTANTS.skriptIds.global, "global");
+
+        return directories;
     }
 
     createDirectory(id: ScriptId, name: string): Promise<void> {
@@ -49,6 +60,21 @@ export class DirectoryService implements IDirectoryService {
             if (!directory) {
                 await this.createDirectory(directoryId, parts[i - 1]);
             }
+        }
+    }
+
+    private fixDirectoriesName(directories: IDirectory[], id: string, newName: string){
+        const commonDirectory = directories.find(dir => dir._id === id);
+        this.fixDirectoryName(commonDirectory, id, newName);
+    }
+
+    private fixDirectoryName(directory: IDirectory | undefined, id: string, newName: string) {
+        if (directory?._id !== id) {
+            return;
+        }
+
+        if(directory?.common?.name) {
+            directory.common.name = newName;
         }
     }
 }

@@ -19,5 +19,6 @@ export class UpdateTypeDefinitionCommand implements ICommand {
         }
         await this.typeDefinitionService.downloadFromGithubAndSave();
         await this.typeDefinitionService.createConfig();
+        await this.typeDefinitionService.createGlobalTypeDefinitions();
     }
 }

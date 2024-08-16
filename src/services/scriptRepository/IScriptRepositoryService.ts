@@ -27,6 +27,7 @@ export interface IScriptRepositoryService {
 
     getRootLevelScript(): ILocalScript[]
     getRootLevelDirectories(): IDirectory[]
+    getRootDirectory(): IDirectory
 
     getScriptsIn(directory: IDirectory): ILocalScript[]
     getDirectoriesIn(directory: IDirectory): IDirectory[]

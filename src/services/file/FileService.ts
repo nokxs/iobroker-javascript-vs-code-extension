@@ -22,6 +22,10 @@ export class FileService implements IFileService {
         return fs.existsSync(uri.fsPath);
     }
 
+    directoryExists(uri: Uri): boolean {
+        return fs.existsSync(uri.fsPath);
+    }
+
     rename(oldFile: Uri, newFile: Uri): Promise<void> {
         return new Promise((resolve, reject) => {
             fs.rename(oldFile.fsPath, newFile.fsPath, (err) => {
@@ -37,6 +41,14 @@ export class FileService implements IFileService {
     delete(uri: Uri): Promise<void> {
         return new Promise((resolve) => {
             fs.unlink(uri.fsPath, () => {
+                resolve();
+            });
+        });
+    }
+
+    deleteDirectory(uri: Uri): Promise<void> {
+        return new Promise((resolve) => {
+            fs.rmdir(uri.fsPath, { recursive: true }, () => {
                 resolve();
             });
         });
