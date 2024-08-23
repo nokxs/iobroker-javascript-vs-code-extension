@@ -5,7 +5,6 @@ import { IObjectRepositoryService } from "../services/StateRepository/IObjectRep
 import TYPES from "../Types";
 import { IIobrokerCompletionItemProvider } from "./IIobrokerCompletionItemProvider";
 import { IObject } from "../models/IObject";
-import { log } from "console";
 
 @injectable()
 export class IoBrokerCompletionItemProvider implements IIobrokerCompletionItemProvider {
