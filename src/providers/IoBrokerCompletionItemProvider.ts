@@ -5,6 +5,7 @@ import { IObjectRepositoryService } from "../services/StateRepository/IObjectRep
 import TYPES from "../Types";
 import { IIobrokerCompletionItemProvider } from "./IIobrokerCompletionItemProvider";
 import { IObject } from "../models/IObject";
+import { log } from "console";
 
 @injectable()
 export class IoBrokerCompletionItemProvider implements IIobrokerCompletionItemProvider {
@@ -26,7 +27,7 @@ export class IoBrokerCompletionItemProvider implements IIobrokerCompletionItemPr
                 return undefined;
             }
 
-            const currentWordStartPostion = document.getWordRangeAtPosition(position)?.start;
+            const currentWordStartPostion = document.getWordRangeAtPosition(position, /[a-zA-Z0-9$@\-_]+/)?.start;
             return this.createCompletionList(matchingObjects, wordRange, currentWordStartPostion ?? position);
         }
 
