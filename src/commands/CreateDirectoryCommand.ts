@@ -54,6 +54,6 @@ export class CreateDirectoryCommand implements ICommand {
     }
 
     private getScriptDirectory(args: any[]): ScriptDirectory {
-        return <ScriptDirectory>args[0] ?? args[0][0];
+        return args[0] as ScriptDirectory ?? args[0][0] as ScriptDirectory;
     }
 }
