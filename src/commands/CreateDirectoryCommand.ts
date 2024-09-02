@@ -21,7 +21,7 @@ export class CreateDirectoryCommand implements ICommand {
     
     async execute(...args: any[]) {
         if (args) {
-            const parentDirectory = await this.getParentDirectoryName(...args);
+            const parentDirectory = await this.getParentDirectoryName(args);
             if (!parentDirectory) {
                 return;
             }
@@ -41,7 +41,7 @@ export class CreateDirectoryCommand implements ICommand {
         }
     }
 
-    private async getParentDirectoryName(...args: any[]) : Promise<string | undefined> {
+    private async getParentDirectoryName(args: any[]) : Promise<string | undefined> {
         if (!args[0]) {
               return "root";  
         }
@@ -50,7 +50,7 @@ export class CreateDirectoryCommand implements ICommand {
         return await window.showQuickPick([scriptDirectory.directory.common.name ?? "Current directory", "root"], {placeHolder: "Create directory as child of..."});
     }
 
-    private getScriptDirectory(...args: any[]): ScriptDirectory {
+    private getScriptDirectory(args: any[]): ScriptDirectory {
         return <ScriptDirectory>args[0] ?? <ScriptDirectory>args[0][0];
     }
 }
