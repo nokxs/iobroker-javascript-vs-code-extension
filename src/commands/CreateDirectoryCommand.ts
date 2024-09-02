@@ -31,11 +31,14 @@ export class CreateDirectoryCommand implements ICommand {
                 return;
             }
             
-            const scriptDirectory = this.getScriptDirectory(args);
-            const parentDirectoryId = parentDirectory === "root" ? "script.js" : scriptDirectory.directory._id;
-            this.directoryService.createDirectory(`${parentDirectoryId}.${directoryName}`, directoryName);
+            const parentDirectoryId = parentDirectory === "root" ? 
+                                        "script.js" : 
+                                        this.getScriptDirectory(args).directory._id;
+            await this.directoryService.createDirectory(`${parentDirectoryId}.${directoryName}`, directoryName);
 
-            const parentDirectoryPath = parentDirectory === "root" ? Uri.joinPath(this.workspaceService.workspaceToUse.uri, this.configRepositoryService.config.scriptRoot) : scriptDirectory.directory.absoluteUri;
+            const parentDirectoryPath = parentDirectory === "root" ? 
+                                            Uri.joinPath(this.workspaceService.workspaceToUse.uri, this.configRepositoryService.config.scriptRoot) : 
+                                            this.getScriptDirectory(args).directory.absoluteUri;
             const directoryUri = Uri.joinPath(parentDirectoryPath, `${directoryName}`);
             await this.fileService.createDirectory(directoryUri);
         }
@@ -51,6 +54,6 @@ export class CreateDirectoryCommand implements ICommand {
     }
 
     private getScriptDirectory(args: any[]): ScriptDirectory {
-        return <ScriptDirectory>args[0] ?? <ScriptDirectory>args[0][0];
+        return <ScriptDirectory>args[0] ?? args[0][0];
     }
 }
