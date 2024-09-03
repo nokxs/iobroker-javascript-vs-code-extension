@@ -2,7 +2,7 @@ import { IStartup } from "./IStartup";
 import { inject, injectable } from "inversify";
 import TYPES from "./Types";
 import { ICommandService } from "./services/command/ICommandService";
-import { ExtensionContext, languages, window } from "vscode";
+import { CodeActionKind, ExtensionContext, languages, window } from "vscode";
 import { ScriptExplorerProvider } from "./views/scriptExplorer/ScriptExplorerProvider";
 import { IIobrokerConnectionService } from "./services/iobrokerConnection/IIobrokerConnectionService";
 import { IWorkspaceService } from "./services/workspace/IWorkspaceService";
@@ -11,6 +11,7 @@ import { IConfigRepositoryService } from "./services/configRepository/IConfigRep
 import { IDebugLogService } from "./services/debugLogService/IDebugLogService";
 import { IIobrokerHoverProvider } from "./providers/IIobrokerHoverProvider";
 import { IIobrokerCompletionItemProvider } from "./providers/IIobrokerCompletionItemProvider";
+import { IIobrokerCodeActionItemProvider } from "./providers/IIoBrokerCodeActionsProvider";
 
 @injectable()
 export class Startup implements IStartup {
@@ -23,7 +24,8 @@ export class Startup implements IStartup {
         @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
         @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,
         @inject(TYPES.providers.iobrokerHoverProvider) private hoverProvider: IIobrokerHoverProvider,
-        @inject(TYPES.providers.iobrokerCompletionItemProvider) private completionItemProvider: IIobrokerCompletionItemProvider
+        @inject(TYPES.providers.iobrokerCompletionItemProvider) private completionItemProvider: IIobrokerCompletionItemProvider,
+        @inject(TYPES.providers.iobrokerCompletionItemProvider) private codeActionsProvider: IIobrokerCodeActionItemProvider
     ) { }
 
     async init(context: ExtensionContext): Promise<void> {
@@ -49,5 +51,8 @@ export class Startup implements IStartup {
 
         languages.registerCompletionItemProvider({language: "javascript"}, this.completionItemProvider, ".");
         languages.registerCompletionItemProvider({language: "typescript"}, this.completionItemProvider, ".");
+
+        languages.registerCodeActionsProvider({language: "javascript"}, this.codeActionsProvider, { providedCodeActionKinds: [CodeActionKind.RefactorRewrite] });
+        languages.registerCodeActionsProvider({language: "typescript"}, this.codeActionsProvider, { providedCodeActionKinds: [CodeActionKind.RefactorRewrite] });
     }
 }

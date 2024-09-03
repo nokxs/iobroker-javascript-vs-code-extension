@@ -93,6 +93,7 @@ import { UpdateTypeDefinitionCommand } from './commands/UpdateTypeDefinitionComm
 import { UploadAllCommand } from './commands/UploadAllCommand';
 import { WindowMessageService } from './services/windowMessage/WindowMessageService';
 import { WorkspaceService } from './services/workspace/WorkspaceService';
+import { IobrokerCodeActionItemProvider } from './providers/IoBrokerCodeActionsProvider';
 
 const container = new Container();
 
@@ -129,6 +130,7 @@ container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(Ad
 
 container.bind<IIobrokerHoverProvider>(TYPES.providers.iobrokerHoverProvider).to(IoBrokerHoverProvider).inSingletonScope();
 container.bind<IIobrokerCompletionItemProvider>(TYPES.providers.iobrokerCompletionItemProvider).to(IoBrokerCompletionItemProvider).inSingletonScope();
+container.bind<IobrokerCodeActionItemProvider>(TYPES.providers.iobrokerCodeActionsItemProvider).to(IobrokerCodeActionItemProvider).inSingletonScope();
 
 container.bind(TYPES.services.connectionAdmin4).to(ConnectionServiceAdmin4).inSingletonScope();
 container.bind(TYPES.services.connectionAdmin5).to(ConnectionServiceAdmin5).inSingletonScope();
