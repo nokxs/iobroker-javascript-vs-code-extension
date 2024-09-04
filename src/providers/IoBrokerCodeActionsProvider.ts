@@ -27,7 +27,7 @@ export class IobrokerCodeActionItemProvider implements IIobrokerCodeActionItemPr
         
         const codeAction = new CodeAction("Add iobroker state name as comment", CodeActionKind.RefactorRewrite);       
         codeAction.edit = new WorkspaceEdit();
-        codeAction.edit.replace(document.uri, new Range(wordRange.end, wordRange.end), ` /** ${name} **/`);
+        codeAction.edit.replace(document.uri, new Range(wordRange.end, wordRange.end), ` /* ${name} */`);
 
         return [codeAction];
     }
