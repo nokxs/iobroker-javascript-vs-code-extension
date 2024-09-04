@@ -38,7 +38,8 @@ const TYPES = {
     },
     providers: {
         iobrokerHoverProvider: Symbol.for("IobrokerHoverProvider"),
-        iobrokerCompletionItemProvider: Symbol.for("IobrokerCompletionItemProvider")
+        iobrokerCompletionItemProvider: Symbol.for("IobrokerCompletionItemProvider"),
+        iobrokerCodeActionsItemProvider: Symbol.for("IobrokerCodeActionsProvider")
     },
     command: Symbol.for("Command"),
     startup: Symbol.for("Startup"),
