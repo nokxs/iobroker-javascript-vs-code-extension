@@ -260,10 +260,6 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         const serverScriptBuffer = Buffer.from(script.common.source ?? "");
         const localScriptBuffer = Buffer.from(await this.scriptService.getFileContentOnDisk(absoluteScriptUri) ?? "");
 
-        if (!serverScriptBuffer.equals(localScriptBuffer)) {
-            console.log("test");
-        }
-
         return !serverScriptBuffer.equals(localScriptBuffer);
     }
 

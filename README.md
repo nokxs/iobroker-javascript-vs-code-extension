@@ -109,6 +109,16 @@ The whole auto completion process in action:
 
 ![State Id auto completion](https://media.githubusercontent.com/media/nokxs/iobroker-javascript-vs-code-extension/main/doc/state-id-auto-completion.gif)
 
+### Add name of ioBroker object/state id as comment
+
+Sometimes it is hard to remember the meaning of a generic ioBroker object/state id. To make this easier
+the name of an id can be added as comment via code action.
+
+Put your cursor within a valid id and open the code actions menu (click on the light bulb or press <kbd>Strg</kbd>+<kbd>.</kbd>) and select `Add iobroker state name as comment`. The entry will only appear if the state id is valid.
+
+![State name code action](https://media.githubusercontent.com/media/nokxs/iobroker-javascript-vs-code-extension/main/doc/iobroker-state-id-name-code-action.jpg)
+
+
 ## Extension Settings
 
 After the first activation a `.iobroker-config.json` file is created in the root directory of your workspace. It contains all settings.

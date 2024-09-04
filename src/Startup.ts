@@ -25,7 +25,7 @@ export class Startup implements IStartup {
         @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,
         @inject(TYPES.providers.iobrokerHoverProvider) private hoverProvider: IIobrokerHoverProvider,
         @inject(TYPES.providers.iobrokerCompletionItemProvider) private completionItemProvider: IIobrokerCompletionItemProvider,
-        @inject(TYPES.providers.iobrokerCompletionItemProvider) private codeActionsProvider: IIobrokerCodeActionItemProvider
+        @inject(TYPES.providers.iobrokerCodeActionsItemProvider) private codeActionsProvider: IIobrokerCodeActionItemProvider
     ) { }
 
     async init(context: ExtensionContext): Promise<void> {
@@ -52,7 +52,7 @@ export class Startup implements IStartup {
         languages.registerCompletionItemProvider({language: "javascript"}, this.completionItemProvider, ".");
         languages.registerCompletionItemProvider({language: "typescript"}, this.completionItemProvider, ".");
 
-        languages.registerCodeActionsProvider({language: "javascript"}, this.codeActionsProvider, { providedCodeActionKinds: [CodeActionKind.RefactorRewrite] });
-        languages.registerCodeActionsProvider({language: "typescript"}, this.codeActionsProvider, { providedCodeActionKinds: [CodeActionKind.RefactorRewrite] });
+        context.subscriptions.push(languages.registerCodeActionsProvider({language: "javascript"}, this.codeActionsProvider, { providedCodeActionKinds: [CodeActionKind.RefactorRewrite] }));
+        context.subscriptions.push(languages.registerCodeActionsProvider({language: "typescript"}, this.codeActionsProvider, { providedCodeActionKinds: [CodeActionKind.RefactorRewrite] }));
     }
 }
