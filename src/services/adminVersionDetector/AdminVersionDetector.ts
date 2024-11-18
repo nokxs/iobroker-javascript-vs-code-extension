@@ -56,6 +56,7 @@ export class AdminVersionDetector implements IAdminVersionDetector {
     private determineAdminVersion(iobrokerUrl: string, allowSelfSignedCertificate: boolean, accessToken?: string): Promise<AdminVersion> {
         return new Promise<AdminVersion>((resolve) => {
             const timeout = setTimeout(() => {
+                cleanUp();
                 resolve(AdminVersion.unknown);
             }, 5000);
 
