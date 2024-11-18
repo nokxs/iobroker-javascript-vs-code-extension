@@ -18,8 +18,6 @@ If `.iobroker-config.json` is found in the root of your workspace, the extension
 
 If your ioBroker installation is protected via password, the extension will ask for it during the connection attempt. The username is stored in the config file `.iobroker-config.jon` and the password is stored in the VS Code internal secret storage. If the password was changed, the extions will automtically ask for the new one. It might be necessary to restart VS Code in the case supplying the new password fails.
 
-> ⚠ There is currently a problem where connecting is not possible, if the password contains an ampersand (`&`).
-
 ### Type definitions
 
 If you choose to configure ioBroker type definitions, the current defintions are downloaded from [GitHub](https://github.com/ioBroker/ioBroker.javascript/blob/master/lib/javascript.d.ts). Additionaly a `tsconfig.json` is created
