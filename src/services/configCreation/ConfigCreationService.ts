@@ -36,7 +36,7 @@ export class ConfigCreationService implements IConfigCreationService {
             port = portMatch[2]; 
         }
         else {
-            port = await window.showInputBox({prompt: "The port of the socket.io Adapter", value: "8081", ignoreFocusOut: true});
+            port = await window.showInputBox({prompt: "The port of the admin Adapter (Port where ioBroker GUI is reachable)", value: "8081", ignoreFocusOut: true});
         }
         
         if (!port) {
@@ -63,31 +63,42 @@ export class ConfigCreationService implements IConfigCreationService {
         }
 
         const uri = `${ioBrokerUrl}:${port}`;
+        const parsedUri = Uri.parse(uri);
+
+        let username: string | undefined = undefined;
+        let accessToken: string | undefined = undefined;
+        if (await this.loginService.isLoginNecessary(parsedUri, allowSelfSignedCertificate)) {
+            username = await window.showInputBox({prompt: "Login necessary. Enter user name", value: "admin", ignoreFocusOut: true});
+
+            if (!username) {
+                return new NoConfig();
+            }
+
+            accessToken = await this.loginService.getAccessToken(parsedUri, allowSelfSignedCertificate, username);
+
+            if(!accessToken) {
+                return new NoConfig();
+            }
+        }
+
         const statusBarMessage = window.setStatusBarMessage("$(sync~spin) Trying to detect used ioBroker Admin version...");
-        const adminVersion = await this.getAdminVersion(uri, allowSelfSignedCertificate);    
+        const adminVersion = await this.getAdminVersion(uri, allowSelfSignedCertificate, accessToken);    
         statusBarMessage.dispose();
 
         if (adminVersion === AdminVersion.unknown) {
             return new NoConfig();
         }
-
-        let username: string | undefined = undefined;
-        if (adminVersion === AdminVersion.admin5) {
-            if (await this.loginService.isLoginNecessary(Uri.parse(uri), allowSelfSignedCertificate)) {
-                username = await window.showInputBox({prompt: "Login necessary. Enter user name", value: "admin", ignoreFocusOut: true});
-            }
-        }
         
         return new Config(ioBrokerUrl, Number.parseInt(port), scriptPath, adminVersion, undefined, undefined, allowSelfSignedCertificate, username);
     }
 
-    private async getAdminVersion(ioBrokerUrl: string, allowSelfSignedCertificate: boolean): Promise<AdminVersion> {
+    private async getAdminVersion(ioBrokerUrl: string, allowSelfSignedCertificate: boolean, accessToken?: string): Promise<AdminVersion> {
         const admin4 = "Admin 4";
         const admin5 = "Admin 5";
         const admin6 = "Admin 6";
         const admin7 = "Admin 7";
 
-        let adminVersion = await this.adminVersionDetector.getVersion(ioBrokerUrl, allowSelfSignedCertificate);
+        let adminVersion = await this.adminVersionDetector.getVersion(ioBrokerUrl, allowSelfSignedCertificate, accessToken);
         
         if (adminVersion === AdminVersion.unknown) {
             const adminVersionPick = await window.showQuickPick(
