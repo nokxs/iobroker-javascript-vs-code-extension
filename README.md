@@ -33,7 +33,7 @@ Click on script to show its contents. If the script is not downloaded yet, only 
 Every time a script object is changed, the script explorer refreshes its view.
 
 ### View: Changed scripts
-The *Changed scripts* view can be found in the activity bar behind the ioBroker logo. It shows all scripts, where the local version differs from the server version. Only scripts which are already uploaded to the server are shown *(This might change in the future)*.
+The *Changed scripts* view can be found in the activity bar behind the ioBroker logo. It shows all scripts, where the local version differs from the server version. Only scripts which are on local disk and already uploaded to the server are shown *(This might change in the future)*.
 
 The same scripts are also shown in the script explorer marked with a star.
 
@@ -48,6 +48,8 @@ To upload a single script you have the following options:
 
 * Go to the script explorer and press the upload button. This will only work, if the script resides on your disk.
 * Use the command `iobroker: Upload script`. This command uploads the script in the active text editor.
+
+Only scripts residing on local disk can be uploaded. Scripts which are marked as *remote only* in script explorer can be viewed by clicking on it, but changes cannot be uploaded.
 
 ### Start/Stop scripts
 To start/stop a single script you have the following options:
