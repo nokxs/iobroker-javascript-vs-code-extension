@@ -85,7 +85,7 @@ export class LoginService implements ILoginService {
         const newAccessToken = await this.login(baseUri, allowSelfSignedCertificate, username, password);
 
         if (this.loginCredentialService.isValidAccessToken(newAccessToken, serverTime)) {
-            this.loginCredentialService.updateAccessToken(newAccessToken);
+            await this.loginCredentialService.updateAccessToken(newAccessToken);
             return newAccessToken;
         }
 
@@ -106,7 +106,7 @@ export class LoginService implements ILoginService {
 
     private login(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<IAccessToken> {
         return new Promise((resolve, reject) => {
-            const postData = `username=${username}&password=${password}&stayloggedin=on`;
+            const postData = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=on`;
             const options = this.getLoginPostOptions(baseUri, allowSelfSignedCertificate, postData);
             const req = this.createRequest(baseUri, options, resolve, reject);
 
