@@ -5,11 +5,10 @@ import { IScriptChangedEventListener } from '../../services/scriptRemote/IScript
 import { IIobrokerConnectionService } from '../../services/iobrokerConnection/IIobrokerConnectionService';
 import { IScriptRepositoryService } from '../../services/scriptRepository/IScriptRepositoryService';
 import { ILocalScript } from '../../models/ILocalScript';
-import { IWorkspaceService } from '../../services/workspace/IWorkspaceService';
-import { ILocalOnlyScriptRepositoryService } from '../../services/localOnlyScriptRepository/ILocalOnlyScriptRepositoryService';
-import { IConfigRepositoryService } from '../../services/configRepository/IConfigRepositoryService';
 import { ScriptItem } from '../scriptExplorer/ScriptItem';
 import { IChangedScriptsProvider } from './IChangedScriptsProvider';
+import { IConfigRepositoryService } from '../../services/configRepository/IConfigRepositoryService';
+import { IWorkspaceService } from '../../services/workspace/IWorkspaceService';
 
 @injectable()
 export class ChangedScriptsProvider implements vscode.TreeDataProvider<ScriptItem>, IChangedScriptsProvider, IScriptChangedEventListener {
@@ -21,36 +20,51 @@ export class ChangedScriptsProvider implements vscode.TreeDataProvider<ScriptIte
     constructor(
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
         @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
-        @inject(TYPES.services.localOnlyScriptRepository) private localOnlyScriptRepositoryService: ILocalOnlyScriptRepositoryService,
-        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
-        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService
+        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
+        @inject(TYPES.services.workspace) private workSpaceService: IWorkspaceService
     ) {
         scriptRepositoryService.registerScriptChangedEventListener(this);
-        
+
         vscode.workspace.onDidCreateFiles(() => this.refresh());
         vscode.workspace.onDidDeleteFiles(() => this.refresh());
+        vscode.workspace.onDidRenameFiles(() => this.refresh());
+
+        this.workSpaceService.getWorkspacesWithConfig().then(async workspacesWithConfig => {
+            if (workspacesWithConfig.length === 1) {
+                const config = await this.configRepositoryService.read(workspacesWithConfig[0]);
+                const watchPattern = config.scriptRoot === '/' ? 
+                    '**/*.ts' : 
+                    config.scriptRoot + '/**/*.{js,ts}';
+                const watcher = vscode.workspace.createFileSystemWatcher(watchPattern);
+                watcher.onDidChange(async uri => {
+                    const script = scriptRepositoryService.getScriptFromAbsolutUri(uri);
+
+                    if(script) {
+                        await this.scriptRepositoryService.evaluateDirtyState(script);
+                    }
+
+                    this.refresh();
+                });
+            }
+        });
     }
-    
+
     getTreeItem(element: ScriptItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
         return element;
     }
 
-    async getChildren(element?: ScriptItem): Promise<Array<ScriptItem>> {
+    async getChildren(): Promise<Array<ScriptItem>> {
         if (!this.iobrokerConnectionService.isConnected()) {
             return Promise.resolve([]);
         }
 
-        if(!element) {
-            return this.getRootLevelItems();
-        }
-
-        return Promise.resolve([]);
+        return await this.getRootLevelItems();
     }
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
     }
-    
+
     onScriptChanged(): void {
         this.refresh();
     }
@@ -60,10 +74,10 @@ export class ChangedScriptsProvider implements vscode.TreeDataProvider<ScriptIte
     }
 
     private async getRootLevelItems(): Promise<Array<ScriptItem>> {
-        const scripts = this.scriptRepositoryService.getAllChangedScripts();        
+        const scripts = this.scriptRepositoryService.getAllChangedScripts();
         return this.convertToScriptItems(scripts);
     }
-    
+
     private convertToScriptItems(scripts: ILocalScript[]): ScriptItem[] {
         return scripts.map(s => new ScriptItem(s));
     }
