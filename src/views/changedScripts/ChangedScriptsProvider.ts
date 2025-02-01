@@ -24,29 +24,6 @@ export class ChangedScriptsProvider implements vscode.TreeDataProvider<ScriptIte
         @inject(TYPES.services.workspace) private workSpaceService: IWorkspaceService
     ) {
         scriptRepositoryService.registerScriptChangedEventListener(this);
-
-        vscode.workspace.onDidCreateFiles(() => this.refresh());
-        vscode.workspace.onDidDeleteFiles(() => this.refresh());
-        vscode.workspace.onDidRenameFiles(() => this.refresh());
-
-        this.workSpaceService.getWorkspacesWithConfig().then(async workspacesWithConfig => {
-            if (workspacesWithConfig.length === 1) {
-                const config = await this.configRepositoryService.read(workspacesWithConfig[0]);
-                const watchPattern = config.scriptRoot === '/' ? 
-                    '**/*.ts' : 
-                    config.scriptRoot + '/**/*.{js,ts}';
-                const watcher = vscode.workspace.createFileSystemWatcher(watchPattern);
-                watcher.onDidChange(async uri => {
-                    const script = scriptRepositoryService.getScriptFromAbsolutUri(uri);
-
-                    if(script) {
-                        await this.scriptRepositoryService.evaluateDirtyState(script);
-                    }
-
-                    this.refresh();
-                });
-            }
-        });
     }
 
     getTreeItem(element: ScriptItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
