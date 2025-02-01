@@ -36,8 +36,9 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         await this.updateFromServer();
         this.scriptRemoteService.registerScriptChangedEventListener(this);
         this.raiseScriptChangedEvent(undefined);
-
+        
         this.handleTextDocumentChanges();
+        this.handleFileChangeOnDisk();
         this.handleDocumentCreation();
         this.handDocumentDeletion();
     }
@@ -268,8 +269,6 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     private handleTextDocumentChanges() {
-
-
         workspace.onDidSaveTextDocument(async document => {
             const scriptId = this.scriptIdService.getIoBrokerId(document.uri);
 
@@ -279,6 +278,22 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
             }
 
             this.raiseScriptChangedEvent(<string>scriptId);
+        });
+    }
+
+    private async handleFileChangeOnDisk(): Promise<void> {    
+        const config = await this.configRepositoryService.read(this.workspaceService.workspaceToUse);
+        const watchPattern = config.scriptRoot === '/' ? 
+        '**/*.ts' : 
+        config.scriptRoot + '/**/*.{js,ts}';
+
+        const watcher = workspace.createFileSystemWatcher(watchPattern);
+        watcher.onDidChange(async uri => {
+            const script = this.getScriptFromAbsolutUri(uri);
+
+            if(script) {
+                await this.evaluateDirtyState(script);
+            }
         });
     }
 
