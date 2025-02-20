@@ -23,19 +23,31 @@ export class LoginService implements ILoginService {
     async isLoginNecessary(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<boolean> {
         const httpsAgent = this.createHttpsAgent(allowSelfSignedCertificate);
         const loginUri = baseUri.with({ path: "login" }).toString();
-        this.debugLogService.logWarning(`Trying to login to ${loginUri}`, "LoginService");
+        this.logDebug(`Trying to login to ${loginUri}`);
 
         try {
             const result = await axios.get(loginUri, { httpsAgent: httpsAgent });
             if (result.status === 200 && 'set-cookie' in result.headers) {
-                this.debugLogService.log("Login is necessary, because 'set-cookie' exists as header", "LoginService");
+                this.logDebug("Login is necessary, because 'set-cookie' exists as header");
                 return true;
             }
 
-            this.debugLogService.log(`Login not necessary. Response: ${JSON.stringify(result)}`);
+            this.logDebug(`Login not necessary. Response: ${JSON.stringify(result)}`);
             return false;
         } catch (error) {
-            this.debugLogService.logWarning(`Login failed, because of exception. Login not necessary. Error: ${JSON.stringify(error)}`, "LoginService");
+            this.logDebug(`Login failed, because of exception. Login not necessary. Error: ${JSON.stringify(error)}`);
+
+            try {
+                this.logDebug("Trying to call base url to see if host is available");
+                const result = await axios.get(baseUri.toString(), { httpsAgent: httpsAgent });
+                if (result.status === 200) {
+                    this.logDebug(`Host is available under ${baseUri.toString()}`);
+                }
+            }
+            catch (error2) {
+                this.logDebug(`Host is not available. Error: ${JSON.stringify(error2)}`);
+            }
+
             return false;
         }
     }
@@ -49,29 +61,29 @@ export class LoginService implements ILoginService {
 
         // check if the retreived token is still valid
         if (accessToken && this.loginCredentialService.isValidAccessToken(accessToken, serverTime)) {
-            this.debugLogService.log("Found valid access token. Using it", "LoginService");
+            this.logDebug("Found valid access token. Using it");
             return accessToken.token;
         }
 
         // token was not valid. Get password form store or user
         const password = await this.loginCredentialService.getPassword();
         if (!password) {
-            this.debugLogService.log("User did not provide password. Cannot get access token", "LoginService");
+            this.logDebug("User did not provide password. Cannot get access token");
             return undefined;
         }
 
         // get new token with retreived password
         const newAccessToken = await this.getAndUpdateToken(baseUri, allowSelfSignedCertificate, username, password, serverTime);
         if (newAccessToken) {
-            this.debugLogService.log("Successfuly got new access token. Using it", "LoginService");
+            this.logDebug("Successfuly got new access token. Using it");
             return newAccessToken.token;
         }
 
         // could not get new token with the password. Ask the user to supply a new one
         const newPassword = await this.loginCredentialService.updatePasswordFromUser();
-        this.debugLogService.log("Could not get new token with the password. Ask the user to supply a new one", "LoginService");
+        this.logDebug("Could not get new token with the password. Ask the user to supply a new one");
         if (!newPassword) {
-            this.debugLogService.log("User did not provide password. Cannot get access token", "LoginService");
+            this.logDebug("User did not provide password. Cannot get access token");
             return undefined;
         }
 
@@ -160,7 +172,7 @@ export class LoginService implements ILoginService {
         const connectToken = `connect.sid=${this.getCookieValue(cookie, "connect.sid")}`;
         const expires = new Date(this.getCookieValue(cookie, "Expires"));
 
-        this.debugLogService.log(`Got new access token which expires on ${expires}`, "LoginService");
+        this.logDebug(`Got new access token which expires on ${expires}`);
 
         const accessToken: IAccessToken = { token: connectToken, expires: expires };
 
@@ -187,5 +199,9 @@ export class LoginService implements ILoginService {
         return new https.Agent({
             rejectUnauthorized: !allowSelfSignedCertificate
         });
+    }
+
+    private logDebug(message: string) {
+        this.debugLogService.log(message, "LoginService");
     }
 }
