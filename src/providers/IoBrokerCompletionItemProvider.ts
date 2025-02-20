@@ -20,7 +20,7 @@ export class IoBrokerCompletionItemProvider implements IIobrokerCompletionItemPr
         if (wordRange) {
             // slice removes first and last char
             const text = document.getText(wordRange).slice(1, position.character - wordRange.start.character);
-            const matchingObjects = this.objectRepositoryService.findMatchingObjects(text);
+            const matchingObjects = this.objectRepositoryService.findMatchingObjectsByPartialIdAndName(text);
 
             if (token.isCancellationRequested) {
                 return undefined;

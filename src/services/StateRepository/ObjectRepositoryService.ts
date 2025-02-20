@@ -27,7 +27,7 @@ export class ObjectRepositoryService implements IObjectRepositoryService, IObjec
         this.stateRemoteService.registerObjectChangedEventListener(this);
     }
 
-    findMatchingObjects(partialId: string): IObjectList | undefined {
+    findMatchingObjectsByPartialIdAndName(partialId: string): IObjectList | undefined {
         const idParts = partialId.split(".");
 
         let currentObjectDictionary: ObjectRepositoryDictionary = this.allObjects;
@@ -41,10 +41,23 @@ export class ObjectRepositoryService implements IObjectRepositoryService, IObjec
             // then use partial id part for filtering
             else {
                 const keys = Object.keys(currentObjectDictionary);
-                const matchingKeys = keys.filter(key => key.startsWith(idPart));
+                const matchingKeysById = keys.filter(key => key.toLocaleLowerCase().includes(idPart.toLocaleLowerCase()));
+                
+                for (const key in currentObjectDictionary) {
+                    const item = currentObjectDictionary[key];
+                    const name = <any>(item.item?.common.name);
+                    const nameExpanded: string | undefined = name?.en ?? name ?? undefined;
+
+                    if (nameExpanded && nameExpanded.toLocaleLowerCase().includes(idPart.toLocaleLowerCase())) {
+                        if (!matchingKeysById.includes(key)) {
+                            matchingKeysById.push(key);
+                        }
+                    }
+                }
+
                 const result: IObjectList= {};
                 
-                for (const key of matchingKeys) {
+                for (const key of matchingKeysById) {
                     result[key] = currentObjectDictionary[key].item;
                 }
 
