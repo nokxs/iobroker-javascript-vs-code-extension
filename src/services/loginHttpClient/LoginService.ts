@@ -22,34 +22,32 @@ export class LoginService implements ILoginService {
 
     async isLoginNecessary(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<boolean> {
         const httpsAgent = this.createHttpsAgent(allowSelfSignedCertificate);
-        const loginUri = baseUri.with({ path: "login" }).toString();
-        this.logDebug(`Trying to login to ${loginUri}`);
-
+        
         try {
-            const result = await axios.get(loginUri, { httpsAgent: httpsAgent });
-            if (result.status === 200 && 'set-cookie' in result.headers) {
-                this.logDebug("Login is necessary, because 'set-cookie' exists as header");
-                return true;
-            }
-
-            this.logDebug(`Login not necessary. Response: ${JSON.stringify(result)}`);
-            return false;
-        } catch (error) {
-            this.logDebug(`Login failed, because of exception. Login not necessary. Error: ${JSON.stringify(error)}`);
-
-            try {
-                this.logDebug("Trying to call base url to see if host is available");
-                const result = await axios.get(baseUri.toString(), { httpsAgent: httpsAgent });
-                if (result.status === 200) {
-                    this.logDebug(`Host is available under ${baseUri.toString()}`);
-                }
-            }
-            catch (error2) {
-                this.logDebug(`Host is not available. Error: ${JSON.stringify(error2)}`);
-            }
-
-            return false;
+            const loginUri = baseUri.with({ path: "index.html" }).toString() + "?login";
+            return await this.isLoginNecessaryInternal(loginUri, httpsAgent);
         }
+        catch (error) {
+            try {
+                const loginUri = baseUri.with({ path: "login" }).toString();
+                return await this.isLoginNecessaryInternal(loginUri, httpsAgent);
+            } catch (error2) {
+                try {
+                    this.logDebug("Trying to call base url to see if host is available");
+                    const result = await axios.get(baseUri.toString(), { httpsAgent: httpsAgent });
+                    if (result.status === 200) {
+                        this.logDebug(`Host is available under ${baseUri.toString()}`);
+                    }
+                }
+                catch (error3) {
+                    this.logDebug(`Host is not available. Error: ${JSON.stringify(error3)}`);
+                }
+
+                this.logDebug(`Login failed, because of exception. Login not necessary. Error: ${JSON.stringify(error)}`);
+            }
+        }
+        
+        return false;
     }
 
     async getAccessToken(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string): Promise<string | undefined> {
@@ -91,6 +89,18 @@ export class LoginService implements ILoginService {
         const updatedAccessToken = await this.getAndUpdateToken(baseUri, allowSelfSignedCertificate, username, password, serverTime);
         return updatedAccessToken?.token ?? undefined;
 
+    }
+
+    private async isLoginNecessaryInternal(loginUri: string, httpsAgent: https.Agent): Promise<boolean> {
+        this.logDebug(`Trying to login to ${loginUri}`);
+        const result = await axios.get(loginUri, { httpsAgent: httpsAgent });
+        if (result.status === 200 && 'set-cookie' in result.headers) {
+            this.logDebug("Login is necessary, because 'set-cookie' exists as header");
+            return true;
+        }
+
+        this.logDebug(`Login not necessary. Response: ${JSON.stringify(result)}`);
+        return false;
     }
 
     private async getAndUpdateToken(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string, serverTime: Date): Promise<IAccessToken | undefined> {
