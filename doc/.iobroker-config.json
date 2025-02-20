@@ -10,5 +10,7 @@
     "collapseDirectoriesOnStartup": true
   },
   "autoUpload": false,
-  "scriptAutoRun": false
+  "scriptAutoRun": false,
+  "collectDebugLog": false,
+  "forceLogin": false
 }
