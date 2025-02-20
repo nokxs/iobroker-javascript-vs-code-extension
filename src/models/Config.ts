@@ -10,7 +10,8 @@ export class Config {
         readonly username?: string,
         readonly collectDebugLog?: boolean,
         readonly autoUpload?: boolean,
-        readonly scriptAutoRun?: boolean) {}
+        readonly scriptAutoRun?: boolean,
+        readonly forceLogin?: boolean) {}
 }
 
 export class ScriptExplorerConfig {

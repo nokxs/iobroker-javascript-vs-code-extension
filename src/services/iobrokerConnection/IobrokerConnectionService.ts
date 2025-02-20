@@ -132,6 +132,11 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
                 this.logDebug("Self signed certificates are allowed for connecting to iobroker");
             }
 
+            if (this.config.forceLogin) {
+                this.logDebug("Login is forced and login detection therefore skipped");
+                forceLogin = true;
+            }
+            
             this.logDebug(`Force login: ${forceLogin}`);
 
             if (forceLogin || await this.loginService.isLoginNecessary(uri, allowSelfSignedCertificate)) {

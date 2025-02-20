@@ -144,6 +144,7 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 | `scriptExplorer.collapseDirectoriesOnStartup` | Should the directories in the script explorer be collapsed on startup. | No | true |
 | `autoUpload` | Automatically upload scripts on save? | No | false |
 | `scriptAutoRun` | Automatically start a uploaded script? | No | false |
+| `forceLogin` | Should login detection be skipped and login to ioBroker be forced? | No | false |
 
 ### Admin versions
 The extension currently supports the following Admin versions:
