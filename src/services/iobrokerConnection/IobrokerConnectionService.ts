@@ -86,33 +86,36 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
             }
 
             this.config = await this.configRepository.read(workspaceFolder);
-            this.debugLogService.log(`read config: ${JSON.stringify(this.config)}`, "IobrokerConnectionService");
+            this.logDebug(`read config: ${JSON.stringify(this.config)}`);
 
             if (!(this.config instanceof NoConfig) && !this.isConfigValid()) {
-                this.debugLogService.log("Config is invalid", "IobrokerConnectionService");
+                this.logDebug("Config is invalid");
                 const pickAnswer = await window.showQuickPick(["Yes", "No", "No, open documentation"], { placeHolder: "ioBroker: Your config is missing mandatory items. Recreate config?", ignoreFocusOut: true });
                 if (pickAnswer === "Yes") {
-                    this.debugLogService.log("Config shall be recreated", "IobrokerConnectionService");
+                    this.logDebug("Config shall be recreated");
                     this.config = new NoConfig();
                 }
                 else if (pickAnswer === "No, open documentation") {
                     await env.openExternal(Uri.parse("https://github.com/nokxs/iobroker-javascript-vs-code-extension#available-settings"));
                     this.windowMessageService.showWarning("Connection attempt to ioBroker aborted. Update your config and try again!");
+                    this.logDebug("Abort connection attempt and open documentation");
                     return;
                 }
             }
 
             if (this.config instanceof NoConfig) {
-                this.debugLogService.log("Creating config interactively", "IobrokerConnectionService");
+                this.logDebug("Creating config interactively");
                 this.config = await this.configCreationService.createConfigInteractivly();
                 if (this.config instanceof NoConfig) {
                     this.windowMessageService.showWarning("ioBroker: Config not saved. Execute command 'iobroker: Connect to ioBroker' to start another connection attempt.");
+                    this.logDebug("Interactive config creation aborted");
                     return;
                 }
                 else {
                     await this.configRepository.write(this.config, workspaceFolder);
                     this.statusBarService.setStatusBarMessage("ioBroker: Created new 'iobroker-config.json' in root directory");
                     isInitialConnect = true;
+                    this.logDebug("New config created");
                 }
             }
 
@@ -121,13 +124,18 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
             const useAutoReconnect = this.config?.autoReconnect ?? true;
             const allowSelfSignedCertificate = this.config.allowSelfSignedCertificate ?? false;
             const uri = Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`);
+            
+            this.logDebug(`Connection Url is '${uri}'`);
 
             if (allowSelfSignedCertificate) {
                 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
+                this.logDebug("Self signed certificates are allowed for connecting to iobroker");
             }
 
+            this.logDebug(`Force login: ${forceLogin}`);
+
             if (forceLogin || await this.loginService.isLoginNecessary(uri, allowSelfSignedCertificate)) {
-                this.debugLogService.log(`Login is necessary. Force login: ${forceLogin}`, "IobrokerConnectionService");
+                this.logDebug(`Login is necessary`);
 
                 if (!this.config.username) {
                     this.windowMessageService.showWarning("ioBroker: Login to ioBroker necessary, but no user name is set. Add property 'username' to .iobroker-config.json and try again!");
@@ -143,28 +151,43 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
                 await connectionService.connectWithToken(uri, useAutoReconnect, allowSelfSignedCertificate, token);
             }
             else {
+                this.logDebug("Login not necessary. Connecting to iobroker...");
                 await connectionService.connect(uri, useAutoReconnect, allowSelfSignedCertificate);
             }
 
+            this.logDebug("Connection to iobroker successful. Initializing extension...");
+
+            this.logDebug("Start receiving log messages...");
             await this.logService.startReceiving();
+
+            this.logDebug("Initialize internal script repository...");
             await this.scriptRepositoryService.init();
+
+            this.logDebug("Initialize internal object repository...");
             await this.objectRepositoryService.init();
+
+            this.logDebug("Initialze remove services...");
             this.stateAndObjectRemoteService.init();
 
             if (this.config.autoUpload) {
+                this.logDebug("Auto Upload feature is initialized");
                 this.autoUploadService.init();
             }
 
             if (isInitialConnect) {
+                this.logDebug("This is the initial connect. Ask to download all scripts");
                 const answer = await window.showQuickPick(["Yes", "No"], { placeHolder: "Download all scripts" });
                 if (answer === "Yes") {
+                    this.logDebug("All scripts will be downloaded...");
                     const scripts = this.scriptRepositoryService.getAllScripts();
                     await this.scriptService.saveAllToFile(scripts);
                     await this.scriptRepositoryService.evaluateScriptOnRemoteForAllScripts();
                     await this.scriptRepositoryService.evaluateDirtyStateForAllScripts();
+                    this.logDebug("All scripts downloaded")
                 }
             }
         } catch (error) {
+            this.logDebug("Connection was not possible due to erorr: " + JSON.stringify(error));
             this.windowMessageService.showError(`Could not connect to ioBroker. Check your '.iobroker-config.json' for wrong configuration: ${error}`);
         }
     }
@@ -180,5 +203,9 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
         }
 
         return true;
+    }
+
+    private logDebug(message: string) {
+        this.debugLogService.log(message, "IobrokerConnectionService");
     }
 }
