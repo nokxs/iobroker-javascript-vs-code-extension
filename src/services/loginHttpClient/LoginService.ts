@@ -92,15 +92,17 @@ export class LoginService implements ILoginService {
     }
 
     private async isLoginNecessaryInternal(loginUri: string, httpsAgent: https.Agent): Promise<boolean> {
-        this.logDebug(`Trying to login to ${loginUri}`);
-        const result = await axios.get(loginUri, { httpsAgent: httpsAgent });
-        if (result.status === 200 && 'set-cookie' in result.headers) {
-            this.logDebug("Login is necessary, because 'set-cookie' exists as header");
-            return true;
-        }
+        return true;
+        
+        // this.logDebug(`Trying to login to ${loginUri}`);
+        // const result = await axios.get(loginUri, { httpsAgent: httpsAgent });
+        // if (result.status === 200 && 'set-cookie' in result.headers) {
+        //     this.logDebug("Login is necessary, because 'set-cookie' exists as header");
+        //     return true;
+        // }
 
-        this.logDebug(`Login not necessary. Response: ${JSON.stringify(result)}`);
-        return false;
+        // this.logDebug(`Login not necessary. Response Status Code: ${result.status} | Response Headers: ${JSON.stringify(result.headers)} | Response Data: ${result.data}`);
+        // return false;
     }
 
     private async getAndUpdateToken(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string, serverTime: Date): Promise<IAccessToken | undefined> {
@@ -127,9 +129,22 @@ export class LoginService implements ILoginService {
     }
 
     private login(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<IAccessToken> {
+        // return new Promise((resolve, reject) => {
+        //     const postData = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=on`;
+        //     const options = this.getLoginPostOptions(baseUri, allowSelfSignedCertificate, postData);
+        //     const req = this.createRequest(baseUri, options, resolve, reject);
+
+        //     req.on('error', (e) => {
+        //         reject(e);
+        //     });
+
+        //     req.write(postData);
+        //     req.end();
+        // });
+
         return new Promise((resolve, reject) => {
-            const postData = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=on`;
-            const options = this.getLoginPostOptions(baseUri, allowSelfSignedCertificate, postData);
+            const postData = `grant_type=password&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=true&client_id=ioBroker`;
+            const options = this.getLoginPostOptionsForOAuth(baseUri, allowSelfSignedCertificate, postData);
             const req = this.createRequest(baseUri, options, resolve, reject);
 
             req.on('error', (e) => {
@@ -164,6 +179,30 @@ export class LoginService implements ILoginService {
         };
     }
 
+    
+    private getLoginPostOptionsForOAuth(baseUri: Uri, allowSelfSignedCertificate: boolean, postData: string) {
+        const portIndex = baseUri.authority.indexOf(":");
+        const hostname = portIndex > 0 ? baseUri.authority.substring(0, portIndex) : baseUri.authority;
+        const schemeDefaultPort = baseUri.scheme === "http" ? 80 : 443;
+        const port = portIndex > 0 ? baseUri.authority.substring(portIndex + 1) : schemeDefaultPort;
+
+        return {
+            hostname: hostname,
+            port: port,
+            path: '/oauth/token',
+            method: 'POST',
+            rejectUnauthorized: !allowSelfSignedCertificate,
+            requestCert: true,
+            agent: false,
+            headers: {
+                // eslint-disable-next-line @typescript-eslint/naming-convention
+                'Content-Type': 'application/x-www-form-urlencoded',
+                // eslint-disable-next-line @typescript-eslint/naming-convention
+                'Content-Length': postData.length
+            }
+        };
+    }
+
     private async requestHandler(res: http.IncomingMessage, resolve: (value: IAccessToken) => void, reject: (reason?: any) => void) {
 
         if (res.statusCode && res.statusCode !== 200 && res.statusCode !== 302) {
@@ -179,7 +218,8 @@ export class LoginService implements ILoginService {
 
         const cookie = cookies[0];
 
-        const connectToken = `connect.sid=${this.getCookieValue(cookie, "connect.sid")}`;
+        // const connectToken = `connect.sid=${this.getCookieValue(cookie, "connect.sid")}`;
+        const connectToken = `access_token=${this.getCookieValue(cookie, "connect.sid")}`;
         const expires = new Date(this.getCookieValue(cookie, "Expires"));
 
         this.logDebug(`Got new access token which expires on ${expires}`);

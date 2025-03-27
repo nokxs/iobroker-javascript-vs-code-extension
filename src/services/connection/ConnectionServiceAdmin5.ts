@@ -33,7 +33,7 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     }
 
     async connectWithToken(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean, accessToken: string): Promise<void> {
-        const options = {cookie: accessToken};        
+        const options = {cookie: accessToken, name: "admin"};        
         await this.connectInternal(uri, autoReconnect, allowSelfSignedCertificate, options);
     }
 
@@ -264,10 +264,10 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
             this.isConnected = false;
         }
 
-        this.socketIoClient.autoReconnect = autoReconnect;       
+        this.socketIoClient.autoReconnect = autoReconnect;
         this.client = await this.socketIoClient.connect(uri.toString(), options, allowSelfSignedCertificate);
 
-        return new Promise<void>((resolve, reject) => {
+        const connectionPromise = new Promise<void>((resolve, reject) => {
             this.registerSocketEvents();
 
             const timeout = setTimeout(() => {
@@ -292,8 +292,10 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
             this.client!.on("error", (err: any) => {
                 message.dispose();
                 clearTimeout(timeout);
-                reject(new Error(`The connection to ioBroker was not possible. Reason: ${err}`));
+                 reject(new Error(`The connection to ioBroker was not possible. Reason: ${err}`));
             });
         });
+
+        return connectionPromise;
     }
 }
