@@ -21,6 +21,7 @@ import { IWindowMessageService } from "../windowMessage/IWindowMessageService";
 import { IObjectRepositoryService } from "../StateRepository/IObjectRepositoryService";
 import { IStateAndObjectRemoteService } from "../stateRemote/IStateAndObjectRemoteService";
 import { IAutoUploadService } from "../autoUpload/IAutoUploadService";
+import { LoginType } from "../loginHttpClient/LoginType";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
@@ -139,7 +140,8 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
             
             this.logDebug(`Force login: ${forceLogin}`);
 
-            if (forceLogin || await this.loginService.isLoginNecessary(uri, allowSelfSignedCertificate)) {
+            const loginType = await this.loginService.getLoginType(uri, allowSelfSignedCertificate);
+            if (forceLogin || loginType !== LoginType.noLogin) {
                 this.logDebug(`Login is necessary`);
 
                 if (!this.config.username) {
@@ -147,7 +149,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
                     return;
                 }
 
-                const token = await this.loginService.getAccessToken(uri, allowSelfSignedCertificate, this.config.username);
+                const token = await this.loginService.getAccessToken(uri, allowSelfSignedCertificate, this.config.username, loginType);
                 if (!token) {
                     this.windowMessageService.showWarning("ioBroker: Could not login to ioBroker. Is user name and password correct?");
                     return;

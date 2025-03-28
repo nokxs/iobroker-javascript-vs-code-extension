@@ -10,6 +10,12 @@ import { IAccessToken } from '../loginCredentialsService/IAccessToken';
 import { ILoginCredentialsService } from '../loginCredentialsService/ILoginCredentialsService';
 import { IDebugLogService } from '../debugLogService/IDebugLogService';
 import { IConfigRepositoryService } from '../configRepository/IConfigRepositoryService';
+import { LoginType } from './LoginType';
+
+interface ILoginError {
+    message: string;
+    isLoginUrlAvailable: boolean;
+}
 
 @injectable()
 export class LoginService implements ILoginService {
@@ -20,37 +26,35 @@ export class LoginService implements ILoginService {
         @inject(TYPES.services.configRepository) private configRepository: IConfigRepositoryService
     ) { }
 
-    async isLoginNecessary(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<boolean> {
-        const httpsAgent = this.createHttpsAgent(allowSelfSignedCertificate);
+    async getLoginType(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<LoginType> {
+        try {
+            await this.getOAuthAccessTokenFromIoBroker(baseUri, allowSelfSignedCertificate, "", "");
+            // An exception is expected, even if logging in is necessary
+        }
+        catch (error: ILoginError | unknown) {
+            if (error && typeof error === "object" && "isLoginUrlAvailable" in error) {
+                if (error.isLoginUrlAvailable) {
+                    return LoginType.oAuth2;
+                }
+            }
+        }        
         
         try {
-            const loginUri = baseUri.with({ path: "index.html" }).toString() + "?login";
-            return await this.isLoginNecessaryInternal(loginUri, httpsAgent);
+            await this.getLegacyAccessTokenFromIoBroker(baseUri, allowSelfSignedCertificate, "", "");
+            // An exception is expected, even if logging in is necessary
         }
-        catch (error) {
-            try {
-                const loginUri = baseUri.with({ path: "login" }).toString();
-                return await this.isLoginNecessaryInternal(loginUri, httpsAgent);
-            } catch (error2) {
-                try {
-                    this.logDebug("Trying to call base url to see if host is available");
-                    const result = await axios.get(baseUri.toString(), { httpsAgent: httpsAgent });
-                    if (result.status === 200) {
-                        this.logDebug(`Host is available under ${baseUri.toString()}`);
-                    }
+        catch (error: ILoginError | unknown) {
+            if (error && typeof error === "object" && "isLoginUrlAvailable" in error) {
+                if (error.isLoginUrlAvailable) {
+                    return LoginType.legacy;
                 }
-                catch (error3) {
-                    this.logDebug(`Host is not available. Error: ${JSON.stringify(error3)}`);
-                }
-
-                this.logDebug(`Login failed, because of exception. Login not necessary. Error: ${JSON.stringify(error)}`);
             }
         }
         
-        return false;
+        return LoginType.noLogin;
     }
 
-    async getAccessToken(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string): Promise<string | undefined> {
+    async getAccessToken(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, loginType: LoginType): Promise<string | undefined> {
         const config = this.configRepository.config;
         console.log(config.ioBrokerUrl);
         
@@ -71,7 +75,7 @@ export class LoginService implements ILoginService {
         }
 
         // get new token with retreived password
-        const newAccessToken = await this.getAndUpdateToken(baseUri, allowSelfSignedCertificate, username, password, serverTime);
+        const newAccessToken = await this.getAndUpdateToken(baseUri, allowSelfSignedCertificate, username, password, serverTime, loginType);
         if (newAccessToken) {
             this.logDebug("Successfuly got new access token. Using it");
             return newAccessToken.token;
@@ -86,27 +90,30 @@ export class LoginService implements ILoginService {
         }
 
         // try to get a new token with the updated password
-        const updatedAccessToken = await this.getAndUpdateToken(baseUri, allowSelfSignedCertificate, username, password, serverTime);
+        const updatedAccessToken = await this.getAndUpdateToken(baseUri, allowSelfSignedCertificate, username, password, serverTime, loginType);
         return updatedAccessToken?.token ?? undefined;
 
     }
 
-    private async isLoginNecessaryInternal(loginUri: string, httpsAgent: https.Agent): Promise<boolean> {
-        return true;
-        
-        // this.logDebug(`Trying to login to ${loginUri}`);
-        // const result = await axios.get(loginUri, { httpsAgent: httpsAgent });
-        // if (result.status === 200 && 'set-cookie' in result.headers) {
-        //     this.logDebug("Login is necessary, because 'set-cookie' exists as header");
-        //     return true;
-        // }
+    private async getAndUpdateToken(
+        baseUri: Uri, 
+        allowSelfSignedCertificate: boolean, 
+        username: string, 
+        password: string, 
+        serverTime: Date,
+        loginType: LoginType
+    ): Promise<IAccessToken | undefined> {
 
-        // this.logDebug(`Login not necessary. Response Status Code: ${result.status} | Response Headers: ${JSON.stringify(result.headers)} | Response Data: ${result.data}`);
-        // return false;
-    }
-
-    private async getAndUpdateToken(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string, serverTime: Date): Promise<IAccessToken | undefined> {
-        const newAccessToken = await this.login(baseUri, allowSelfSignedCertificate, username, password);
+        let newAccessToken;
+        if (loginType === LoginType.oAuth2) {
+            newAccessToken = await this.getOAuthAccessTokenFromIoBroker(baseUri, allowSelfSignedCertificate, username, password);
+        }
+        else if (loginType === LoginType.legacy) {
+            newAccessToken = await this.getLegacyAccessTokenFromIoBroker(baseUri, allowSelfSignedCertificate, username, password);
+        }
+        else {
+            throw new Error("Login type is not supported: " + loginType);
+        }
 
         if (this.loginCredentialService.isValidAccessToken(newAccessToken, serverTime)) {
             await this.loginCredentialService.updateAccessToken(newAccessToken);
@@ -128,21 +135,8 @@ export class LoginService implements ILoginService {
         return new Date();
     }
 
-    private login(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<IAccessToken> {
-        // return new Promise((resolve, reject) => {
-        //     const postData = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=on`;
-        //     const options = this.getLoginPostOptions(baseUri, allowSelfSignedCertificate, postData);
-        //     const req = this.createRequest(baseUri, options, resolve, reject);
-
-        //     req.on('error', (e) => {
-        //         reject(e);
-        //     });
-
-        //     req.write(postData);
-        //     req.end();
-        // });
-
-        return new Promise((resolve, reject) => {
+    private getOAuthAccessTokenFromIoBroker(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<IAccessToken> {
+         return new Promise((resolve, reject) => {
             const postData = `grant_type=password&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=true&client_id=ioBroker`;
             const options = this.getLoginPostOptionsForOAuth(baseUri, allowSelfSignedCertificate, postData);
             const req = this.createRequest(baseUri, options, resolve, reject);
@@ -156,7 +150,22 @@ export class LoginService implements ILoginService {
         });
     }
 
-    private getLoginPostOptions(baseUri: Uri, allowSelfSignedCertificate: boolean, postData: string) {
+    private getLegacyAccessTokenFromIoBroker(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<IAccessToken> {
+        return new Promise((resolve, reject) => {
+            const postData = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=on`;
+            const options = this.getLegacyLoginPostOptions(baseUri, allowSelfSignedCertificate, postData);
+            const req = this.createRequest(baseUri, options, resolve, reject);
+
+            req.on('error', (e) => {
+                reject(e);
+            });
+
+            req.write(postData);
+            req.end();
+        });
+    }
+
+    private getLegacyLoginPostOptions(baseUri: Uri, allowSelfSignedCertificate: boolean, postData: string) {
         const portIndex = baseUri.authority.indexOf(":");
         const hostname = portIndex > 0 ? baseUri.authority.substring(0, portIndex) : baseUri.authority;
         const schemeDefaultPort = baseUri.scheme === "http" ? 80 : 443;
@@ -206,13 +215,22 @@ export class LoginService implements ILoginService {
     private async requestHandler(res: http.IncomingMessage, resolve: (value: IAccessToken) => void, reject: (reason?: any) => void) {
 
         if (res.statusCode && res.statusCode !== 200 && res.statusCode !== 302) {
-            reject(`Login failed. Received status code '${res.statusCode}'`);
+            const result: ILoginError = { 
+                message: `Login failed. Received status code '${res.statusCode}'`,
+                isLoginUrlAvailable: res.statusCode === 400
+            };
+            reject(result);
+            return;
         }
 
         var cookies = res.headers["set-cookie"] ?? [];
 
         if (cookies.length !== 1) {
-            reject("Cookie was not set");
+            const result = { 
+                message: `Cookie was not set`,
+                isLoginUrlAvailable: res.statusCode === 400
+            };
+            reject(result);
             return;
         }
 

@@ -7,6 +7,7 @@ import { ITypeDefinitionService } from '../typeDefinition/ITypeDefinitionService
 import { IConfigCreationService } from "./IConfigCreationService";
 import { IAdminVersionDetector } from "../adminVersionDetector/IAdminVersionDetector";
 import { ILoginService } from "../loginHttpClient/ILoginService";
+import { LoginType } from "../loginHttpClient/LoginType";
 
 @injectable()
 export class ConfigCreationService implements IConfigCreationService {
@@ -67,14 +68,15 @@ export class ConfigCreationService implements IConfigCreationService {
 
         let username: string | undefined = undefined;
         let accessToken: string | undefined = undefined;
-        if (await this.loginService.isLoginNecessary(parsedUri, allowSelfSignedCertificate)) {
+        const loginType = await this.loginService.getLoginType(parsedUri, allowSelfSignedCertificate);
+        if (loginType !== LoginType.noLogin) {
             username = await window.showInputBox({prompt: "Login necessary. Enter user name", value: "admin", ignoreFocusOut: true});
 
             if (!username) {
                 return new NoConfig();
             }
 
-            accessToken = await this.loginService.getAccessToken(parsedUri, allowSelfSignedCertificate, username);
+            accessToken = await this.loginService.getAccessToken(parsedUri, allowSelfSignedCertificate, username, loginType);
 
             if(!accessToken) {
                 return new NoConfig();
