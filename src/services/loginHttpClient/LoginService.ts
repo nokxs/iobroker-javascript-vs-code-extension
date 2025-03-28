@@ -219,7 +219,7 @@ export class LoginService implements ILoginService {
         const cookie = cookies[0];
 
         // const connectToken = `connect.sid=${this.getCookieValue(cookie, "connect.sid")}`;
-        const connectToken = `access_token=${this.getCookieValue(cookie, "connect.sid")}`;
+        const connectToken = `access_token=${this.getCookieValue(cookie, "access_token")}`;
         const expires = new Date(this.getCookieValue(cookie, "Expires"));
 
         this.logDebug(`Got new access token which expires on ${expires}`);
