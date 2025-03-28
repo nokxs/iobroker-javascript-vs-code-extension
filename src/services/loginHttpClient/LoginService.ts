@@ -136,24 +136,22 @@ export class LoginService implements ILoginService {
     }
 
     private getOAuthAccessTokenFromIoBroker(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<IAccessToken> {
-         return new Promise((resolve, reject) => {
-            const postData = `grant_type=password&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=true&client_id=ioBroker`;
-            const options = this.getLoginPostOptionsForOAuth(baseUri, allowSelfSignedCertificate, postData);
-            const req = this.createRequest(baseUri, options, resolve, reject);
-
-            req.on('error', (e) => {
-                reject(e);
-            });
-
-            req.write(postData);
-            req.end();
-        });
+        const postData = `grant_type=password&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=true&client_id=ioBroker`;
+        return this.getAccessTokenFromIoBroker(baseUri, allowSelfSignedCertificate, postData, '/oauth/token');
     }
 
     private getLegacyAccessTokenFromIoBroker(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<IAccessToken> {
+        const postData = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=on`;
+        return this.getAccessTokenFromIoBroker(baseUri, allowSelfSignedCertificate, postData, '/login');
+    }
+
+    private getAccessTokenFromIoBroker(
+        baseUri: Uri, 
+        allowSelfSignedCertificate: boolean, 
+        postData: string, 
+        path: string): Promise<IAccessToken> {
         return new Promise((resolve, reject) => {
-            const postData = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=on`;
-            const options = this.getLegacyLoginPostOptions(baseUri, allowSelfSignedCertificate, postData);
+            const options = this.getLoginPostOptions(baseUri, path, allowSelfSignedCertificate, postData);
             const req = this.createRequest(baseUri, options, resolve, reject);
 
             req.on('error', (e) => {
@@ -165,7 +163,7 @@ export class LoginService implements ILoginService {
         });
     }
 
-    private getLegacyLoginPostOptions(baseUri: Uri, allowSelfSignedCertificate: boolean, postData: string) {
+    private getLoginPostOptions(baseUri: Uri, path: string, allowSelfSignedCertificate: boolean, postData: string) {
         const portIndex = baseUri.authority.indexOf(":");
         const hostname = portIndex > 0 ? baseUri.authority.substring(0, portIndex) : baseUri.authority;
         const schemeDefaultPort = baseUri.scheme === "http" ? 80 : 443;
@@ -174,31 +172,7 @@ export class LoginService implements ILoginService {
         return {
             hostname: hostname,
             port: port,
-            path: '/login',
-            method: 'POST',
-            rejectUnauthorized: !allowSelfSignedCertificate,
-            requestCert: true,
-            agent: false,
-            headers: {
-                // eslint-disable-next-line @typescript-eslint/naming-convention
-                'Content-Type': 'application/x-www-form-urlencoded',
-                // eslint-disable-next-line @typescript-eslint/naming-convention
-                'Content-Length': postData.length
-            }
-        };
-    }
-
-    
-    private getLoginPostOptionsForOAuth(baseUri: Uri, allowSelfSignedCertificate: boolean, postData: string) {
-        const portIndex = baseUri.authority.indexOf(":");
-        const hostname = portIndex > 0 ? baseUri.authority.substring(0, portIndex) : baseUri.authority;
-        const schemeDefaultPort = baseUri.scheme === "http" ? 80 : 443;
-        const port = portIndex > 0 ? baseUri.authority.substring(portIndex + 1) : schemeDefaultPort;
-
-        return {
-            hostname: hostname,
-            port: port,
-            path: '/oauth/token',
+            path: path,
             method: 'POST',
             rejectUnauthorized: !allowSelfSignedCertificate,
             requestCert: true,
