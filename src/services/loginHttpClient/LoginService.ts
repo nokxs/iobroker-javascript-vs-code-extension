@@ -29,7 +29,10 @@ export class LoginService implements ILoginService {
     async getLoginType(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<LoginType> {
         try {
             await this.getOAuthAccessTokenFromIoBroker(baseUri, allowSelfSignedCertificate, "", "");
-            // An exception is expected, even if logging in is necessary
+            // At most cases an exception is expected, even if logging in is necessary
+            // If Admin < 7.6.0 and authentication is disabled, an invalid token is received. We just 
+            // assume that no login is necessary in this case.
+            return LoginType.legacy;
         }
         catch (error: ILoginError | unknown) {
             if (error && typeof error === "object" && "isLoginUrlAvailable" in error) {
@@ -41,7 +44,10 @@ export class LoginService implements ILoginService {
         
         try {
             await this.getLegacyAccessTokenFromIoBroker(baseUri, allowSelfSignedCertificate, "", "");
-            // An exception is expected, even if logging in is necessary
+            // At most cases an exception is expected, even if logging in is necessary
+            // If Admin < 7.6.0 and authentication is disabled, an invalid token is received. We just 
+            // assume that no login is necessary in this case.
+            return LoginType.legacy;
         }
         catch (error: ILoginError | unknown) {
             if (error && typeof error === "object" && "isLoginUrlAvailable" in error) {
@@ -136,11 +142,13 @@ export class LoginService implements ILoginService {
     }
 
     private getOAuthAccessTokenFromIoBroker(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<IAccessToken> {
+        this.logDebug("Getting access token from ioBroker with OAuth2");
         const postData = `grant_type=password&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=true&client_id=ioBroker`;
         return this.getAccessTokenFromIoBroker(baseUri, allowSelfSignedCertificate, postData, '/oauth/token');
     }
 
     private getLegacyAccessTokenFromIoBroker(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<IAccessToken> {
+        this.logDebug("Getting access token from ioBroker with legacy method");
         const postData = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=on`;
         return this.getAccessTokenFromIoBroker(baseUri, allowSelfSignedCertificate, postData, '/login');
     }

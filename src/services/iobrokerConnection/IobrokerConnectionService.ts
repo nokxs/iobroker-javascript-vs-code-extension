@@ -140,7 +140,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
             
             this.logDebug(`Force login: ${forceLogin}`);
 
-            const loginType = await this.loginService.getLoginType(uri, allowSelfSignedCertificate);
+            const loginType = forceLogin ? LoginType.oAuth2 : await this.loginService.getLoginType(uri, allowSelfSignedCertificate);
             if (forceLogin || loginType !== LoginType.noLogin) {
                 this.logDebug(`Login is necessary`);
 
