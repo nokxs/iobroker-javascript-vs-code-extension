@@ -31,7 +31,7 @@ export class LoginService implements ILoginService {
             await this.getOAuthAccessTokenFromIoBroker(baseUri, allowSelfSignedCertificate, "", "");
             // At most cases an exception is expected, even if logging in is necessary
             // If Admin < 7.6.0 and authentication is disabled, an invalid token is received. We just 
-            // assume that no login is necessary in this case.
+            // assume that legacy is necessary in this case.
             return LoginType.legacy;
         }
         catch (error: ILoginError | unknown) {
@@ -46,7 +46,7 @@ export class LoginService implements ILoginService {
             await this.getLegacyAccessTokenFromIoBroker(baseUri, allowSelfSignedCertificate, "", "");
             // At most cases an exception is expected, even if logging in is necessary
             // If Admin < 7.6.0 and authentication is disabled, an invalid token is received. We just 
-            // assume that no login is necessary in this case.
+            // assume that legacy login is necessary in this case.
             return LoginType.legacy;
         }
         catch (error: ILoginError | unknown) {
@@ -144,23 +144,24 @@ export class LoginService implements ILoginService {
     private getOAuthAccessTokenFromIoBroker(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<IAccessToken> {
         this.logDebug("Getting access token from ioBroker with OAuth2");
         const postData = `grant_type=password&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=true&client_id=ioBroker`;
-        return this.getAccessTokenFromIoBroker(baseUri, allowSelfSignedCertificate, postData, '/oauth/token');
+        return this.getAccessTokenFromIoBroker(baseUri, LoginType.oAuth2, allowSelfSignedCertificate, postData, '/oauth/token');
     }
 
     private getLegacyAccessTokenFromIoBroker(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, password: string): Promise<IAccessToken> {
         this.logDebug("Getting access token from ioBroker with legacy method");
         const postData = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&stayloggedin=on`;
-        return this.getAccessTokenFromIoBroker(baseUri, allowSelfSignedCertificate, postData, '/login');
+        return this.getAccessTokenFromIoBroker(baseUri, LoginType.legacy, allowSelfSignedCertificate, postData, '/login');
     }
 
     private getAccessTokenFromIoBroker(
         baseUri: Uri, 
+        loginType: LoginType,
         allowSelfSignedCertificate: boolean, 
         postData: string, 
         path: string): Promise<IAccessToken> {
         return new Promise((resolve, reject) => {
             const options = this.getLoginPostOptions(baseUri, path, allowSelfSignedCertificate, postData);
-            const req = this.createRequest(baseUri, options, resolve, reject);
+            const req = this.createRequest(baseUri, loginType, options, resolve, reject);
 
             req.on('error', (e) => {
                 reject(e);
@@ -194,7 +195,11 @@ export class LoginService implements ILoginService {
         };
     }
 
-    private async requestHandler(res: http.IncomingMessage, resolve: (value: IAccessToken) => void, reject: (reason?: any) => void) {
+    private async requestHandler(
+        loginType: LoginType,
+        res: http.IncomingMessage, 
+        resolve: (value: IAccessToken) => void, 
+        reject: (reason?: any) => void) {
 
         if (res.statusCode && res.statusCode !== 200 && res.statusCode !== 302) {
             const result: ILoginError = { 
@@ -218,8 +223,18 @@ export class LoginService implements ILoginService {
 
         const cookie = cookies[0];
 
-        // const connectToken = `connect.sid=${this.getCookieValue(cookie, "connect.sid")}`;
-        const connectToken = `access_token=${this.getCookieValue(cookie, "access_token")}`;
+        let connectToken: string | undefined = undefined;
+        if (loginType === LoginType.oAuth2) {
+            connectToken = `access_token=${this.getCookieValue(cookie, "access_token")}`;
+        }
+        else if (loginType === LoginType.legacy) {
+            connectToken = `connect.sid=${this.getCookieValue(cookie, "connect.sid")}`;
+            
+        }
+        else {
+            throw new Error("Login type is not supported: " + loginType);
+        }
+        
         const expires = new Date(this.getCookieValue(cookie, "Expires"));
 
         this.logDebug(`Got new access token which expires on ${expires}`);
@@ -236,13 +251,18 @@ export class LoginService implements ILoginService {
         return startSubString.substring(0, endIndex);
     }
 
-    private createRequest(uri: Uri, options: http.RequestOptions, resolve: (value: IAccessToken) => void, reject: (reason?: any) => void): http.ClientRequest {
+    private createRequest(
+        uri: Uri,
+        loginType: LoginType, 
+        options: http.RequestOptions, 
+        resolve: (value: IAccessToken) => void, 
+        reject: (reason?: any) => void): http.ClientRequest {
 
         if (uri.scheme === "http") {
-            return http.request(options, res => this.requestHandler(res, resolve, reject));
+            return http.request(options, res => this.requestHandler(loginType, res, resolve, reject));
         }
 
-        return https.request(options, res => this.requestHandler(res, resolve, reject));
+        return https.request(options, res => this.requestHandler(loginType, res, resolve, reject));
     }
 
     private createHttpsAgent(allowSelfSignedCertificate: boolean) {
