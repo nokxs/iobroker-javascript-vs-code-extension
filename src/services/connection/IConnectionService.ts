@@ -9,7 +9,7 @@ export interface IConnectionService {
     isConnected: boolean;
     
     connect(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean): Promise<void>
-    connectWithToken(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean, accessToken: string): Promise<void>
+    connectWithToken(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean, accessToken: string, username: string | null): Promise<void>
     
     disconnect(): Promise<void>
     
