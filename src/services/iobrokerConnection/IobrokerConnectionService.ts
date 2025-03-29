@@ -155,7 +155,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
                     return;
                 }
 
-                await connectionService.connectWithToken(uri, useAutoReconnect, allowSelfSignedCertificate, token);
+                await connectionService.connectWithToken(uri, useAutoReconnect, allowSelfSignedCertificate, token, this.config.username);
             }
             else {
                 this.logDebug("Login not necessary. Connecting to iobroker...");

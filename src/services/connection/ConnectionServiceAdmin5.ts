@@ -32,8 +32,8 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
         await this.connectInternal(uri, autoReconnect, allowSelfSignedCertificate, options);
     }
 
-    async connectWithToken(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean, accessToken: string): Promise<void> {
-        const options = {cookie: accessToken, name: "admin"};        
+    async connectWithToken(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean, accessToken: string, username: string | null): Promise<void> {
+        const options = {cookie: accessToken, name: username};        
         await this.connectInternal(uri, autoReconnect, allowSelfSignedCertificate, options);
     }
 
