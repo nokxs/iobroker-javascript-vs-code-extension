@@ -21,8 +21,7 @@ export class DownloadCommandProxy implements ICommand {
     ) {
         this.downloadCommand = new DownloadCommand(iobrokerConnectionService, scriptService, scriptRepositoryService);
     }
-    
-    
+        
     async execute(...args: any[]) {
         this.downloadCommand.execute(...args);
     }
@@ -41,7 +40,7 @@ export class DownloadCommand implements ICommand {
     async execute(...args: any[]) {
         if (!this.iobrokerConnectionService.isConnected()) {
             await this.iobrokerConnectionService.connect();
-        } 
+        }
 
         await this.scriptRepositoryService.updateFromServer();
         const localScript = await this.tryGetLocalScript(args);

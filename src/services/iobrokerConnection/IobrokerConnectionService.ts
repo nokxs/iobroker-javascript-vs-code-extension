@@ -190,7 +190,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
                     await this.scriptService.saveAllToFile(scripts);
                     await this.scriptRepositoryService.evaluateScriptOnRemoteForAllScripts();
                     await this.scriptRepositoryService.evaluateDirtyStateForAllScripts();
-                    this.logDebug("All scripts downloaded")
+                    this.logDebug("All scripts downloaded");
                 }
             }
         } catch (error) {
