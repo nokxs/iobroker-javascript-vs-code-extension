@@ -52,17 +52,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     async updateFromServer(): Promise<void> {
-        const ioBrokerDirectories = await this.directoryService.downloadAllDirectories();
-        const unsortedDirectories = ioBrokerDirectories.map(dir => {
-            return {
-                _id: dir._id,
-                common: dir.common,
-                relativeUri: this.getRelativeDirectoryUri(dir, ioBrokerDirectories),
-                absoluteUri: this.getAbsoluteDirectoryUri(dir, ioBrokerDirectories)
-            };
-        });
-
-        this.directories = unsortedDirectories.sort((dir1, dir2) => this.compareIds(dir1._id, dir2._id));
+        await this.updateAllDirectoriesFromServer();
 
         const ioBrokerScripts = await this.scriptRemoteService.downloadAllScripts();
         const unsortedScripts = await Promise.all(ioBrokerScripts.map(async script => {
@@ -72,8 +62,15 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         this.scripts = this.sortScripts(unsortedScripts);
     }
 
-    async updateSingleScriptFromServer(id: ScriptId): Promise<void> {
+    async updateSingleScriptOrDirectoryFromServer(id: ScriptId): Promise<void> {
         const updatedScript = await this.scriptRemoteService.downloadScriptWithId(id);
+
+        // Id is not a script, but a directory
+        if (updatedScript && updatedScript.type === "channel") {
+            // Assumption: Directories are not changed very often, therefore it is ok to update all directories
+            await this.updateAllDirectoriesFromServer();
+            return;
+        }
         
         // find script in the local repository
         const script = this.scripts.find(s => s._id.toLocaleLowerCase() === id.toLocaleLowerCase());
@@ -83,8 +80,14 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
             script.ioBrokerScript = updatedScript;
             script.isDirty = await this.isScriptDirty(updatedScript, script.absoluteUri);
             script.isRemoteOnly = await this.isRemoteOnly(script.absoluteUri);
-        } else {
-            // If the script is not found in the local repository, add it
+            return;
+        } 
+        else if(updatedScript) {
+            // Script is not found in the local repository, but exists on the server
+            this.scripts.push(await this.createLocalScript(updatedScript));
+        } 
+        else {
+            // If the script is not found, add it as local only item
             const localScript = await this.createLocalScript(updatedScript);
             this.scripts.push(localScript);
             this.scripts = this.sortScripts(this.scripts);
@@ -183,7 +186,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     async onScriptChanged(id: string): Promise<void> {
         // TODO: Currently all scripts are redownloaded every time a single script changes.
         //       Performance could be optimized, if only the changed script is updated.
-        await this.updateSingleScriptFromServer(new ScriptId(id));
+        await this.updateSingleScriptOrDirectoryFromServer(new ScriptId(id));
         this.raiseScriptChangedEvent(id);
     }
 
@@ -191,6 +194,20 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         this.directories = [];
         this.scripts = [];
         this.raiseScriptChangedEvent(undefined);
+    }
+
+    private async updateAllDirectoriesFromServer(): Promise<void> {
+        const ioBrokerDirectories = await this.directoryService.downloadAllDirectories();
+        const unsortedDirectories = ioBrokerDirectories.map(dir => {
+            return {
+                _id: dir._id,
+                common: dir.common,
+                relativeUri: this.getRelativeDirectoryUri(dir, ioBrokerDirectories),
+                absoluteUri: this.getAbsoluteDirectoryUri(dir, ioBrokerDirectories)
+            };
+        });
+
+        this.directories = unsortedDirectories.sort((dir1, dir2) => this.compareIds(dir1._id, dir2._id));
     }
 
     private sortScripts(scripts: ILocalScript[]): ILocalScript[] {
