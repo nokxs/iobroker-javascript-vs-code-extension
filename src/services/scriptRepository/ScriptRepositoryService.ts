@@ -15,6 +15,7 @@ import { EngineType } from "../../models/EngineType";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { ScriptId } from "../../models/ScriptId";
 import { IScriptIdService } from "../scriptId/IScriptIdService";
+import { IDebugLogService } from "../debugLogService/IDebugLogService";
 
 @injectable()
 export class ScriptRepositoryService implements IScriptRepositoryService, IScriptChangedEventListener {
@@ -29,6 +30,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
         @inject(TYPES.services.script) private scriptService: IScriptService,
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
+        @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,
     ) { }
 
     async init(): Promise<void> {
@@ -68,29 +70,40 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         // Id is not a script, but a directory
         if (updatedScript && updatedScript.type === "channel") {
             // Assumption: Directories are not changed very often, therefore it is ok to update all directories
+            this.logDebug(`'${id}' was changed and it is a directory. Updating all directories...`);
             await this.updateAllDirectoriesFromServer();
             return;
         }
         
-        // find script in the local repository
         const script = this.scripts.find(s => s._id.toLocaleLowerCase() === id.toLocaleLowerCase());
         
         if (script) {
-            // Update the existing script
-            script.ioBrokerScript = updatedScript;
-            script.isDirty = await this.isScriptDirty(updatedScript, script.absoluteUri);
-            script.isRemoteOnly = await this.isRemoteOnly(script.absoluteUri);
-            return;
-        } 
-        else if(updatedScript) {
-            // Script is not found in the local repository, but exists on the server
-            this.scripts.push(await this.createLocalScript(updatedScript));
-        } 
-        else {
-            // If the script is not found, add it as local only item
+            if (updatedScript) {
+                this.logDebug(`'${id}' was changed was found locally. Updating the script...`);
+                script.ioBrokerScript = updatedScript;
+                script.isDirty = await this.isScriptDirty(updatedScript, script.absoluteUri);
+                script.isRemoteOnly = await this.isRemoteOnly(script.absoluteUri);
+                return;
+            }
+            else {
+                this.logDebug(`'${id}' was removed and was found locally. Removing the script...`);
+                this.scripts = this.scripts.filter(s => s._id !== script._id);
+                this.raiseScriptChangedEvent(script._id);
+                return;
+            }
+        }
+        else if (updatedScript){
+            // Hack: Sleep 1 seconds to give the local file system time to create the file
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            this.logDebug(`'${id}' was changed and was not found locally. Adding the script...`);
             const localScript = await this.createLocalScript(updatedScript);
             this.scripts.push(localScript);
             this.scripts = this.sortScripts(this.scripts);
+        }
+        else {
+            this.logDebug(`'${id}' was removed and was not found locally. It might have been a directory, so update them...`);            
+            await this.updateAllDirectoriesFromServer();
         }
     }
 
@@ -365,5 +378,9 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
                 this.evaluateDirtyState(matchingScript);
             }
         }
+    }
+
+    private logDebug(message: string) {
+        this.debugLogService.log(message, "ScriptRepositoryService");
     }
 }
