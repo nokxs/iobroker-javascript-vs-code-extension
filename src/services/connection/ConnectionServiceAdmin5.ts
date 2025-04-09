@@ -24,6 +24,10 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     ) { }
 
     registerConnectionEventListener(listener: IConnectionEventListener): void {
+        if (this.connectionEventListeners.includes(listener)) {
+            return; 
+        }
+        
         this.connectionEventListeners.push(listener);
     }
 

@@ -11,6 +11,7 @@ export interface IScriptRepositoryService {
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void
 
     updateFromServer(): Promise<void>
+    updateSingleScriptFromServer(script: ScriptId): Promise<void>
 
     evaluateDirtyStateForAllScripts(): Promise<void>
     evaluateDirtyState(script: ILocalScript): Promise<void>

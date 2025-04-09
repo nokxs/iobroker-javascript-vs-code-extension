@@ -16,6 +16,10 @@ export class StateAndObjectRemoteService implements IStateAndObjectRemoteService
     ) {}
 
     registerObjectChangedEventListener(listener: IObjectChangedEventListener): void {
+        if (this.objectEventListeners.includes(listener)) {
+            return;
+        }
+        
         this.objectEventListeners.push(listener);
     }
 

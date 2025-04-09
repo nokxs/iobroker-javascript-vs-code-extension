@@ -33,6 +33,10 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
+        if (this.scriptEventListeners.includes(listener)) {
+            return;
+        }
+
         this.scriptEventListeners.push(listener);
     }
 

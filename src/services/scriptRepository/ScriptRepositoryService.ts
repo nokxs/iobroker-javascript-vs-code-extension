@@ -44,6 +44,10 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
+        if (this.scriptEventListeners.includes(listener)) {
+            return;
+        }
+
         this.scriptEventListeners.push(listener);
     }
 
@@ -62,20 +66,29 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
 
         const ioBrokerScripts = await this.scriptRemoteService.downloadAllScripts();
         const unsortedScripts = await Promise.all(ioBrokerScripts.map(async script => {
-            const absoluteUri = this.getAbsoluteFileUri(script, this.directories);
-            const relativeUri = this.getRelativeFileUri(script, this.directories);
-
-            return {
-                _id: script._id,
-                ioBrokerScript: script,
-                absoluteUri: absoluteUri,
-                relativeUri: relativeUri,
-                isDirty: await this.isScriptDirty(script, absoluteUri),
-                isRemoteOnly: await this.isRemoteOnly(absoluteUri)
-            };
+            return await this.createLocalScript(script);
         }));
 
-        this.scripts = unsortedScripts.sort((script1, script2) => this.compareIds(script1._id, script2._id));
+        this.scripts = this.sortScripts(unsortedScripts);
+    }
+
+    async updateSingleScriptFromServer(id: ScriptId): Promise<void> {
+        const updatedScript = await this.scriptRemoteService.downloadScriptWithId(id);
+        
+        // find script in the local repository
+        const script = this.scripts.find(s => s._id.toLocaleLowerCase() === id.toLocaleLowerCase());
+        
+        if (script) {
+            // Update the existing script
+            script.ioBrokerScript = updatedScript;
+            script.isDirty = await this.isScriptDirty(updatedScript, script.absoluteUri);
+            script.isRemoteOnly = await this.isRemoteOnly(script.absoluteUri);
+        } else {
+            // If the script is not found in the local repository, add it
+            const localScript = await this.createLocalScript(updatedScript);
+            this.scripts.push(localScript);
+            this.scripts = this.sortScripts(this.scripts);
+        }
     }
 
     async evaluateDirtyStateForAllScripts(): Promise<void> {
@@ -170,7 +183,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     async onScriptChanged(id: string): Promise<void> {
         // TODO: Currently all scripts are redownloaded every time a single script changes.
         //       Performance could be optimized, if only the changed script is updated.
-        await this.updateFromServer();
+        await this.updateSingleScriptFromServer(new ScriptId(id));
         this.raiseScriptChangedEvent(id);
     }
 
@@ -178,6 +191,24 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         this.directories = [];
         this.scripts = [];
         this.raiseScriptChangedEvent(undefined);
+    }
+
+    private sortScripts(scripts: ILocalScript[]): ILocalScript[] {
+        return scripts.sort((script1, script2) => this.compareIds(script1._id, script2._id));
+    }
+
+    private async createLocalScript(script: IScript): Promise<ILocalScript> {
+        const absoluteUri = this.getAbsoluteFileUri(script, this.directories);
+        const relativeUri = this.getRelativeFileUri(script, this.directories);
+
+        return {
+            _id: script._id,
+            ioBrokerScript: script,
+            absoluteUri: absoluteUri,
+            relativeUri: relativeUri,
+            isDirty: await this.isScriptDirty(script, absoluteUri),
+            isRemoteOnly: await this.isRemoteOnly(absoluteUri)
+        };
     }
 
     private compareIds(id1: ScriptId, id2: ScriptId): number {
