@@ -7,21 +7,18 @@ import { IScriptRepositoryService } from '../../services/scriptRepository/IScrip
 import { ILocalScript } from '../../models/ILocalScript';
 import { ScriptItem } from '../scriptExplorer/ScriptItem';
 import { IChangedScriptsProvider } from './IChangedScriptsProvider';
-import { IConfigRepositoryService } from '../../services/configRepository/IConfigRepositoryService';
-import { IWorkspaceService } from '../../services/workspace/IWorkspaceService';
 
 @injectable()
 export class ChangedScriptsProvider implements vscode.TreeDataProvider<ScriptItem>, IChangedScriptsProvider, IScriptChangedEventListener {
 
     private _onDidChangeTreeData: vscode.EventEmitter<ScriptItem | undefined | null | void> = new vscode.EventEmitter<ScriptItem | undefined | null | void>();
+    private _scriptCountCallback?: (count: number) => void;
 
     onDidChangeTreeData?: vscode.Event<void | ScriptItem | null | undefined> | undefined = this._onDidChangeTreeData.event;
 
     constructor(
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
-        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
-        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
-        @inject(TYPES.services.workspace) private workSpaceService: IWorkspaceService
+        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService
     ) {
         scriptRepositoryService.registerScriptChangedEventListener(this);
     }
@@ -35,7 +32,11 @@ export class ChangedScriptsProvider implements vscode.TreeDataProvider<ScriptIte
             return Promise.resolve([]);
         }
 
-        return await this.getRootLevelItems();
+        return await this.getChangedScriptItems();
+    }
+
+    onScriptCountChanged(callback: (count: number) => void): void {
+        this._scriptCountCallback = callback;
     }
 
     refresh(): void {
@@ -50,9 +51,16 @@ export class ChangedScriptsProvider implements vscode.TreeDataProvider<ScriptIte
         this.refresh();
     }
 
-    private async getRootLevelItems(): Promise<Array<ScriptItem>> {
+    private async getChangedScriptItems(): Promise<Array<ScriptItem>> {
         const scripts = this.scriptRepositoryService.getAllChangedScripts();
+        this.notifyScriptCountChange(scripts);
         return this.convertToScriptItems(scripts);
+    }
+
+    private notifyScriptCountChange(scripts: ILocalScript[]): void {
+        if (this._scriptCountCallback) {
+            this._scriptCountCallback(scripts.length);
+        }
     }
 
     private convertToScriptItems(scripts: ILocalScript[]): ScriptItem[] {
