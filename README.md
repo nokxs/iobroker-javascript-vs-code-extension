@@ -20,7 +20,7 @@ If your ioBroker installation is protected via password, the extension will ask 
 
 ### Type definitions
 
-If you choose to configure ioBroker type definitions, the current defintions are downloaded from [GitHub](https://github.com/ioBroker/ioBroker.javascript/blob/master/lib/javascript.d.ts). Additionaly a `tsconfig.json` is created
+If you choose to configure ioBroker type definitions, the current defintions are downloaded from [GitHub](https://github.com/ioBroker/ioBroker.javascript/blob/master/src/lib/javascript.d.ts). Additionaly a `tsconfig.json` is created
 (if it does not exist yet) with the necessary settings. This enables Visual Studio Code to know
 the [ioBroker specific javascript functions](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/javascript.md).
 
