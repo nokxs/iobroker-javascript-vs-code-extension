@@ -145,6 +145,7 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 | `autoUpload` | Automatically upload scripts on save? | No | false |
 | `scriptAutoRun` | Automatically start a uploaded script? | No | false |
 | `forceLogin` | Should login detection be skipped and login to ioBroker be forced? Works only with admin version >= 7.6.2 | No | false |
+| `iobrokerNodeTypesVersion` | Specify the version of @types/node to use for TypeScript definitions. Check [available versions on npm](https://www.npmjs.com/package/@types/node?activeTab=versions) to find a suitable version. Use the version number without the 'v' prefix (e.g., "20.14.10"). | No | "20.14.10" |
 
 ### Admin versions
 The extension currently supports the following Admin versions:

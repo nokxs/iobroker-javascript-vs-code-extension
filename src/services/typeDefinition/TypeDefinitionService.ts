@@ -4,6 +4,7 @@ import { inject, injectable } from "inversify";
 import TYPES from "../../Types";
 import { IFileService } from "../file/IFileService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
+import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { Uri, WorkspaceFolder } from "vscode";
 import * as tar from 'tar';
 
@@ -69,6 +70,7 @@ declare global {
     constructor(
         @inject(TYPES.services.file) private fileService: IFileService,
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
+        @inject(TYPES.services.configRepository) private configRepository: IConfigRepositoryService,
     ) {}
 
     async downloadIobrokerTypeDefinitionsFromGithubAndSave(): Promise<void> {
@@ -84,15 +86,24 @@ declare global {
     }
     
     async downloadNodeTypeDefinitionsFromNpmAndSave(): Promise<void> {
-        const response = await axios.get("https://registry.npmjs.org/@types/node/-/node-20.14.10.tgz", { responseType: 'arraybuffer' });
+        const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
+        const config = await this.configRepository.read(workspaceFolder);
+        const version = config.iobrokerNodeTypesVersion || "20.14.10"; // Default to a stable version if not set
+
+        const response = await axios.get(`https://registry.npmjs.org/@types/node/-/node-${version}.tgz`, { responseType: 'arraybuffer' });
         if (response.status === 200) {
-            const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
             const tempUri = Uri.joinPath(workspaceFolder.uri, ".iobroker/types/temp.tgz");
             const extractPath = Uri.joinPath(workspaceFolder.uri, ".iobroker/types/node").fsPath;
+            const extractUri = Uri.file(extractPath);
 
             // Save .tgz file
             await this.fileService.saveToFile(tempUri, Buffer.from(response.data));
-            await this.fileService.createDirectory(Uri.file(extractPath));
+
+            if (this.fileService.directoryExists(extractUri)) { 
+                await this.fileService.deleteDirectory(extractUri);
+            }
+
+            await this.fileService.createDirectory(extractUri);
             
             // Extract the contents
             await tar.x({
