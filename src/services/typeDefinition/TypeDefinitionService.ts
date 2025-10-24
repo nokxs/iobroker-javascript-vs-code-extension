@@ -5,6 +5,7 @@ import TYPES from "../../Types";
 import { IFileService } from "../file/IFileService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
+import { IDebugLogService } from "../debugLogService/IDebugLogService";
 import { Uri, WorkspaceFolder } from "vscode";
 import * as tar from 'tar';
 
@@ -71,17 +72,23 @@ declare global {
         @inject(TYPES.services.file) private fileService: IFileService,
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
         @inject(TYPES.services.configRepository) private configRepository: IConfigRepositoryService,
+        @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,
     ) {}
 
     async downloadIobrokerTypeDefinitionsFromGithubAndSave(): Promise<void> {
+        this.debugLogService.log("Downloading ioBroker type definitions from GitHub", "TypeDefinition");
         const response = await axios.get("https://raw.githubusercontent.com/ioBroker/ioBroker.javascript/refs/heads/master/src/lib/javascript.d.ts");
         if (response.status === 200) {
             const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
             const uri = Uri.joinPath(workspaceFolder.uri, ".iobroker/types/javascript.d.ts");
 
+            this.debugLogService.log(`Saving ioBroker type definitions to ${uri.fsPath}`, "TypeDefinition");
             await this.fileService.saveToFile(uri, response.data);
+            this.debugLogService.log("Successfully downloaded and saved ioBroker type definitions", "TypeDefinition");
         } else {
-            throw new Error(`ioBroker: Couldn't download new type defintions: ${response.status}: ${response.statusText}`);
+            const error = `ioBroker: Couldn't download new type defintions: ${response.status}: ${response.statusText}`;
+            this.debugLogService.logError(error, "TypeDefinition");
+            throw new Error(error);
         }
     }
     
@@ -90,21 +97,25 @@ declare global {
         const config = await this.configRepository.read(workspaceFolder);
         const version = config.iobrokerNodeTypesVersion || "20.14.10"; // Default to a stable version if not set
 
+        this.debugLogService.log(`Downloading @types/node version ${version} from npm`, "TypeDefinition");
         const response = await axios.get(`https://registry.npmjs.org/@types/node/-/node-${version}.tgz`, { responseType: 'arraybuffer' });
         if (response.status === 200) {
             const tempUri = Uri.joinPath(workspaceFolder.uri, ".iobroker/types/temp.tgz");
             const extractPath = Uri.joinPath(workspaceFolder.uri, ".iobroker/types/node").fsPath;
             const extractUri = Uri.file(extractPath);
 
-            // Save .tgz file
+            this.debugLogService.log(`Saving temporary file to ${tempUri.fsPath}`, "TypeDefinition");
             await this.fileService.saveToFile(tempUri, Buffer.from(response.data));
 
             if (this.fileService.directoryExists(extractUri)) { 
+                this.debugLogService.log(`Cleaning up existing node types directory at ${extractPath}`, "TypeDefinition");
                 await this.fileService.deleteDirectory(extractUri);
             }
 
+            this.debugLogService.log(`Creating node types directory at ${extractPath}`, "TypeDefinition");
             await this.fileService.createDirectory(extractUri);
             
+            this.debugLogService.log("Extracting node types package...", "TypeDefinition");
             // Extract the contents
             await tar.x({
                 file: tempUri.fsPath,
@@ -113,7 +124,10 @@ declare global {
             });
 
             // Delete temporary .tgz file
+            this.debugLogService.log("Cleaning up temporary files", "TypeDefinition");
             await this.fileService.delete(tempUri);
+            
+            this.debugLogService.log("Successfully downloaded and installed node type definitions", "TypeDefinition");
         }
     }
     
