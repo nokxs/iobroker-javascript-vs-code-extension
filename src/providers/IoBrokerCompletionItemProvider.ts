@@ -51,7 +51,7 @@ export class IoBrokerCompletionItemProvider implements IIobrokerCompletionItemPr
                 },
                 insertText: statePart,
                 range: new Range(pos, new Position(wordRange.end.line, wordRange.end.character - 1)),
-                filterText: statePart + nameExpanded,
+                filterText: `${statePart} ${nameExpanded}`,
                 documentation: this.getDocumentation(<IObject>obj),
                 commitCharacters: ["."],
                 kind: isState ? CompletionItemKind.Variable : CompletionItemKind.Folder
