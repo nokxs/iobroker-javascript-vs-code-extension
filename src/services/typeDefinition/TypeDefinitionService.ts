@@ -5,6 +5,7 @@ import TYPES from "../../Types";
 import { IFileService } from "../file/IFileService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { Uri, WorkspaceFolder } from "vscode";
+import * as tar from 'tar';
 
 interface CompilerOptions {
     noEmit: boolean;
@@ -58,8 +59,7 @@ declare global {
         "include": [
             "**/*.js",
             "**/*.ts",
-            ".iobroker/types/javascript.d.ts",
-            ".iobroker/types/global.d.ts"
+            ".iobroker/types/**/*.d.ts"
         ],
         "exclude": [
             "node_modules/**"
@@ -71,7 +71,7 @@ declare global {
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
     ) {}
 
-    async downloadFromGithubAndSave(): Promise<void> {
+    async downloadIobrokerTypeDefinitionsFromGithubAndSave(): Promise<void> {
         const response = await axios.get("https://raw.githubusercontent.com/ioBroker/ioBroker.javascript/refs/heads/master/src/lib/javascript.d.ts");
         if (response.status === 200) {
             const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
@@ -80,6 +80,29 @@ declare global {
             await this.fileService.saveToFile(uri, response.data);
         } else {
             throw new Error(`ioBroker: Couldn't download new type defintions: ${response.status}: ${response.statusText}`);
+        }
+    }
+    
+    async downloadNodeTypeDefinitionsFromNpmAndSave(): Promise<void> {
+        const response = await axios.get("https://registry.npmjs.org/@types/node/-/node-20.14.10.tgz", { responseType: 'arraybuffer' });
+        if (response.status === 200) {
+            const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
+            const tempUri = Uri.joinPath(workspaceFolder.uri, ".iobroker/types/temp.tgz");
+            const extractPath = Uri.joinPath(workspaceFolder.uri, ".iobroker/types/node").fsPath;
+
+            // Save .tgz file
+            await this.fileService.saveToFile(tempUri, Buffer.from(response.data));
+            await this.fileService.createDirectory(Uri.file(extractPath));
+            
+            // Extract the contents
+            await tar.x({
+                file: tempUri.fsPath,
+                cwd: extractPath,
+                strip: 1 // Remove the first directory level (package)
+            });
+
+            // Delete temporary .tgz file
+            await this.fileService.delete(tempUri);
         }
     }
     

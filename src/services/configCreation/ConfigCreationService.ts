@@ -59,7 +59,7 @@ export class ConfigCreationService implements IConfigCreationService {
         }
         
         if (shouldCreateTypeDefinitionConfig && shouldCreateTypeDefinitionConfig === "Yes") {
-            await this.typeDefinitionService.downloadFromGithubAndSave();
+            await this.typeDefinitionService.downloadIobrokerTypeDefinitionsFromGithubAndSave();
             await this.typeDefinitionService.createConfig();
         }
 

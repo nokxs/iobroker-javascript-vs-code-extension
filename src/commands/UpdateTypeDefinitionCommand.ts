@@ -17,7 +17,8 @@ export class UpdateTypeDefinitionCommand implements ICommand {
         if (!this.iobrokerConnectionService.isConnected()) {
             await this.iobrokerConnectionService.connect();
         }
-        await this.typeDefinitionService.downloadFromGithubAndSave();
+        await this.typeDefinitionService.downloadIobrokerTypeDefinitionsFromGithubAndSave();
+        await this.typeDefinitionService.downloadNodeTypeDefinitionsFromNpmAndSave();
         await this.typeDefinitionService.createConfig();
         await this.typeDefinitionService.createGlobalTypeDefinitions();
     }

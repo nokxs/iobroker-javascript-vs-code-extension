@@ -104,7 +104,7 @@
 			},
 			{
 				"command": "iobroker-javascript.updateTypeDefinition",
-				"title": "iobroker: Update JS type definition from GitHub"
+				"title": "iobroker: Update JS type definitions"
 			},
 			{
 				"command": "iobroker-javascript.view.scriptExplorer.refresh",
@@ -326,6 +326,7 @@
 		"reflect-metadata": "^0.1.13",
 		"socket.io": "^2.5.0",
 		"socket.io-client": "^2.5.0",
+		"tar": "^7.5.1",
 		"ws": "^8.12.0"
 	},
 	"devDependencies": {
@@ -335,6 +336,7 @@
 		"@types/node": "^12.20.55",
 		"@types/socket.io": "^2.1.13",
 		"@types/socket.io-client": "^1.4.36",
+		"@types/tar": "^6.1.13",
 		"@types/vscode": "^1.74.0",
 		"@types/ws": "^8.5.4",
 		"@typescript-eslint/eslint-plugin": "^5.49.0",
