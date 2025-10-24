@@ -72,7 +72,7 @@ declare global {
     ) {}
 
     async downloadFromGithubAndSave(): Promise<void> {
-        const response = await axios.get("https://raw.githubusercontent.com/ioBroker/ioBroker.javascript/master/lib/javascript.d.ts");
+        const response = await axios.get("https://raw.githubusercontent.com/ioBroker/ioBroker.javascript/refs/heads/master/src/lib/javascript.d.ts");
         if (response.status === 200) {
             const workspaceFolder = await this.workspaceService.getWorkspaceToUse();
             const uri = Uri.joinPath(workspaceFolder.uri, ".iobroker/types/javascript.d.ts");
