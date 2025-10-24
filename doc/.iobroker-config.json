@@ -12,5 +12,6 @@
   "autoUpload": false,
   "scriptAutoRun": false,
   "collectDebugLog": false,
-  "forceLogin": false
+  "forceLogin": false,
+  "iobrokerNodeTypesVersion": "20.14.10"
 }
