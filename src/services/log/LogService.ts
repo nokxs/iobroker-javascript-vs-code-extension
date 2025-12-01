@@ -56,7 +56,32 @@ export class LogService implements ILogService {
 
     private isMessageForFile(logMessage: ILogMessage, uri: Uri): boolean {
         const scriptId = <string>this.scriptIdService.getIoBrokerId(uri);
-        return logMessage.message.includes(scriptId);
+        const messageScriptId = LogService.extractScriptIdFromMessage(logMessage.message);
+        
+        if (!messageScriptId) {
+            return false;
+        }
+        
+        return messageScriptId === scriptId;
+    }
+
+    /**
+     * Extracts the script ID from a log message.
+     * Expected format: "javascript.0 (PID) script.name: log content"
+     * 
+     * @param message The log message to parse
+     * @returns The extracted script ID or null if the format is invalid
+     */
+    public static extractScriptIdFromMessage(message: string): string | null {
+        // match is the array result from the regex. match[0] is the full match (e.g., ") script.js.logic.xmas: ")
+        // match[1] is the first capture group containing just the script name (e.g., "script.js.logic.xmas")
+        const match = message.match(/\)\s+([^:]+):\s+/);
+        
+        if (!match || !match[1]) {
+            return null;
+        }
+        
+        return match[1];
     }
 
     private getAllOutputChannel(): OutputChannel {
