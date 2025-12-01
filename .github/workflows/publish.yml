@@ -13,6 +13,10 @@ jobs:
       uses: actions/setup-node@v2
       with:
         node-version: 20
+    - name: Update version from tag
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        npm version $VERSION --no-git-tag-version
     - name: Install
       run: npm ci
     - name: Compile
