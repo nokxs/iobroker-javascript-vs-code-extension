@@ -148,7 +148,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
             case EngineType.typescript:
                 return "TypeScript/ts";
             case EngineType.javascript:
-                return "JavaScript/js";
+                return "Javascript/js";
             case EngineType.blockly:
                 return "Rules";
             case EngineType.rules:
