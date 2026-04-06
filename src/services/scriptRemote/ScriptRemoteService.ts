@@ -13,16 +13,17 @@ import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnec
 import { EngineType } from "../../models/EngineType";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
-import * as fs from 'fs';
+import { promises as fs } from 'fs';
 import * as path from 'path';
 
 export const SECRET_PLACEHOLDER_PATTERN = /__IOBROKER_SECRET_([A-Za-z0-9_]+)__/g;
+const SECRET_PLACEHOLDER_EXISTS_PATTERN = /__IOBROKER_SECRET_([A-Za-z0-9_]+)__/;
 
 export function replaceSecretPlaceholders(scriptSource: string, envContent: string): string {
     const env = parseEnvContent(envContent);
 
     return scriptSource.replace(SECRET_PLACEHOLDER_PATTERN, (placeholder, key) => {
-        return env.has(key) ? <string>env.get(key) : placeholder;
+        return env.has(key) ? env.get(key)! : placeholder;
     });
 }
 
@@ -103,7 +104,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
 
     async uploadScript(script: IScript): Promise<void> {
         script.common.engineType = this.getFixedEngineTypeCasing(script.common.engineType);
-        script.common.source = this.replaceSecretsFromDotEnvFile(script.common.source ?? "");
+        script.common.source = await this.replaceSecretsFromDotEnvFile(script.common.source ?? "");
 
         if (this.configRepositoryService.config.scriptAutoRun) {
             script.common.enabled = true;
@@ -207,8 +208,8 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         return "";
     }
 
-    private replaceSecretsFromDotEnvFile(scriptSource: string): string {
-        if (!scriptSource.match(SECRET_PLACEHOLDER_PATTERN)) {
+    private async replaceSecretsFromDotEnvFile(scriptSource: string): Promise<string> {
+        if (!SECRET_PLACEHOLDER_EXISTS_PATTERN.test(scriptSource)) {
             return scriptSource;
         }
 
@@ -218,10 +219,10 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         }
 
         const envPath = path.join(workspacePath, ".env");
-        if (!fs.existsSync(envPath)) {
+        try {
+            return replaceSecretPlaceholders(scriptSource, await fs.readFile(envPath, "utf8"));
+        } catch {
             return scriptSource;
         }
-
-        return replaceSecretPlaceholders(scriptSource, fs.readFileSync(envPath, "utf8"));
     }
 }
