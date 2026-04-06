@@ -12,6 +12,53 @@ import { IDirectoryService } from "../directory/IDirectoryService";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { EngineType } from "../../models/EngineType";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
+import { IWorkspaceService } from "../workspace/IWorkspaceService";
+import * as fs from 'fs';
+import * as path from 'path';
+
+export const SECRET_PLACEHOLDER_PATTERN = /__IOBROKER_SECRET_([A-Za-z0-9_]+)__/g;
+
+export function replaceSecretPlaceholders(scriptSource: string, envContent: string): string {
+    const env = parseEnvContent(envContent);
+
+    return scriptSource.replace(SECRET_PLACEHOLDER_PATTERN, (placeholder, key) => {
+        return env.has(key) ? <string>env.get(key) : placeholder;
+    });
+}
+
+function parseEnvContent(envContent: string): Map<string, string> {
+    const env = new Map<string, string>();
+    const lines = envContent.split(/\r?\n/);
+
+    lines.forEach(line => {
+        const trimmedLine = line.trim();
+        if (!trimmedLine || trimmedLine.startsWith("#")) {
+            return;
+        }
+
+        const separatorIndex = trimmedLine.indexOf("=");
+        if (separatorIndex <= 0) {
+            return;
+        }
+
+        const key = trimmedLine.substring(0, separatorIndex).trim();
+        const rawValue = trimmedLine.substring(separatorIndex + 1).trim();
+        const value = removeWrappingQuotes(rawValue);
+        env.set(key, value);
+    });
+
+    return env;
+}
+
+function removeWrappingQuotes(value: string): string {
+    if (value.length >= 2) {
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+            return value.substring(1, value.length - 1);
+        }
+    }
+
+    return value;
+}
 
 @injectable()
 export class ScriptRemoteService implements IScriptRemoteService, IConnectionEventListener {
@@ -21,7 +68,8 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
         @inject(TYPES.services.directory) private directoryService: IDirectoryService,
-        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService
+        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
+        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService
     ) { }
 
     init(): void {
@@ -55,6 +103,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
 
     async uploadScript(script: IScript): Promise<void> {
         script.common.engineType = this.getFixedEngineTypeCasing(script.common.engineType);
+        script.common.source = this.replaceSecretsFromDotEnvFile(script.common.source ?? "");
 
         if (this.configRepositoryService.config.scriptAutoRun) {
             script.common.enabled = true;
@@ -156,5 +205,23 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         }
 
         return "";
+    }
+
+    private replaceSecretsFromDotEnvFile(scriptSource: string): string {
+        if (!scriptSource.match(SECRET_PLACEHOLDER_PATTERN)) {
+            return scriptSource;
+        }
+
+        const workspacePath = this.workspaceService.workspaceToUse?.uri?.fsPath;
+        if (!workspacePath) {
+            return scriptSource;
+        }
+
+        const envPath = path.join(workspacePath, ".env");
+        if (!fs.existsSync(envPath)) {
+            return scriptSource;
+        }
+
+        return replaceSecretPlaceholders(scriptSource, fs.readFileSync(envPath, "utf8"));
     }
 }
