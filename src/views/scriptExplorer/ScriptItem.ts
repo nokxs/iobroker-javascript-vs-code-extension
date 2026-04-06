@@ -41,7 +41,7 @@ export class ScriptItem extends vscode.TreeItem {
 
     private getScriptName(script: IScript) {
         const name = script.common?.name ?? "INVALID NAME";
-        const state = script.common.enabled ? "▶" : "❚❚";
+        const state = script.common.enabled ? "▶️" : "⏹️";
         const jsInstanceNumber = this.getJsInstanceNumber(script.common?.engine);
 
         return `${state} [${jsInstanceNumber}] ${name}`;
