@@ -16,6 +16,7 @@ import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { ScriptId } from "../../models/ScriptId";
 import { IScriptIdService } from "../scriptId/IScriptIdService";
 import { IDebugLogService } from "../debugLogService/IDebugLogService";
+import { ISecretPlaceholderService } from "../scriptRemote/ISecretPlaceholderService";
 
 @injectable()
 export class ScriptRepositoryService implements IScriptRepositoryService, IScriptChangedEventListener {
@@ -31,6 +32,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         @inject(TYPES.services.script) private scriptService: IScriptService,
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
         @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,
+        @inject(TYPES.services.secretPlaceholder) private secretPlaceholderService: ISecretPlaceholderService,
     ) { }
 
     async init(): Promise<void> {
@@ -320,7 +322,9 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
 
     private async isScriptDirty(script: IScript, absoluteScriptUri: Uri): Promise<boolean> {
         const serverScriptBuffer = Buffer.from(script.common.source ?? "");
-        const localScriptBuffer = Buffer.from(await this.scriptService.getFileContentOnDisk(absoluteScriptUri) ?? "");
+        const localSource = await this.scriptService.getFileContentOnDisk(absoluteScriptUri) ?? "";
+        const localSourceWithResolvedSecrets = await this.secretPlaceholderService.replaceSecretPlaceholdersFromEnvFile(localSource);
+        const localScriptBuffer = Buffer.from(localSourceWithResolvedSecrets);
 
         return !serverScriptBuffer.equals(localScriptBuffer);
     }

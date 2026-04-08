@@ -12,6 +12,8 @@ import { IDirectoryService } from "../directory/IDirectoryService";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { EngineType } from "../../models/EngineType";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
+import { IWorkspaceService } from "../workspace/IWorkspaceService";
+import { ISecretPlaceholderService } from "./ISecretPlaceholderService";
 
 @injectable()
 export class ScriptRemoteService implements IScriptRemoteService, IConnectionEventListener {
@@ -21,7 +23,9 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
         @inject(TYPES.services.directory) private directoryService: IDirectoryService,
-        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService
+        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
+        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
+        @inject(TYPES.services.secretPlaceholder) private secretPlaceholderService: ISecretPlaceholderService
     ) { }
 
     init(): void {
@@ -55,6 +59,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
 
     async uploadScript(script: IScript): Promise<void> {
         script.common.engineType = this.getFixedEngineTypeCasing(script.common.engineType);
+        script.common.source = await this.replaceSecretsFromDotEnvFile(script.common.source ?? "");
 
         if (this.configRepositoryService.config.scriptAutoRun) {
             script.common.enabled = true;
@@ -156,5 +161,9 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         }
 
         return "";
+    }
+
+    private async replaceSecretsFromDotEnvFile(scriptSource: string): Promise<string> {
+        return await this.secretPlaceholderService.replaceSecretPlaceholdersFromEnvFile(scriptSource);
     }
 }

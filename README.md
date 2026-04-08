@@ -51,6 +51,31 @@ To upload a single script you have the following options:
 
 Only scripts residing on local disk can be uploaded. Scripts which are marked as *remote only* in script explorer can be viewed by clicking on it, but changes cannot be uploaded.
 
+#### Replace secrets from `.env` on upload
+Before uploading a script, the extension can replace placeholders with values from an `.env` file in your workspace root.
+
+Use the placeholder pattern `__IOBROKER_SECRET_<KEY>__` in your script and define `<KEY>` in `.env`.
+
+Example:
+
+```js
+const apiToken = "__IOBROKER_SECRET_API_TOKEN__";
+```
+
+`.env`:
+
+```ini
+API_TOKEN=super-secret-token
+```
+
+Uploaded script source:
+
+```js
+const apiToken = "super-secret-token";
+```
+
+If `.env` is missing or a key is not found, the placeholder stays unchanged.
+
 ### Start/Stop scripts
 To start/stop a single script you have the following options:
 
