@@ -29,11 +29,11 @@ export class ShowLocalToServerDiffCommand implements ICommand {
         
         const fileExtension = this.scriptService.getFileExtension(<EngineType>script.script.ioBrokerScript.common.engineType);
         const fileName = `${script.script._id.toString()}.${fileExtension}`;
-        const serverSourceWithResolvedSecrets = await replaceSecretPlaceholdersFromEnvFile(
+        const normalizedServerSource = await replaceSecretPlaceholdersFromEnvFile(
             script.script.ioBrokerScript.common.source ?? "",
             this.workspaceService.workspaceToUse?.uri?.fsPath
         );
-        const serverUri = await this.fileService.createTemporaryFile(fileName, serverSourceWithResolvedSecrets);
+        const serverUri = await this.fileService.createTemporaryFile(fileName, normalizedServerSource);
 
         const localUri = script.script.absoluteUri;
 

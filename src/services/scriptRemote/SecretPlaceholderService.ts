@@ -1,8 +1,9 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 
-export const SECRET_PLACEHOLDER_PATTERN = /__IOBROKER_SECRET_([A-Za-z0-9_]+)__/g;
-const SECRET_PLACEHOLDER_EXISTS_PATTERN = /__IOBROKER_SECRET_([A-Za-z0-9_]+)__/;
+const SECRET_PLACEHOLDER_PATTERN_TEXT = "__IOBROKER_SECRET_([A-Za-z0-9_]+)__";
+export const SECRET_PLACEHOLDER_PATTERN = new RegExp(SECRET_PLACEHOLDER_PATTERN_TEXT, "g");
+const SECRET_PLACEHOLDER_EXISTS_PATTERN = new RegExp(SECRET_PLACEHOLDER_PATTERN_TEXT);
 
 export function replaceSecretPlaceholders(scriptSource: string, envContent: string): string {
     const env = parseEnvContent(envContent);
