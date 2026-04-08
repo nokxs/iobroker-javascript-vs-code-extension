@@ -13,7 +13,7 @@ import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnec
 import { EngineType } from "../../models/EngineType";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
-import { replaceSecretPlaceholdersFromEnvFile } from "./SecretPlaceholderService";
+import { ISecretPlaceholderService } from "./ISecretPlaceholderService";
 
 @injectable()
 export class ScriptRemoteService implements IScriptRemoteService, IConnectionEventListener {
@@ -24,7 +24,8 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
         @inject(TYPES.services.directory) private directoryService: IDirectoryService,
         @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
-        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService
+        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
+        @inject(TYPES.services.secretPlaceholder) private secretPlaceholderService: ISecretPlaceholderService
     ) { }
 
     init(): void {
@@ -163,6 +164,6 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     private async replaceSecretsFromDotEnvFile(scriptSource: string): Promise<string> {
-        return await replaceSecretPlaceholdersFromEnvFile(scriptSource, this.workspaceService.workspaceToUse?.uri?.fsPath);
+        return await this.secretPlaceholderService.replaceSecretPlaceholdersFromEnvFile(scriptSource);
     }
 }

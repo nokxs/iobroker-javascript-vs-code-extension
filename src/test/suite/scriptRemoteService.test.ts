@@ -3,7 +3,18 @@ import { mkdtempSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { writeFileSync } from 'fs';
-import { replaceSecretPlaceholders, replaceSecretPlaceholdersFromEnvFile } from '../../services/scriptRemote/SecretPlaceholderService';
+import { SecretPlaceholderService } from '../../services/scriptRemote/SecretPlaceholderService';
+import { IWorkspaceService } from '../../services/workspace/IWorkspaceService';
+import { WorkspaceFolder } from 'vscode';
+
+function createService(workspacePath: string | undefined): SecretPlaceholderService {
+    const workspaceService: IWorkspaceService = {
+        workspaceToUse: workspacePath ? { uri: { fsPath: workspacePath } } as WorkspaceFolder : undefined as unknown as WorkspaceFolder,
+        getWorkspaceToUse: () => Promise.resolve(undefined as unknown as WorkspaceFolder),
+        getWorkspacesWithConfig: () => Promise.resolve([]),
+    };
+    return new SecretPlaceholderService(workspaceService);
+}
 
 suite('ScriptRemoteService Test Suite', () => {
     suite('replaceSecretPlaceholders', () => {
@@ -13,7 +24,7 @@ suite('ScriptRemoteService Test Suite', () => {
             const env = "API_TOKEN=abc123";
 
             // Act
-            const result = replaceSecretPlaceholders(source, env);
+            const result = createService(undefined).replaceSecretPlaceholders(source, env);
 
             // Assert
             assert.strictEqual(result, "const token = 'abc123';");
@@ -25,7 +36,7 @@ suite('ScriptRemoteService Test Suite', () => {
             const env = "OTHER_KEY=abc123";
 
             // Act
-            const result = replaceSecretPlaceholders(source, env);
+            const result = createService(undefined).replaceSecretPlaceholders(source, env);
 
             // Assert
             assert.strictEqual(result, source);
@@ -37,7 +48,7 @@ suite('ScriptRemoteService Test Suite', () => {
             const env = "# comment\nDB_USER=\"my user\"\nDB_PASS='my=pass'";
 
             // Act
-            const result = replaceSecretPlaceholders(source, env);
+            const result = createService(undefined).replaceSecretPlaceholders(source, env);
 
             // Assert
             assert.strictEqual(result, "const user = 'my user'; const pass = 'my=pass';");
@@ -50,7 +61,7 @@ suite('ScriptRemoteService Test Suite', () => {
             writeFileSync(join(workspacePath, '.env'), 'API_TOKEN=file-token', 'utf8');
 
             // Act
-            const result = await replaceSecretPlaceholdersFromEnvFile(source, workspacePath);
+            const result = await createService(workspacePath).replaceSecretPlaceholdersFromEnvFile(source);
 
             // Assert
             assert.strictEqual(result, "const token = 'file-token';");

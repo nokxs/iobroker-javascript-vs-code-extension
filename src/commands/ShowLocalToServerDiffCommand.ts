@@ -6,8 +6,7 @@ import { IScriptService } from "../services/script/IScriptService";
 import { commands } from "vscode";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import { EngineType } from "../models/EngineType";
-import { IWorkspaceService } from "../services/workspace/IWorkspaceService";
-import { replaceSecretPlaceholdersFromEnvFile } from "../services/scriptRemote/SecretPlaceholderService";
+import { ISecretPlaceholderService } from "../services/scriptRemote/ISecretPlaceholderService";
 
 @injectable()
 export class ShowLocalToServerDiffCommand implements ICommand {
@@ -17,7 +16,7 @@ export class ShowLocalToServerDiffCommand implements ICommand {
     constructor(
         @inject(TYPES.services.script) private scriptService: IScriptService,
         @inject(TYPES.services.file) private fileService: IFileService,
-        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
+        @inject(TYPES.services.secretPlaceholder) private secretPlaceholderService: ISecretPlaceholderService,
     ) {}
     
     async execute(...args: ScriptItem[]) {
@@ -29,9 +28,8 @@ export class ShowLocalToServerDiffCommand implements ICommand {
         
         const fileExtension = this.scriptService.getFileExtension(<EngineType>script.script.ioBrokerScript.common.engineType);
         const fileName = `${script.script._id.toString()}.${fileExtension}`;
-        const normalizedServerSource = await replaceSecretPlaceholdersFromEnvFile(
-            script.script.ioBrokerScript.common.source ?? "",
-            this.workspaceService.workspaceToUse?.uri?.fsPath
+        const normalizedServerSource = await this.secretPlaceholderService.replaceSecretPlaceholdersFromEnvFile(
+            script.script.ioBrokerScript.common.source ?? ""
         );
         const serverUri = await this.fileService.createTemporaryFile(fileName, normalizedServerSource);
 
