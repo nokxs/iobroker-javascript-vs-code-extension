@@ -1,5 +1,9 @@
 import * as assert from 'assert';
-import { replaceSecretPlaceholders } from '../../services/scriptRemote/ScriptRemoteService';
+import { mkdtempSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { writeFileSync } from 'fs';
+import { replaceSecretPlaceholders, replaceSecretPlaceholdersFromEnvFile } from '../../services/scriptRemote/SecretPlaceholderService';
 
 suite('ScriptRemoteService Test Suite', () => {
     suite('replaceSecretPlaceholders', () => {
@@ -37,6 +41,19 @@ suite('ScriptRemoteService Test Suite', () => {
 
             // Assert
             assert.strictEqual(result, "const user = 'my user'; const pass = 'my=pass';");
+        });
+
+        test('should replace placeholders from workspace .env file', async () => {
+            // Arrange
+            const workspacePath = mkdtempSync(join(tmpdir(), 'iobroker-secret-test-'));
+            const source = "const token = '__IOBROKER_SECRET_API_TOKEN__';";
+            writeFileSync(join(workspacePath, '.env'), 'API_TOKEN=file-token', 'utf8');
+
+            // Act
+            const result = await replaceSecretPlaceholdersFromEnvFile(source, workspacePath);
+
+            // Assert
+            assert.strictEqual(result, "const token = 'file-token';");
         });
     });
 });
