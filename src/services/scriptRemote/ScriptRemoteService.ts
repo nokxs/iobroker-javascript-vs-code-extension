@@ -155,12 +155,12 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
             case EngineType.javascript:
                 return "Javascript/js";
             case EngineType.blockly:
-                return "Rules";
-            case EngineType.rules:
                 return "Blockly";
+            case EngineType.rules:
+                return "Rules";
         }
 
-        return "";
+        return engineType ?? "";
     }
 
     private async replaceSecretsFromDotEnvFile(scriptSource: string): Promise<string> {
