@@ -18,6 +18,10 @@ If `.iobroker-config.json` is found in the root of your workspace, the extension
 
 If your ioBroker installation is protected via password, the extension will ask for it during the connection attempt. The username is stored in the config file `.iobroker-config.json` and the password is stored in the VS Code internal secret storage. If the password was changed, the extension will automatically ask for the new one. It might be necessary to restart VS Code in the case supplying the new password fails.
 
+### Disconnect / Logout
+
+Use the command `iobroker: Logout from ioBroker` to disconnect from ioBroker and delete all stored credentials (username and password). This is useful when switching to a different ioBroker instance or when credentials need to be reset.
+
 ### Type definitions
 
 If you choose to configure ioBroker type definitions, the current definitions are downloaded from [GitHub](https://github.com/ioBroker/ioBroker.javascript/blob/master/src/lib/javascript.d.ts). Additionally a `tsconfig.json` is created
@@ -30,7 +34,7 @@ ioBroker server, a star (*) is shown next to the script name.
 
 Click on a script to show its contents. If the script is not downloaded yet, only a preview is opened.
 
-Every time a script object is changed, the script explorer refreshes its view.
+Every time a script object is changed, the script explorer refreshes its view. You can also manually refresh it by clicking the refresh button in the Script Explorer title bar. If the connection was lost, clicking refresh will automatically attempt to reconnect.
 
 ### View: Changed scripts
 The *Changed scripts* view can be found in the activity bar behind the ioBroker logo. It shows all scripts, where the local version differs from the server version. Only scripts which are on local disk and already uploaded to the server are shown *(This might change in the future)*.
@@ -90,6 +94,10 @@ Scripts can be moved from one directory to another on your ioBroker server. Movi
 
 Scripts can only be moved over the script explorer. Right click on the script you want to move, select `Move` and choose the directory you want the script to move to.
 If the script is synced to your local disk, it will also be moved there.
+
+### Rename scripts
+
+Scripts can be renamed via the script explorer. Right click on the script you want to rename and select `Rename`. The script is renamed on the ioBroker server and, if it is synced to your local disk, the local file is renamed as well.
 
 ### Create scripts and subdirectories
 Right click on an existing directory to create a new file in this directory or in the root directory. It is possible to create subdirectories, TypeScript files and JavaScript files. Newly created scripts are immediately uploaded to
