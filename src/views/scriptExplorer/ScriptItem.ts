@@ -68,7 +68,8 @@ export class ScriptItem extends vscode.TreeItem {
         if (engine) {
             const lastDot = engine.lastIndexOf(".");
             const number = engine.substring(lastDot + 1);
-            return Number.parseInt(number);            
+            const parsed = Number.parseInt(number, 10);
+            return Number.isNaN(parsed) ? 0 : parsed;
         }
 
         return 0;
