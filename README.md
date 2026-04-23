@@ -8,7 +8,7 @@ This extension for [Visual Studio Code](https://code.visualstudio.com/) enables 
 
 ## Features
 
-Open the command pallet (<kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> OR <kbd>F1</kbd>) and type `iobroker: ` to see all available commands.
+Open the command palette (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> OR <kbd>F1</kbd>) and type `iobroker: ` to see all available commands.
 
 Connect to your ioBroker instance by invoking the command `iobroker: Connect to ioBroker`. You can see the process in the gif above. If your connection fails, check the created file `.iobroker-config.json` and re-run the command `iobroker: Connect to ioBroker` for another connection attempt. 
 
@@ -16,11 +16,11 @@ If `.iobroker-config.json` is found in the root of your workspace, the extension
 
 ### Password protected ioBroker installations
 
-If your ioBroker installation is protected via password, the extension will ask for it during the connection attempt. The username is stored in the config file `.iobroker-config.jon` and the password is stored in the VS Code internal secret storage. If the password was changed, the extions will automtically ask for the new one. It might be necessary to restart VS Code in the case supplying the new password fails.
+If your ioBroker installation is protected via password, the extension will ask for it during the connection attempt. The username is stored in the config file `.iobroker-config.json` and the password is stored in the VS Code internal secret storage. If the password was changed, the extension will automatically ask for the new one. It might be necessary to restart VS Code in the case supplying the new password fails.
 
 ### Type definitions
 
-If you choose to configure ioBroker type definitions, the current defintions are downloaded from [GitHub](https://github.com/ioBroker/ioBroker.javascript/blob/master/src/lib/javascript.d.ts). Additionaly a `tsconfig.json` is created
+If you choose to configure ioBroker type definitions, the current definitions are downloaded from [GitHub](https://github.com/ioBroker/ioBroker.javascript/blob/master/src/lib/javascript.d.ts). Additionally a `tsconfig.json` is created
 (if it does not exist yet) with the necessary settings. This enables Visual Studio Code to know
 the [ioBroker specific javascript functions](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/javascript.md).
 
@@ -28,7 +28,7 @@ the [ioBroker specific javascript functions](https://github.com/ioBroker/ioBroke
 The script explorer can be found in the activity bar behind the ioBroker logo. It shows all scripts, which are on the configured iobroker server. If the script content differs on the local disk from the remote version on the
 ioBroker server, a star (*) is shown next to the script name.
 
-Click on script to show its contents. If the script is not downloaded yet, only a preview is openend. 
+Click on a script to show its contents. If the script is not downloaded yet, only a preview is opened.
 
 Every time a script object is changed, the script explorer refreshes its view.
 
@@ -38,7 +38,7 @@ The *Changed scripts* view can be found in the activity bar behind the ioBroker 
 The same scripts are also shown in the script explorer marked with a star.
 
 ### Download scripts
-Either download only one script (`iobroker: Download script`) or all scripts at once (`iobroker: Download all scripts`). To download a single script you have to following options:
+Either download only one script (`iobroker: Download script`) or all scripts at once (`iobroker: Download all scripts`). To download a single script you have the following options:
 
 * Go to the script explorer and press the download button next to the script you want to download
 * Use the command `iobroker: Download script`. This command is only for updating an existing script as it downloads the script in the active text editor.
@@ -92,8 +92,8 @@ Scripts can only be moved over the script explorer. Right click on the script yo
 If the script is synced to your local disk, it will also be moved there.
 
 ### Create scripts and subdirectories
-Right click on an existing directory to create a new file in this directory or in the root directory. It is possible to create subdirectories, TypeScript files and JavaScript files. Newly created scripts are immediatly uploaded to
-the server as stoped scripts.
+Right click on an existing directory to create a new file in this directory or in the root directory. It is possible to create subdirectories, TypeScript files and JavaScript files. Newly created scripts are immediately uploaded to
+the server as stopped scripts.
 
 ### Delete scripts
 Scripts can be deleted on your ioBroker server via the script explorer. Right click on a script, select `Delete` and confirm that the script shall be really be deleted. If the script is synced to
@@ -108,11 +108,11 @@ The JS Instance for a script can be changed over the script explorer. Right clic
 ![JS Instance Number](https://media.githubusercontent.com/media/nokxs/iobroker-javascript-vs-code-extension/main/doc/js-instance-nr.jpg)
 
 ### Show script logging
-Press <kbd>Strg</kbd> + <kbd>Shift</kbd> + <kbd>U</kbd> to open the "Output" view. Open the drop down and select `ioBroker (all)` or `ioBroker (current script)`.
+Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>U</kbd> to open the "Output" view. Open the drop-down and select `ioBroker (all)` or `ioBroker (current script)`.
 
 * `ioBroker (all)`: As long as a connection to ioBroker exists, this will show the output of all scripts.
 * `ioBroker (current script)`: As long as a connection to ioBroker exists, this will show only the outputs of the script in the currently active tab. This output gets not cleared, if the tab is changed. If you need to 
-clear the output use Visual Studios feature `Clear Output`.
+clear the output use Visual Studio's `Clear Output` feature.
 
 ### Hover over state id string to show value
 
@@ -124,7 +124,7 @@ This only works for states and not for channels.
 
 ### Auto completion (IntelliSense) of iobroker state ids
 
-Press <kbd>Strg</kbd> + <kbd>.</kbd> in any string to show the IntelliSense menu. If the string contains parts of
+Type `.` inside any string to trigger the IntelliSense menu. If the string contains parts of
 an ioBroker state id (for example `admin.0.`), IntelliSense will show all states/channels/devices/... under the
 given partial state id. In case of `admin.0.` it will look like this:
 
@@ -141,7 +141,7 @@ The whole auto completion process in action:
 Sometimes it is hard to remember the meaning of a generic ioBroker object/state id. To make this easier
 the name of an id can be added as comment via code action.
 
-Put your cursor within a valid id and open the code actions menu (click on the light bulb or press <kbd>Strg</kbd>+<kbd>.</kbd>) and select `Add iobroker state name as comment`. The entry will only appear if the state id is valid.
+Put your cursor within a valid id and open the code actions menu (click on the light bulb or press <kbd>Ctrl</kbd>+<kbd>.</kbd>) and select `Add iobroker state name as comment`. The entry will only appear if the state id is valid.
 
 ![State name code action](https://media.githubusercontent.com/media/nokxs/iobroker-javascript-vs-code-extension/main/doc/iobroker-state-id-name-code-action.jpg)
 
