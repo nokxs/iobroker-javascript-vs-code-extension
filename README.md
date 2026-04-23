@@ -180,6 +180,16 @@ The extension currently supports the following Admin versions:
 - Admin6
 - Admin7
 
+## Debug Log
+
+To help diagnose connection or runtime issues, the extension can write a debug log file.
+
+**Enable via command:** Open the command palette and run `iobroker: Start/Stop collecting debug log`. Run it again to stop collecting. The log is appended to an existing file each time collecting starts.
+
+**Enable on startup:** Set `"collectDebugLog": true` in `.iobroker-config.json` to start collecting automatically when the extension connects.
+
+**Log file location:** The log is written to `debug.log` in the root of your workspace.
+
 ## Known Issues
 
 If you got any problems, please open a GitHub issue.
