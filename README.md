@@ -122,6 +122,8 @@ Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>U</kbd> to open the "Output" vie
 * `ioBroker (current script)`: As long as a connection to ioBroker exists, this will show only the outputs of the script in the currently active tab. This output gets not cleared, if the tab is changed. If you need to 
 clear the output use Visual Studio's `Clear Output` feature.
 
+To keep the script log on disk (e.g. for grep or AI coding agents), set `"mirrorIoBrokerJavaScriptLog": true` in `.iobroker-config.json`. All lines of `ioBroker (all)` are then appended to `.iobroker/javascript-live.log` in the workspace (configurable via `ioBrokerLogMirrorRelativePath`). Consider adding this file to `.gitignore`.
+
 ### Hover over state id string to show value
 
 Hover over any string with a full state id to show current data of the state:
@@ -174,6 +176,8 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 | `allowSelfSignedCertificate` | Is it allowed to connect to a self signed certificate? | No | false |
 | `username` | The user name for ioBroker. Only necessary for password protected ioBroker installations | No | |
 | `collectDebugLog` | Should the debug log be created directly on start up? | No | false |
+| `mirrorIoBrokerJavaScriptLog` | Should the script log (`ioBroker (all)`) also be appended to a file in the workspace? | No | false |
+| `ioBrokerLogMirrorRelativePath` | Path of the log mirror file, relative to the workspace root. | No | ".iobroker/javascript-live.log" |
 | `scriptExplorer.collapseDirectoriesOnStartup` | Should the directories in the script explorer be collapsed on startup. | No | true |
 | `scriptExplorer.revealCurrentScript` | Should the script of the active editor automatically be selected and revealed in the script explorer? | No | true |
 | `autoUpload` | Automatically upload scripts on save? | No | false |

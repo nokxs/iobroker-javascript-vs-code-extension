@@ -13,7 +13,10 @@ export class Config {
         readonly scriptAutoRun?: boolean,
         readonly forceLogin?: boolean,
         readonly iobrokerNodeTypesVersion?: string,
-        readonly aiTools?: boolean) {}
+        readonly aiTools?: boolean,
+        readonly mirrorIoBrokerJavaScriptLog?: boolean,
+        readonly ioBrokerLogMirrorRelativePath?: string,
+        readonly ioBrokerLogMirrorMaxSizeMb?: number) {}
 }
 
 export class ScriptExplorerConfig {
