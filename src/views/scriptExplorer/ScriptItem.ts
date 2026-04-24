@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { EngineType } from '../../models/EngineType';
+import { EngineType, normalizeEngineType } from '../../models/EngineType';
 import { ILocalScript } from '../../models/ILocalScript';
 import { IScript } from "../../models/IScript";
 
@@ -26,7 +26,10 @@ export class ScriptItem extends vscode.TreeItem {
     }
 
     private getIconPath(script: IScript): string | undefined {
-        switch (script.common.engineType?.toLowerCase()) {
+        // Tolerate bare / non-canonical engineType values (e.g. "javascript"
+        // without "/js") by normalizing, so the correct icon is shown even
+        // when the script object was uploaded by a REST/MCP client.
+        switch (normalizeEngineType(script.common.engineType)) {
             case EngineType.javascript:
                 return this.getJsIcon();
             case EngineType.typescript:

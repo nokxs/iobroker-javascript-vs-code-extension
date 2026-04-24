@@ -3,7 +3,7 @@ import { Uri } from "vscode";
 import TYPES from "../../Types";
 import { IFileService } from "../file/IFileService";
 import { IScriptService } from "./IScriptService";
-import { EngineType } from "../../models/EngineType";
+import { EngineType, normalizeEngineType } from "../../models/EngineType";
 import { ILocalScript } from "../../models/ILocalScript";
 import { ScriptId } from "../../models/ScriptId";
 import { IScript } from "../../models/IScript";
@@ -17,7 +17,12 @@ export class ScriptService implements IScriptService {
     ) {}
         
     getFileExtension(engineType: EngineType): string {
-        switch (engineType?.toLowerCase()) {
+        // Tolerate bare / non-canonical engineType values (e.g. "javascript"
+        // without the "/js" suffix as written by REST/MCP uploaders) by
+        // normalizing first. Without this the extension would fall through to
+        // the "txt" default and then treat the same script as both
+        // "only local" (.js on disk) and "only remote" (.txt expected).
+        switch (normalizeEngineType(engineType)) {
             case EngineType.javascript:
                 return "js";
             case EngineType.typescript:
@@ -26,7 +31,7 @@ export class ScriptService implements IScriptService {
                 return "block";
             case EngineType.rules:
                 return "rules";
-        
+
             default:
                 return "txt";
         }

@@ -10,7 +10,7 @@ import { IConnectionEventListener } from "../connection/IConnectionEventListener
 import { IDirectory } from "../../models/IDirectory";
 import { IDirectoryService } from "../directory/IDirectoryService";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
-import { EngineType } from "../../models/EngineType";
+import { EngineType, normalizeEngineType } from "../../models/EngineType";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { ISecretPlaceholderService } from "./ISecretPlaceholderService";
@@ -149,7 +149,10 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     private getFixedEngineTypeCasing(engineType: string | undefined): string {
-        switch (engineType?.toLowerCase()) {
+        // Normalize first so bare forms like "javascript" (without "/js") —
+        // as written by some REST/MCP uploaders — are also healed back into
+        // the canonical casing ioBroker admin expects.
+        switch (normalizeEngineType(engineType)) {
             case EngineType.typescript:
                 return "TypeScript/ts";
             case EngineType.javascript:
