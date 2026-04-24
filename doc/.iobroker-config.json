@@ -13,6 +13,8 @@
   "autoUpload": false,
   "scriptAutoRun": false,
   "collectDebugLog": false,
+  "mirrorIoBrokerJavaScriptLog": false,
+  "ioBrokerLogMirrorRelativePath": ".iobroker/javascript-live.log",
   "forceLogin": false,
   "iobrokerNodeTypesVersion": "20.14.10"
 }
