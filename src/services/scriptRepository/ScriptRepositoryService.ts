@@ -349,7 +349,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     private async handleFileChangeOnDisk(): Promise<void> {    
         const config = await this.configRepositoryService.read(this.workspaceService.workspaceToUse);
         const watchPattern = config.scriptRoot === '/' ? 
-        '**/*.ts' : 
+        '**/*.{js,ts}' : 
         config.scriptRoot + '/**/*.{js,ts}';
 
         const watcher = workspace.createFileSystemWatcher(watchPattern);
