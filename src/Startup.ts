@@ -43,7 +43,7 @@ export class Startup implements IStartup {
             window.setStatusBarMessage("ioBroker: No auto connect possible. Multiple 'iobroker-config.json' found.");
         }
 
-        window.createTreeView("iobroker-javascript.script-explorer", { treeDataProvider: this.scriptExplorerProvider });
+        this.scriptExplorerProvider.treeView = window.createTreeView("iobroker-javascript.script-explorer", { treeDataProvider: this.scriptExplorerProvider });
         const changedScriptTreeView = window.createTreeView("iobroker-javascript.changed-scripts", { treeDataProvider: this.changedScriptsProvider });
 
         this.changedScriptsProvider.onScriptCountChanged((count: number) => {
