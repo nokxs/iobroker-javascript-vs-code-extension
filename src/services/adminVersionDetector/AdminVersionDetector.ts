@@ -13,12 +13,12 @@ export class AdminVersionDetector implements IAdminVersionDetector {
         @inject(TYPES.services.socketIoClient) private socketIoClient: ISocketIoClient
     ) { }
 
-    async getVersion(iobrokerUrl: string, allowSelfSignedCertificate: boolean): Promise<AdminVersion> {
+    async getVersion(iobrokerUrl: string, allowSelfSignedCertificate: boolean, accessToken?: string): Promise<AdminVersion> {
         if (await this.isAdmin4Reachable(iobrokerUrl)) {
             return AdminVersion.admin4;
         }
 
-        return await this.determineAdminVersion(iobrokerUrl, allowSelfSignedCertificate);
+        return await this.determineAdminVersion(iobrokerUrl, allowSelfSignedCertificate, accessToken);
     }
 
     private isAdmin4Reachable(iobrokerUrl: string): Promise<boolean> {
@@ -53,14 +53,11 @@ export class AdminVersionDetector implements IAdminVersionDetector {
         });
     }
 
-    private determineAdminVersion(iobrokerUrl: string, allowSelfSignedCertificate: boolean): Promise<AdminVersion> {
+    private determineAdminVersion(iobrokerUrl: string, allowSelfSignedCertificate: boolean, accessToken?: string): Promise<AdminVersion> {
         return new Promise<AdminVersion>((resolve) => {
-            this.socketIoClient.connect(iobrokerUrl, "", allowSelfSignedCertificate);
-
             const timeout = setTimeout(() => {
-                if(!this.socketIoClient.connected) {
-                    resolve(AdminVersion.unknown);
-                }
+                cleanUp();
+                resolve(AdminVersion.unknown);
             }, 5000);
 
             const cleanUp = () => {
@@ -72,6 +69,9 @@ export class AdminVersionDetector implements IAdminVersionDetector {
                 this.socketIoClient.emit("getObject", "system.adapter.admin", (err: any, state: { common?: { version?: string}}) => {
                     if (state?.common?.version?.startsWith("6")) {
                         resolve(AdminVersion.admin6);
+                    }
+                    else if (state?.common?.version?.startsWith("7")) {
+                        resolve(AdminVersion.admin7);
                     }
                     else {
                         resolve(AdminVersion.admin5);
@@ -85,6 +85,12 @@ export class AdminVersionDetector implements IAdminVersionDetector {
                 cleanUp();
                 resolve(AdminVersion.unknown);
             });
+
+            if(accessToken) {
+                this.socketIoClient.connect(iobrokerUrl, {cookie: accessToken}, allowSelfSignedCertificate);
+            } else {
+                this.socketIoClient.connect(iobrokerUrl, "", allowSelfSignedCertificate);
+            }
         });
     }
 }

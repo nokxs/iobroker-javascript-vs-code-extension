@@ -21,8 +21,7 @@ export class DownloadCommandProxy implements ICommand {
     ) {
         this.downloadCommand = new DownloadCommand(iobrokerConnectionService, scriptService, scriptRepositoryService);
     }
-    
-    
+        
     async execute(...args: any[]) {
         this.downloadCommand.execute(...args);
     }

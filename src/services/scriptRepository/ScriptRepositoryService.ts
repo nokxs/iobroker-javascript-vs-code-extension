@@ -15,6 +15,8 @@ import { EngineType } from "../../models/EngineType";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { ScriptId } from "../../models/ScriptId";
 import { IScriptIdService } from "../scriptId/IScriptIdService";
+import { IDebugLogService } from "../debugLogService/IDebugLogService";
+import { ISecretPlaceholderService } from "../scriptRemote/ISecretPlaceholderService";
 
 @injectable()
 export class ScriptRepositoryService implements IScriptRepositoryService, IScriptChangedEventListener {
@@ -29,6 +31,8 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
         @inject(TYPES.services.script) private scriptService: IScriptService,
         @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
+        @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,
+        @inject(TYPES.services.secretPlaceholder) private secretPlaceholderService: ISecretPlaceholderService,
     ) { }
 
     async init(): Promise<void> {
@@ -36,45 +40,73 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         await this.updateFromServer();
         this.scriptRemoteService.registerScriptChangedEventListener(this);
         this.raiseScriptChangedEvent(undefined);
-
+        
         this.handleTextDocumentChanges();
+        this.handleFileChangeOnDisk();
         this.handleDocumentCreation();
         this.handDocumentDeletion();
     }
 
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
+        if (this.scriptEventListeners.includes(listener)) {
+            return;
+        }
+
         this.scriptEventListeners.push(listener);
     }
 
     async updateFromServer(): Promise<void> {
-        const ioBrokerDirectories = await this.directoryService.downloadAllDirectories();
-        const unsortedDirectories = ioBrokerDirectories.map(dir => {
-            return {
-                _id: dir._id,
-                common: dir.common,
-                relativeUri: this.getRelativeDirectoryUri(dir, ioBrokerDirectories),
-                absoluteUri: this.getAbsoluteDirectoryUri(dir, ioBrokerDirectories)
-            };
-        });
-
-        this.directories = unsortedDirectories.sort((dir1, dir2) => this.compareIds(dir1._id, dir2._id));
+        await this.updateAllDirectoriesFromServer();
 
         const ioBrokerScripts = await this.scriptRemoteService.downloadAllScripts();
         const unsortedScripts = await Promise.all(ioBrokerScripts.map(async script => {
-            const absoluteUri = this.getAbsoluteFileUri(script, this.directories);
-            const relativeUri = this.getRelativeFileUri(script, this.directories);
-
-            return {
-                _id: script._id,
-                ioBrokerScript: script,
-                absoluteUri: absoluteUri,
-                relativeUri: relativeUri,
-                isDirty: await this.isScriptDirty(script, absoluteUri),
-                isRemoteOnly: await this.isRemoteOnly(absoluteUri)
-            };
+            return await this.createLocalScript(script);
         }));
 
-        this.scripts = unsortedScripts.sort((script1, script2) => this.compareIds(script1._id, script2._id));
+        this.scripts = this.sortScripts(unsortedScripts);
+    }
+
+    async updateSingleScriptOrDirectoryFromServer(id: ScriptId): Promise<void> {
+        const updatedScript = await this.scriptRemoteService.downloadScriptWithId(id);
+
+        // Id is not a script, but a directory
+        if (updatedScript && updatedScript.type === "channel") {
+            // Assumption: Directories are not changed very often, therefore it is ok to update all directories
+            this.logDebug(`'${id}' was changed and it is a directory. Updating all directories...`);
+            await this.updateAllDirectoriesFromServer();
+            return;
+        }
+        
+        const script = this.scripts.find(s => s._id.toLocaleLowerCase() === id.toLocaleLowerCase());
+        
+        if (script) {
+            if (updatedScript) {
+                this.logDebug(`'${id}' was changed was found locally. Updating the script...`);
+                script.ioBrokerScript = updatedScript;
+                script.isDirty = await this.isScriptDirty(updatedScript, script.absoluteUri);
+                script.isRemoteOnly = await this.isRemoteOnly(script.absoluteUri);
+                return;
+            }
+            else {
+                this.logDebug(`'${id}' was removed and was found locally. Removing the script...`);
+                this.scripts = this.scripts.filter(s => s._id !== script._id);
+                this.raiseScriptChangedEvent(script._id);
+                return;
+            }
+        }
+        else if (updatedScript){
+            // Hack: Sleep 1 seconds to give the local file system time to create the file
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            this.logDebug(`'${id}' was changed and was not found locally. Adding the script...`);
+            const localScript = await this.createLocalScript(updatedScript);
+            this.scripts.push(localScript);
+            this.scripts = this.sortScripts(this.scripts);
+        }
+        else {
+            this.logDebug(`'${id}' was removed and was not found locally. It might have been a directory, so update them...`);            
+            await this.updateAllDirectoriesFromServer();
+        }
     }
 
     async evaluateDirtyStateForAllScripts(): Promise<void> {
@@ -169,7 +201,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     async onScriptChanged(id: string): Promise<void> {
         // TODO: Currently all scripts are redownloaded every time a single script changes.
         //       Performance could be optimized, if only the changed script is updated.
-        await this.updateFromServer();
+        await this.updateSingleScriptOrDirectoryFromServer(new ScriptId(id));
         this.raiseScriptChangedEvent(id);
     }
 
@@ -177,6 +209,38 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         this.directories = [];
         this.scripts = [];
         this.raiseScriptChangedEvent(undefined);
+    }
+
+    private async updateAllDirectoriesFromServer(): Promise<void> {
+        const ioBrokerDirectories = await this.directoryService.downloadAllDirectories();
+        const unsortedDirectories = ioBrokerDirectories.map(dir => {
+            return {
+                _id: dir._id,
+                common: dir.common,
+                relativeUri: this.getRelativeDirectoryUri(dir, ioBrokerDirectories),
+                absoluteUri: this.getAbsoluteDirectoryUri(dir, ioBrokerDirectories)
+            };
+        });
+
+        this.directories = unsortedDirectories.sort((dir1, dir2) => this.compareIds(dir1._id, dir2._id));
+    }
+
+    private sortScripts(scripts: ILocalScript[]): ILocalScript[] {
+        return scripts.sort((script1, script2) => this.compareIds(script1._id, script2._id));
+    }
+
+    private async createLocalScript(script: IScript): Promise<ILocalScript> {
+        const absoluteUri = this.getAbsoluteFileUri(script, this.directories);
+        const relativeUri = this.getRelativeFileUri(script, this.directories);
+
+        return {
+            _id: script._id,
+            ioBrokerScript: script,
+            absoluteUri: absoluteUri,
+            relativeUri: relativeUri,
+            isDirty: await this.isScriptDirty(script, absoluteUri),
+            isRemoteOnly: await this.isRemoteOnly(absoluteUri)
+        };
     }
 
     private compareIds(id1: ScriptId, id2: ScriptId): number {
@@ -258,11 +322,9 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
 
     private async isScriptDirty(script: IScript, absoluteScriptUri: Uri): Promise<boolean> {
         const serverScriptBuffer = Buffer.from(script.common.source ?? "");
-        const localScriptBuffer = Buffer.from(await this.scriptService.getFileContentOnDisk(absoluteScriptUri) ?? "");
-
-        if (!serverScriptBuffer.equals(localScriptBuffer)) {
-            console.log("test");
-        }
+        const localSource = await this.scriptService.getFileContentOnDisk(absoluteScriptUri) ?? "";
+        const localSourceWithResolvedSecrets = await this.secretPlaceholderService.replaceSecretPlaceholdersFromEnvFile(localSource);
+        const localScriptBuffer = Buffer.from(localSourceWithResolvedSecrets);
 
         return !serverScriptBuffer.equals(localScriptBuffer);
     }
@@ -272,8 +334,6 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     private handleTextDocumentChanges() {
-
-
         workspace.onDidSaveTextDocument(async document => {
             const scriptId = this.scriptIdService.getIoBrokerId(document.uri);
 
@@ -283,6 +343,22 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
             }
 
             this.raiseScriptChangedEvent(<string>scriptId);
+        });
+    }
+
+    private async handleFileChangeOnDisk(): Promise<void> {    
+        const config = await this.configRepositoryService.read(this.workspaceService.workspaceToUse);
+        const watchPattern = config.scriptRoot === '/' ? 
+        '**/*.{js,ts}' : 
+        config.scriptRoot + '/**/*.{js,ts}';
+
+        const watcher = workspace.createFileSystemWatcher(watchPattern);
+        watcher.onDidChange(async uri => {
+            const script = this.getScriptFromAbsolutUri(uri);
+
+            if(script) {
+                await this.evaluateDirtyState(script);
+            }
         });
     }
 
@@ -306,5 +382,9 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
                 this.evaluateDirtyState(matchingScript);
             }
         }
+    }
+
+    private logDebug(message: string) {
+        this.debugLogService.log(message, "ScriptRepositoryService");
     }
 }

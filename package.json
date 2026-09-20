@@ -2,7 +2,7 @@
 	"name": "iobroker-javascript",
 	"displayName": "ioBroker.javascript",
 	"description": "Enables you to develop ioBroker scripts completely in Visual Studio Code, without the need of the web interface.",
-	"version": "1.5.0",
+	"version": "1.9.1",
 	"repository": {
 		"url": "https://github.com/nokxs/iobroker-javascript-vs-code-extension",
 		"type": "git"
@@ -17,17 +17,14 @@
 	"publisher": "nokxs",
 	"icon": "resources/iobroker-logo.png",
 	"engines": {
-		"vscode": "^1.74.0"
+		"vscode": "^1.75.0"
 	},
 	"categories": [
 		"Other"
 	],
 	"homepage": "https://github.com/nokxs/iobroker-javascript-vs-code-extension",
 	"activationEvents": [
-		"workspaceContains:.iobroker-config.json",
-		"onView:iobroker-javascript.script-explorer",
-		"onView:iobroker-javascript.changed-scripts",
-		"onCommand:iobroker-javascript.connect"
+		"workspaceContains:.iobroker-config.json"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -44,11 +41,15 @@
 			"iobroker": [
 				{
 					"id": "iobroker-javascript.script-explorer",
-					"name": "Script explorer"
+					"name": "Script explorer",
+					"icon": "resources/iobroker-icon.svg",
+					"type": "tree"
 				},
 				{
 					"id": "iobroker-javascript.changed-scripts",
-					"name": "Changed scripts"
+					"name": "Changed scripts",
+					"icon": "resources/iobroker-icon.svg",
+					"type": "tree"
 				}
 			]
 		},
@@ -99,7 +100,7 @@
 			},
 			{
 				"command": "iobroker-javascript.syncCurrentScriptWithScriptExplorer",
-				"title": "iobroker: Sync view with Script Explroer",
+				"title": "iobroker: Sync view with Script Explorer",
 				"icon": "$(sync)"
 			},
 			{
@@ -108,7 +109,7 @@
 			},
 			{
 				"command": "iobroker-javascript.updateTypeDefinition",
-				"title": "iobroker: Update JS type definition from GitHub"
+				"title": "iobroker: Update JS type definitions"
 			},
 			{
 				"command": "iobroker-javascript.view.scriptExplorer.refresh",
@@ -215,7 +216,8 @@
 				},
 				{
 					"command": "iobroker-javascript.syncCurrentScriptWithScriptExplorer",
-					"when": "view == iobroker-javascript.script-explorer"
+					"when": "view == iobroker-javascript.script-explorer",
+					"group": "navigation"
 				},
 				{
 					"command": "iobroker-javascript.uploadAll",
@@ -328,32 +330,36 @@
 		"test": "node ./out/test/runTest.js"
 	},
 	"dependencies": {
-		"axios": "^1.2.5",
+		"axios": "^1.12.2",
 		"btoa": "^1.2.1",
-		"inversify": "^6.0.1",
-		"reflect-metadata": "^0.1.13",
-		"socket.io": "^2.5.0",
+		"bufferutil": "^4.0.9",
+		"inversify": "^6.2.2",
+		"reflect-metadata": "^0.2.2",
+		"socket.io": "^2.5.1",
 		"socket.io-client": "^2.5.0",
-		"ws": "^8.12.0"
+		"tar": "^7.5.1",
+		"utf-8-validate": "^5.0.10",
+		"ws": "^8.18.3"
 	},
 	"devDependencies": {
-		"@types/btoa": "^1.2.3",
-		"@types/glob": "^8.0.1",
-		"@types/mocha": "^10.0.1",
+		"@types/btoa": "^1.2.5",
+		"@types/glob": "^8.1.0",
+		"@types/mocha": "^10.0.10",
 		"@types/node": "^12.20.55",
 		"@types/socket.io": "^2.1.13",
 		"@types/socket.io-client": "^1.4.36",
-		"@types/vscode": "^1.74.0",
-		"@types/ws": "^8.5.4",
-		"@typescript-eslint/eslint-plugin": "^5.49.0",
-		"@typescript-eslint/parser": "^5.49.0",
-		"eslint": "^8.32.0",
+		"@types/tar": "^6.1.13",
+		"@types/vscode": "^1.75.0",
+		"@types/ws": "^8.18.1",
+		"@typescript-eslint/eslint-plugin": "^5.62.0",
+		"@typescript-eslint/parser": "^5.62.0",
+		"eslint": "^8.57.1",
 		"glob": "^8.1.0",
-		"mocha": "^10.2.0",
-		"ts-loader": "^9.4.2",
-		"typescript": "^4.9.4",
+		"mocha": "^10.8.2",
+		"ts-loader": "^9.5.4",
+		"typescript": "^4.9.5",
 		"vscode-test": "^1.6.1",
-		"webpack": "^5.75.0",
-		"webpack-cli": "^5.0.1"
+		"webpack": "^5.102.1",
+		"webpack-cli": "^5.1.4"
 	}
 }

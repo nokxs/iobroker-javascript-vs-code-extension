@@ -49,6 +49,7 @@ import { IObjectRepositoryService } from './services/StateRepository/IObjectRepo
 import { IScriptCreationService } from './services/scriptCreation/IScriptCreationService';
 import { IScriptExplorerProvider } from './views/scriptExplorer/IScriptExplorerProvider';
 import { IScriptIdService } from './services/scriptId/IScriptIdService';
+import { ISecretPlaceholderService } from './services/scriptRemote/ISecretPlaceholderService';
 import { IScriptRemoteService } from './services/scriptRemote/IScriptRemoteService';
 import { IScriptRepositoryService } from './services/scriptRepository/IScriptRepositoryService';
 import { IScriptService } from './services/script/IScriptService';
@@ -75,6 +76,7 @@ import { RefreshCommand } from './commands/RefreshCommand';
 import { ScriptCreationService } from './services/scriptCreation/ScriptCreationService';
 import { ScriptExplorerProvider } from './views/scriptExplorer/ScriptExplorerProvider';
 import { ScriptIdService } from './services/scriptId/ScriptIdService';
+import { SecretPlaceholderService } from './services/scriptRemote/SecretPlaceholderService';
 import { ScriptRemoteService } from './services/scriptRemote/ScriptRemoteService';
 import { ScriptRenameCommand } from './commands/ScriptRenameCommand';
 import { ScriptRepositoryService } from './services/scriptRepository/ScriptRepositoryService';
@@ -87,12 +89,14 @@ import { Startup } from './Startup';
 import { StateAndObjectRemoteService } from './services/stateRemote/StateAndObjectRemoteService';
 import { StatusBarService } from './services/statusBar/StatusBarService';
 import { StopCurrentScriptCommand } from './commands/StopCurrentScriptCommand';
+import { SyncCurrentScriptWithScriptExplorerCommand } from './commands/SyncCurrentScriptWithScriptExplorerCommand';
 import TYPES from './Types';
 import { TypeDefinitionService } from './services/typeDefinition/TypeDefinitionService';
 import { UpdateTypeDefinitionCommand } from './commands/UpdateTypeDefinitionCommand';
 import { UploadAllCommand } from './commands/UploadAllCommand';
 import { WindowMessageService } from './services/windowMessage/WindowMessageService';
 import { WorkspaceService } from './services/workspace/WorkspaceService';
+import { IobrokerCodeActionItemProvider } from './providers/IoBrokerCodeActionsProvider';
 
 const container = new Container();
 
@@ -104,6 +108,7 @@ container.bind<IFileService>(TYPES.services.file).to(FileService).inSingletonSco
 container.bind<ICommandService>(TYPES.services.command).to(CommandService).inSingletonScope();
 container.bind<IScriptService>(TYPES.services.script).to(ScriptService).inSingletonScope();
 container.bind<IScriptIdService>(TYPES.services.scriptId).to(ScriptIdService).inSingletonScope();
+container.bind<ISecretPlaceholderService>(TYPES.services.secretPlaceholder).to(SecretPlaceholderService).inSingletonScope();
 container.bind<IScriptRemoteService>(TYPES.services.scriptRemote).to(ScriptRemoteService).inSingletonScope();
 container.bind<IScriptRepositoryService>(TYPES.services.scriptRepository).to(ScriptRepositoryService).inSingletonScope();
 container.bind<ILocalOnlyScriptRepositoryService>(TYPES.services.localOnlyScriptRepository).to(LocalOnlyScriptRepositoryService).inSingletonScope();
@@ -129,6 +134,7 @@ container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(Ad
 
 container.bind<IIobrokerHoverProvider>(TYPES.providers.iobrokerHoverProvider).to(IoBrokerHoverProvider).inSingletonScope();
 container.bind<IIobrokerCompletionItemProvider>(TYPES.providers.iobrokerCompletionItemProvider).to(IoBrokerCompletionItemProvider).inSingletonScope();
+container.bind<IobrokerCodeActionItemProvider>(TYPES.providers.iobrokerCodeActionsItemProvider).to(IobrokerCodeActionItemProvider).inSingletonScope();
 
 container.bind(TYPES.services.connectionAdmin4).to(ConnectionServiceAdmin4).inSingletonScope();
 container.bind(TYPES.services.connectionAdmin5).to(ConnectionServiceAdmin5).inSingletonScope();

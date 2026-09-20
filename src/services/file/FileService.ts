@@ -9,8 +9,8 @@ import { injectable } from "inversify";
 
 @injectable()
 export class FileService implements IFileService {
-    async saveToFile(uri: Uri, content: string): Promise<void> {
-        const contentBuffer = Buffer.from(content, 'utf8');
+    async saveToFile(uri: Uri, content: string | Buffer): Promise<void> {
+        const contentBuffer = Buffer.isBuffer(content) ? content : Buffer.from(content, 'utf8');
         await workspace.fs.writeFile(uri, contentBuffer);
     }
 

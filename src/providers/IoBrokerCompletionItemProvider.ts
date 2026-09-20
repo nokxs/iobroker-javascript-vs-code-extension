@@ -20,13 +20,13 @@ export class IoBrokerCompletionItemProvider implements IIobrokerCompletionItemPr
         if (wordRange) {
             // slice removes first and last char
             const text = document.getText(wordRange).slice(1, position.character - wordRange.start.character);
-            const matchingObjects = this.objectRepositoryService.findMatchingObjects(text);
+            const matchingObjects = this.objectRepositoryService.findMatchingObjectsByPartialIdAndName(text);
 
             if (token.isCancellationRequested) {
                 return undefined;
             }
 
-            const currentWordStartPostion = document.getWordRangeAtPosition(position)?.start;
+            const currentWordStartPostion = document.getWordRangeAtPosition(position, /[a-zA-Z0-9$@\-_]+/)?.start;
             return this.createCompletionList(matchingObjects, wordRange, currentWordStartPostion ?? position);
         }
 
@@ -51,7 +51,7 @@ export class IoBrokerCompletionItemProvider implements IIobrokerCompletionItemPr
                 },
                 insertText: statePart,
                 range: new Range(pos, new Position(wordRange.end.line, wordRange.end.character - 1)),
-                filterText: statePart + nameExpanded,
+                filterText: `${statePart} ${nameExpanded}`,
                 documentation: this.getDocumentation(<IObject>obj),
                 commitCharacters: ["."],
                 kind: isState ? CompletionItemKind.Variable : CompletionItemKind.Folder

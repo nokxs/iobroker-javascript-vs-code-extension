@@ -28,6 +28,8 @@ const TYPES = {
         autoUploadService: Symbol.for("AutoUploadService'"),
         scriptCreationService: Symbol.for("ScriptCreationService'"),
         
+        secretPlaceholder: Symbol.for("SecretPlaceholderService"),
+
         connectionServiceProvider: Symbol.for("ConnectionServiceProvider"),
         connectionAdmin4: Symbol.for("ConnectionServiceAdmin4"),
         connectionAdmin5: Symbol.for("ConnectionServiceAdmin5"),
@@ -38,7 +40,8 @@ const TYPES = {
     },
     providers: {
         iobrokerHoverProvider: Symbol.for("IobrokerHoverProvider"),
-        iobrokerCompletionItemProvider: Symbol.for("IobrokerCompletionItemProvider")
+        iobrokerCompletionItemProvider: Symbol.for("IobrokerCompletionItemProvider"),
+        iobrokerCodeActionsItemProvider: Symbol.for("IobrokerCodeActionsProvider")
     },
     command: Symbol.for("Command"),
     startup: Symbol.for("Startup"),

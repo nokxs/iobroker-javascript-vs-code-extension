@@ -1,7 +1,7 @@
 import { Uri } from "vscode";
 
 export interface IFileService {
-    saveToFile(uri: Uri, content: string): Promise<void>
+    saveToFile(uri: Uri, content: string | Buffer): Promise<void>
     readFromFile(uri: Uri): Promise<string>
     fileExists(uri: Uri): boolean
     directoryExists(uri: Uri): boolean

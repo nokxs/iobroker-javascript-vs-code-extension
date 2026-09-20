@@ -345,6 +345,11 @@ export class SocketIoClient implements ISocketIoClient {
     on(name: any, cb: any): void {
         if (cb) {
             this.handlers[name] = this.handlers[name] || [];
+
+            if (this.handlers[name].includes(cb)) {
+                return;
+            }
+            
             this.handlers[name].push(cb);
         }
     }

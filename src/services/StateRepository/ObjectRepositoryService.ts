@@ -27,12 +27,20 @@ export class ObjectRepositoryService implements IObjectRepositoryService, IObjec
         this.stateRemoteService.registerObjectChangedEventListener(this);
     }
 
-    findMatchingObjects(partialId: string): IObjectList | undefined {
+    findMatchingObjectsByPartialIdAndName(partialId: string): IObjectList | undefined {
+        
+        // two dots at the end are not a valid state id and therfore no machting objcts can be found
+        if (partialId.endsWith("..")) {
+            return undefined;
+        }
+
         const idParts = partialId.split(".");
 
         let currentObjectDictionary: ObjectRepositoryDictionary = this.allObjects;
         for (const idPart of idParts) {
-            var item = currentObjectDictionary[idPart];
+
+            const item = currentObjectDictionary[idPart];
+            const searchTerm = idPart.toLocaleLowerCase();
             
             // first, iterate through tree, till no matching part is found
             if (item) {
@@ -41,10 +49,23 @@ export class ObjectRepositoryService implements IObjectRepositoryService, IObjec
             // then use partial id part for filtering
             else {
                 const keys = Object.keys(currentObjectDictionary);
-                const matchingKeys = keys.filter(key => key.startsWith(idPart));
+                const matchingKeysById = keys.filter(key => key.toLocaleLowerCase().includes(searchTerm));
+                
+                for (const key in currentObjectDictionary) {
+                    const subItem = currentObjectDictionary[key];
+                    const name = <any>(subItem.item?.common.name);
+                    const nameExpanded: string | undefined = name?.en ?? name ?? undefined;
+
+                    if (nameExpanded && nameExpanded.toLocaleLowerCase().includes(searchTerm)) {
+                        if (!matchingKeysById.includes(key)) {
+                            matchingKeysById.push(key);
+                        }
+                    }
+                }
+
                 const result: IObjectList= {};
                 
-                for (const key of matchingKeys) {
+                for (const key of matchingKeysById) {
                     result[key] = currentObjectDictionary[key].item;
                 }
 

@@ -5,10 +5,10 @@ import { Uri, window } from "vscode";
 import { IConnectionEventListener } from "./IConnectionEventListener";
 import { IConnectionService } from "./IConnectionService";
 import { ILogMessage } from '../../models/ILogMessage';
+import { IObjectList } from '../../models/IObjectList';
+import { IState } from '../../models/IState';
 import { ScriptId } from "../../models/ScriptId";
 import { injectable } from "inversify";
-import { IState } from '../../models/IState';
-import { IObjectList } from '../../models/IObjectList';
 
 @injectable()
 export class ConnectionServiceAdmin4 implements IConnectionService {
@@ -21,6 +21,10 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
     private client: SocketIOClient.Socket | undefined = undefined;
     
     registerConnectionEventListener(listener: IConnectionEventListener): void {
+        if (this.connectionEventListeners.includes(listener)) {
+            return;
+        }
+
         this.connectionEventListeners.push(listener);
     }
     

@@ -5,9 +5,6 @@ import { IScriptChangedEventListener } from '../../services/scriptRemote/IScript
 import { IIobrokerConnectionService } from '../../services/iobrokerConnection/IIobrokerConnectionService';
 import { IScriptRepositoryService } from '../../services/scriptRepository/IScriptRepositoryService';
 import { ILocalScript } from '../../models/ILocalScript';
-import { IWorkspaceService } from '../../services/workspace/IWorkspaceService';
-import { ILocalOnlyScriptRepositoryService } from '../../services/localOnlyScriptRepository/ILocalOnlyScriptRepositoryService';
-import { IConfigRepositoryService } from '../../services/configRepository/IConfigRepositoryService';
 import { ScriptItem } from '../scriptExplorer/ScriptItem';
 import { IChangedScriptsProvider } from './IChangedScriptsProvider';
 
@@ -15,42 +12,37 @@ import { IChangedScriptsProvider } from './IChangedScriptsProvider';
 export class ChangedScriptsProvider implements vscode.TreeDataProvider<ScriptItem>, IChangedScriptsProvider, IScriptChangedEventListener {
 
     private _onDidChangeTreeData: vscode.EventEmitter<ScriptItem | undefined | null | void> = new vscode.EventEmitter<ScriptItem | undefined | null | void>();
+    private _scriptCountCallback?: (count: number) => void;
 
     onDidChangeTreeData?: vscode.Event<void | ScriptItem | null | undefined> | undefined = this._onDidChangeTreeData.event;
 
     constructor(
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
-        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
-        @inject(TYPES.services.localOnlyScriptRepository) private localOnlyScriptRepositoryService: ILocalOnlyScriptRepositoryService,
-        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
-        @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService
+        @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService
     ) {
         scriptRepositoryService.registerScriptChangedEventListener(this);
-        
-        vscode.workspace.onDidCreateFiles(() => this.refresh());
-        vscode.workspace.onDidDeleteFiles(() => this.refresh());
     }
-    
+
     getTreeItem(element: ScriptItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
         return element;
     }
 
-    async getChildren(element?: ScriptItem): Promise<Array<ScriptItem>> {
+    async getChildren(): Promise<Array<ScriptItem>> {
         if (!this.iobrokerConnectionService.isConnected()) {
             return Promise.resolve([]);
         }
 
-        if(!element) {
-            return this.getRootLevelItems();
-        }
+        return await this.getChangedScriptItems();
+    }
 
-        return Promise.resolve([]);
+    onScriptCountChanged(callback: (count: number) => void): void {
+        this._scriptCountCallback = callback;
     }
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
     }
-    
+
     onScriptChanged(): void {
         this.refresh();
     }
@@ -59,11 +51,18 @@ export class ChangedScriptsProvider implements vscode.TreeDataProvider<ScriptIte
         this.refresh();
     }
 
-    private async getRootLevelItems(): Promise<Array<ScriptItem>> {
-        const scripts = this.scriptRepositoryService.getAllChangedScripts();        
+    private async getChangedScriptItems(): Promise<Array<ScriptItem>> {
+        const scripts = this.scriptRepositoryService.getAllChangedScripts();
+        this.notifyScriptCountChange(scripts);
         return this.convertToScriptItems(scripts);
     }
-    
+
+    private notifyScriptCountChange(scripts: ILocalScript[]): void {
+        if (this._scriptCountCallback) {
+            this._scriptCountCallback(scripts.length);
+        }
+    }
+
     private convertToScriptItems(scripts: ILocalScript[]): ScriptItem[] {
         return scripts.map(s => new ScriptItem(s));
     }
