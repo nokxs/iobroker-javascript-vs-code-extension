@@ -96,7 +96,7 @@ export class LoginService implements ILoginService {
         }
 
         // try to get a new token with the updated password
-        const updatedAccessToken = await this.getAndUpdateToken(baseUri, allowSelfSignedCertificate, username, password, serverTime, loginType);
+        const updatedAccessToken = await this.getAndUpdateToken(baseUri, allowSelfSignedCertificate, username, newPassword, serverTime, loginType);
         return updatedAccessToken?.token ?? undefined;
 
     }

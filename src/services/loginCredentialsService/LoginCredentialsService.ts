@@ -53,7 +53,10 @@ export class LoginCredentialsService implements ILoginCredentialsService {
         const json = await this.extensionContext.secrets.get(this.getAccessTokenIdentifier());
 
         if (json) {
-            return JSON.parse(json);
+            // The expiration date is stored as a string and therefore has to be converted back to a
+            // 'Date'. Otherwise the validity check can never succeed and the token is never reused.
+            const parsed = JSON.parse(json) as { token: string; expires: string };
+            return { token: parsed.token, expires: new Date(parsed.expires) };
         }
 
         return undefined;
@@ -64,8 +67,10 @@ export class LoginCredentialsService implements ILoginCredentialsService {
     }
 
     isValidAccessToken(accessToken: IAccessToken | undefined, serverTime: Date): boolean {
-        if (accessToken && accessToken.token) {
-            return serverTime < accessToken.expires;
+        // A token with a corrupted or missing expiration date has to be treated as invalid, otherwise
+        // the comparison below would silently fail and the token would never be reused.
+        if (accessToken && accessToken.token && accessToken.expires instanceof Date) {
+            return !Number.isNaN(accessToken.expires.getTime()) && serverTime < accessToken.expires;
         }
 
         return false;
