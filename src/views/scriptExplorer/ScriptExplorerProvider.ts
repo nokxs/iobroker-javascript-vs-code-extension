@@ -92,6 +92,13 @@ export class ScriptExplorerProvider implements IScriptExplorerProvider, IScriptC
     }
 
     onActiveEditorChanged(uri: vscode.Uri | undefined): void {
+        // An undefined uri means that the focus moved away from the editors (e.g. into a view).
+        // The last known editor has to be kept, because revealing usually happens while the focus
+        // is on the tree view and that would otherwise discard the uri which should be revealed.
+        if (!uri) {
+            return;
+        }
+
         this.currentScriptUri = uri;
 
         // Only reveal while the script explorer is already visible. Revealing would otherwise
@@ -106,10 +113,10 @@ export class ScriptExplorerProvider implements IScriptExplorerProvider, IScriptC
      * the script explorer is not visible or no script belongs to the active editor.
      */
     async revealCurrentScript(): Promise<void> {
-        // The tracked uri is used, because the active text editor is not available anymore as soon as
-        // the focus is on the tree view. If nothing was tracked so far (e.g. the editor was restored
-        // after the extension was activated), the current editor is used as fallback.
-        const uri = this.currentScriptUri ?? vscode.window.activeTextEditor?.document.uri;
+        // `window.activeTextEditor` is undefined while the focus is on the tree view, so the tracked
+        // uri is preferred. The active tab is used as fallback, because it is available independently
+        // of the focus (e.g. for an editor which VS Code restored without raising the editor event).
+        const uri = this.currentScriptUri ?? this.getActiveTabUri();
         if (!uri || !this.autoRevealEnabled || !this.isVisible() || this.isRevealing) {
             return;
         }
@@ -140,6 +147,23 @@ export class ScriptExplorerProvider implements IScriptExplorerProvider, IScriptC
 
     private isVisible(): boolean {
         return this.treeView?.visible ?? false;
+    }
+
+    private getActiveTabUri(): vscode.Uri | undefined {
+        const input = vscode.window.tabGroups.activeTabGroup?.activeTab?.input;
+        if (input instanceof vscode.TabInputText) {
+            return input.uri;
+        }
+
+        if (input instanceof vscode.TabInputTextDiff) {
+            return input.modified;
+        }
+
+        if (input instanceof vscode.TabInputCustom) {
+            return input.uri;
+        }
+
+        return undefined;
     }
 
     async getChildren(element?: ScriptExplorerItem): Promise<Array<ScriptExplorerItem>> {
