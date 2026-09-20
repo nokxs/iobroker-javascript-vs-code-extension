@@ -7,7 +7,8 @@
   "allowSelfSignedCertificate": false,
   "username": "admin",
   "scriptExplorer": {
-    "collapseDirectoriesOnStartup": true
+    "collapseDirectoriesOnStartup": true,
+    "revealCurrentScript": true
   },
   "autoUpload": false,
   "scriptAutoRun": false,

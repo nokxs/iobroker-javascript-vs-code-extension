@@ -43,8 +43,25 @@ export class Startup implements IStartup {
             window.setStatusBarMessage("ioBroker: No auto connect possible. Multiple 'iobroker-config.json' found.");
         }
 
-        window.createTreeView("iobroker-javascript.script-explorer", { treeDataProvider: this.scriptExplorerProvider });
+        this.scriptExplorerProvider.treeView = window.createTreeView("iobroker-javascript.script-explorer", { treeDataProvider: this.scriptExplorerProvider });
         const changedScriptTreeView = window.createTreeView("iobroker-javascript.changed-scripts", { treeDataProvider: this.changedScriptsProvider });
+
+        this.scriptExplorerProvider.updateAutoSyncContext();
+
+        // The active editor is only tracked. The script explorer is not brought to the front, so that
+        // selecting a file in the file explorer does not switch the view.
+        context.subscriptions.push(window.onDidChangeActiveTextEditor(editor => this.scriptExplorerProvider.onActiveEditorChanged(editor?.document.uri)));
+
+        // On startup VS Code restores the previously active editor without raising onDidChangeActiveTextEditor,
+        // so the editor which is open right now has to be tracked explicitly.
+        this.scriptExplorerProvider.onActiveEditorChanged(window.activeTextEditor?.document.uri);
+
+        // As soon as the user switches to the script explorer, the current script is revealed.
+        context.subscriptions.push(this.scriptExplorerProvider.treeView.onDidChangeVisibility(event => {
+            if (event.visible) {
+                void this.scriptExplorerProvider.revealCurrentScript();
+            }
+        }));
 
         this.changedScriptsProvider.onScriptCountChanged((count: number) => {
             changedScriptTreeView.badge = {

@@ -24,7 +24,9 @@ import { DebugLogService } from './services/debugLogService/DebugLogService';
 import { DeleteDirectoryCommand } from './commands/DeleteDirectoryCommand';
 import { DeleteScriptCommand } from './commands/DeleteScriptCommand';
 import { DirectoryService } from './services/directory/DirectorytService';
+import { DisableAutoSyncCommand } from './commands/DisableAutoSyncCommand';
 import { DownloadAllCommand } from './commands/DownloadAllCommand';
+import { EnableAutoSyncCommand } from './commands/EnableAutoSyncCommand';
 import { FileService } from './services/file/FileService';
 import { IAdminVersionDetector } from './services/adminVersionDetector/IAdminVersionDetector';
 import { IAutoUploadService } from './services/autoUpload/IAutoUploadService';
@@ -163,6 +165,8 @@ container.bind<ICommand>(TYPES.command).to(CreateTypeScriptFileCommandy);
 container.bind<ICommand>(TYPES.command).to(CreateJavaScriptFileCommand);
 container.bind<ICommand>(TYPES.command).to(CreateScriptFileCommand);
 container.bind<ICommand>(TYPES.command).to(ShowLocalToServerDiffCommand);
+container.bind<ICommand>(TYPES.command).to(EnableAutoSyncCommand);
+container.bind<ICommand>(TYPES.command).to(DisableAutoSyncCommand);
 
 container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider).inSingletonScope();
 container.bind<IChangedScriptsProvider>(TYPES.views.changedScripts).to(ChangedScriptsProvider).inSingletonScope();

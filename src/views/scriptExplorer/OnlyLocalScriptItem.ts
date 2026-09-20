@@ -8,6 +8,7 @@ export class OnlyLocalScriptItem extends vscode.TreeItem {
     constructor(public fileUri: vscode.Uri) {
         super("", vscode.TreeItemCollapsibleState.None);
         
+        this.id = fileUri.fsPath;
         this.description =  `${path.basename(fileUri.fsPath)} (only local)`;
         this.command = {
             title: "Open script",

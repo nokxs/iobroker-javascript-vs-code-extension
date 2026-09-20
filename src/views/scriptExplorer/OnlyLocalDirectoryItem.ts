@@ -11,6 +11,7 @@ export class OnlyLocalDirectoryItem extends vscode.TreeItem {
     constructor(public directory: ILocalOnlyScript, collapse: boolean) {
         super("", collapse ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Expanded);
         
+        this.id = directory.path.fsPath;
         this.description =  `${path.basename(directory.path.fsPath)} (only local)`;
     }
 

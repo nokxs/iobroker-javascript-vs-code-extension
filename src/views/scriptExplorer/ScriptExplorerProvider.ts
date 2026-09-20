@@ -1,7 +1,8 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { inject, injectable } from 'inversify';
 import TYPES from '../../Types';
-import { IScriptExplorerProvider } from './IScriptExplorerProvider';
+import { IScriptExplorerProvider, ScriptExplorerItem } from './IScriptExplorerProvider';
 import { ScriptDirectory } from './ScriptDirectory';
 import { ScriptItem } from './ScriptItem';
 import { IScriptChangedEventListener } from '../../services/scriptRemote/IScriptChangedListener';
@@ -19,12 +20,22 @@ import { ILocalOnlyScript } from '../../models/ILocalOnlyScript';
 import { IConfigRepositoryService } from '../../services/configRepository/IConfigRepositoryService';
 import { OnlyRemoteScriptItem } from './OnlyRemoteScriptItem';
 
+const ROOT_DIRECTORY_ID = "script.js";
+const AUTO_SYNC_CONTEXT_KEY = "iobrokerAutoSyncEnabled";
+
 @injectable()
-export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>, IScriptExplorerProvider, IScriptChangedEventListener {
+export class ScriptExplorerProvider implements IScriptExplorerProvider, IScriptChangedEventListener {
 
-    private _onDidChangeTreeData: vscode.EventEmitter<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem | undefined | null | void> = new vscode.EventEmitter<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | undefined | null | void>();
+    private parentOf = new Map<string, ScriptExplorerItem>();
 
-    onDidChangeTreeData?: vscode.Event<void | ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem | null | undefined> | undefined = this._onDidChangeTreeData.event;
+    private currentScriptUri: vscode.Uri | undefined;
+
+    private isRevealing = false;
+
+    private _onDidChangeTreeData: vscode.EventEmitter<ScriptExplorerItem | undefined | null | void> = new vscode.EventEmitter<ScriptExplorerItem | undefined | null | void>();
+
+    onDidChangeTreeData?: vscode.Event<void | ScriptExplorerItem | null | undefined> | undefined = this._onDidChangeTreeData.event;
+    treeView!: vscode.TreeView<ScriptExplorerItem>;
 
     constructor(
         @inject(TYPES.services.iobrokerConnection) private iobrokerConnectionService: IIobrokerConnectionService,
@@ -38,12 +49,124 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         vscode.workspace.onDidCreateFiles(() => this.refresh());
         vscode.workspace.onDidDeleteFiles(() => this.refresh());
     }
+
+    get autoRevealEnabled(): boolean {
+        const config = this.configRepositoryService.config;
+        if (config instanceof NoConfig) {
+            return true;
+        }
+
+        return config.scriptExplorer?.revealCurrentScript ?? true;
+    }
+
+    getParent(element: ScriptExplorerItem): ScriptExplorerItem | undefined {
+        return this.parentOf.get(this.toKey(element.id));
+    }
+
+    /**
+     * The ids of the tree items are either real strings or `ScriptId` objects (which are String wrappers).
+     * Both have to be mapped to a real string, because the map treats objects and primitives as different keys.
+     */
+    private toKey(id: string | undefined): string {
+        return id ? `${id}` : "";
+    }
+
+    async setAutoRevealEnabled(enabled: boolean): Promise<void> {
+        const config = this.configRepositoryService.config;
+        if (config instanceof NoConfig) {
+            vscode.window.showWarningMessage("ioBroker: Cannot save the auto sync setting, because no valid ioBroker configuration was found.");
+            return;
+        }
+
+        const updatedConfig = { ...config, scriptExplorer: { ...config.scriptExplorer, revealCurrentScript: enabled } };
+        await this.configRepositoryService.write(updatedConfig, this.workspaceService.workspaceToUse);
+        this.updateAutoSyncContext();
+    }
+
+    updateAutoSyncContext(): void {
+        void vscode.commands.executeCommand("setContext", AUTO_SYNC_CONTEXT_KEY, this.autoRevealEnabled);
+    }
     
     getTreeItem(element: ScriptItem | ScriptDirectory): vscode.TreeItem | Thenable<vscode.TreeItem> {
         return element;
     }
 
-    async getChildren(element?: ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>> {
+    onActiveEditorChanged(uri: vscode.Uri | undefined): void {
+        // An undefined uri means that the focus moved away from the editors (e.g. into a view).
+        // The last known editor has to be kept, because revealing usually happens while the focus
+        // is on the tree view and that would otherwise discard the uri which should be revealed.
+        if (!uri) {
+            return;
+        }
+
+        this.currentScriptUri = uri;
+
+        // Only reveal while the script explorer is already visible. Revealing would otherwise
+        // bring the view to the front and take the user away from the file explorer.
+        if (this.isVisible()) {
+            void this.revealCurrentScript();
+        }
+    }
+
+    /**
+     * Reveals the script of the currently active editor in the script explorer. Does nothing if
+     * the script explorer is not visible or no script belongs to the active editor.
+     */
+    async revealCurrentScript(): Promise<void> {
+        // `window.activeTextEditor` is undefined while the focus is on the tree view, so the tracked
+        // uri is preferred. The active tab is used as fallback, because it is available independently
+        // of the focus (e.g. for an editor which VS Code restored without raising the editor event).
+        const uri = this.currentScriptUri ?? this.getActiveTabUri();
+        if (!uri || !this.autoRevealEnabled || !this.isVisible() || this.isRevealing) {
+            return;
+        }
+
+        // Before the connection is established the script list is not available yet. The current
+        // script is revealed as soon as the scripts are loaded.
+        if (!this.iobrokerConnectionService.isConnected()) {
+            return;
+        }
+
+        const item = this.resolveItem(uri);
+        if (!item) {
+            return;
+        }
+
+        this.fillParentChain(item);
+
+        this.isRevealing = true;
+        try {
+            await this.treeView.reveal(item, { select: true, focus: false, expand: true });
+        } catch {
+            // Revealing can fail while the tree view is still loading. The next change of the active
+            // editor or a new visibility change will try it again.
+        } finally {
+            this.isRevealing = false;
+        }
+    }
+
+    private isVisible(): boolean {
+        return this.treeView?.visible ?? false;
+    }
+
+    private getActiveTabUri(): vscode.Uri | undefined {
+        const input = vscode.window.tabGroups.activeTabGroup?.activeTab?.input;
+        if (input instanceof vscode.TabInputText) {
+            return input.uri;
+        }
+
+        if (input instanceof vscode.TabInputTextDiff) {
+            return input.modified;
+        }
+
+        if (input instanceof vscode.TabInputCustom) {
+            return input.uri;
+        }
+
+        return undefined;
+    }
+
+    async getChildren(element?: ScriptExplorerItem): Promise<Array<ScriptExplorerItem>> {
         if (!this.iobrokerConnectionService.isConnected()) {
             return Promise.resolve([]);
         }
@@ -53,33 +176,35 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         }
 
         if (element && element instanceof ScriptDirectory) {
-            return this.getChildItems(element.directory);
+            return this.getChildItems(element.directory, element);
         }
 
         if (element && element instanceof OnlyLocalDirectoryItem) {
-            return await this.getLocalOnlyChildItems(element.directory);
+            return await this.getLocalOnlyChildItems(element.directory, element);
         }
 
         return Promise.resolve([]);
     }
 
     refresh(): void {
+        this.parentOf.clear();
         this._onDidChangeTreeData.fire();
     }
     
     onScriptChanged(): void {
         this.refresh();
+        void this.revealCurrentScript();
     }
 
     onNoScriptAvailable(): void {
         this.refresh();
     }
 
-    private async getRootLevelItems(): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>> {
-        return await this.getChildItems(new RootDirectory(this.workspaceService, this.configRepositoryService));
+    private async getRootLevelItems(): Promise<Array<ScriptExplorerItem>> {
+        return await this.getChildItems(new RootDirectory(this.workspaceService, this.configRepositoryService), undefined);
     }
 
-    private async getChildItems(directory: IDirectory): Promise<Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem>> {
+    private async getChildItems(directory: IDirectory, parent: ScriptExplorerItem | undefined): Promise<Array<ScriptExplorerItem>> {
 
         const directories = await this.scriptRepositoryService.getDirectoriesIn(directory);
         const directoriesOnlyLocal = await this.localOnlyScriptRepositoryService.getLocalOnlyDirectoriesIn(directory);
@@ -94,17 +219,19 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         const onlyRemoteScritpItems = this.convertToOnlyRemoteScriptItems(scripts.filter(s => s.isRemoteOnly));
         const onlyLocalDirectoryItems = this.convertToOnlyLocalDirectories(directoriesOnlyLocal, collapseDirectories);
 
-        let items: Array<ScriptItem | OnlyLocalScriptItem | ScriptDirectory | OnlyLocalDirectoryItem> = new Array();
+        let items: Array<ScriptExplorerItem> = new Array();
         items = items.concat(scriptDirectories);
         items = items.concat(onlyLocalDirectoryItems);
         items = items.concat(scriptItems);     
         items = items.concat(onlyLocalScriptItems); 
         items = items.concat(onlyRemoteScritpItems); 
 
+        this.registerParent(items, parent);
+
         return items;
     }
 
-    private async getLocalOnlyChildItems(directory: ILocalOnlyScript): Promise<Array<OnlyLocalScriptItem | OnlyLocalDirectoryItem>> {
+    private async getLocalOnlyChildItems(directory: ILocalOnlyScript, parent: OnlyLocalDirectoryItem): Promise<Array<OnlyLocalScriptItem | OnlyLocalDirectoryItem>> {
         const direcoriesOnlyLocal = await this.localOnlyScriptRepositoryService.getSupportedLocalDirectories(directory.path);
         const scriptsOnlyLocal = await this.localOnlyScriptRepositoryService.getSupportedLocalOnlyFiles(directory.path);
         
@@ -116,7 +243,23 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
         items = items.concat(onlyLocalDirectoryItems);
         items = items.concat(onlyLocalScriptItems);   
 
+        this.registerParent(items, parent);
+
         return items;
+    }
+
+    /**
+     * Memorizes the parent of all given items. This is required by the tree view to reveal
+     * items which are below a directory that is not expanded yet.
+     */
+    private registerParent(items: ScriptExplorerItem[], parent: ScriptExplorerItem | undefined): void {
+        if (!parent) {
+            return;
+        }
+
+        for (const item of items) {
+            this.parentOf.set(this.toKey(item.id), parent);
+        }
     }
 
     private shouldDirectoriesBeCollapsed(): boolean {
@@ -146,5 +289,116 @@ export class ScriptExplorerProvider implements vscode.TreeDataProvider<ScriptIte
 
     private convertToOnlyLocalDirectories(onlyLocalDirectories: ILocalOnlyScript[], collapse: boolean): OnlyLocalDirectoryItem[] {
         return onlyLocalDirectories.map(localDirectory => new OnlyLocalDirectoryItem(localDirectory, collapse));
+    }
+
+    private resolveItem(uri: vscode.Uri): ScriptExplorerItem | undefined {
+        const script = this.scriptRepositoryService.getScriptFromAbsolutUri(uri);
+        if (script) {
+            return script.isRemoteOnly ? new OnlyRemoteScriptItem(script) : new ScriptItem(script);
+        }
+
+        if (uri.scheme === "file" && this.isSupportedScriptFile(uri) && this.isInScriptRoot(uri.fsPath)) {
+            return new OnlyLocalScriptItem(uri);
+        }
+
+        return undefined;
+    }
+
+    /**
+     * Adds all items of the given item up to the root of the tree to the parent cache, so that
+     * the tree view is able to expand the collapsed ancestors when revealing the item.
+     */
+    private fillParentChain(item: ScriptExplorerItem): void {
+        if (item instanceof ScriptItem) {
+            this.fillRemoteParents(<string>item.script._id);
+            return;
+        }
+
+        if (item instanceof OnlyLocalScriptItem) {
+            this.fillLocalParents(item.fileUri.fsPath);
+        }
+    }
+
+    private fillRemoteParents(childId: string): void {
+        const directories = this.getDirectoriesById();
+        const collapse = this.shouldDirectoriesBeCollapsed();
+
+        let currentChildId: string | undefined = childId;
+        while (currentChildId) {
+            const parentId = currentChildId.substring(0, currentChildId.lastIndexOf("."));
+            if (!parentId || parentId === ROOT_DIRECTORY_ID) {
+                return;
+            }
+
+            const parentDirectory = directories.get(parentId);
+            if (!parentDirectory) {
+                return;
+            }
+
+            this.parentOf.set(this.toKey(currentChildId), new ScriptDirectory(parentDirectory, collapse));
+            currentChildId = parentId;
+        }
+    }
+
+    private fillLocalParents(filePath: string): void {
+        const directoriesByPath = this.getDirectoriesByPath();
+        const scriptRootPath = this.getScriptRootPath();
+        const collapse = this.shouldDirectoriesBeCollapsed();
+
+        let childId = filePath;
+        let childPath: string | undefined = filePath;
+
+        while (childPath) {
+            const parentPath = path.dirname(childPath);
+            if (parentPath === childPath || parentPath === scriptRootPath) {
+                // Root level is reached, so the item has no parent in the tree.
+                return;
+            }
+
+            const parentDirectory = directoriesByPath.get(parentPath);
+            if (parentDirectory) {
+                this.parentOf.set(this.toKey(childId), new ScriptDirectory(parentDirectory, collapse));
+                this.fillRemoteParents(<string>parentDirectory._id);
+                return;
+            }
+
+            if (!this.isInScriptRoot(parentPath)) {
+                return;
+            }
+
+            this.parentOf.set(this.toKey(childId), new OnlyLocalDirectoryItem({ path: vscode.Uri.file(parentPath) }, collapse));
+            childId = parentPath;
+            childPath = parentPath;
+        }
+    }
+
+    private getDirectoriesById(): Map<string, IDirectory> {
+        return new Map(this.scriptRepositoryService.getAllDirectories().map(directory => [<string>directory._id, directory]));
+    }
+
+    private getDirectoriesByPath(): Map<string, IDirectory> {
+        return new Map(this.scriptRepositoryService.getAllDirectories().map(directory => [directory.absoluteUri.fsPath, directory]));
+    }
+
+    private isSupportedScriptFile(uri: vscode.Uri): boolean {
+        switch (path.extname(uri.fsPath)) {
+            case ".js":
+            case ".ts":
+            case ".rules":
+            case ".block":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private isInScriptRoot(fsPath: string): boolean {
+        const relativePath = path.relative(this.getScriptRootPath(), fsPath);
+        return relativePath !== "" && !relativePath.startsWith("..") && !path.isAbsolute(relativePath);
+    }
+
+    private getScriptRootPath(): string {
+        const scriptRoot = this.configRepositoryService.config.scriptRoot;
+        return vscode.Uri.joinPath(this.workspaceService.workspaceToUse.uri, scriptRoot).fsPath;
     }
 }

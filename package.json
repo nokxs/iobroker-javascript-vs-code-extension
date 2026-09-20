@@ -99,6 +99,16 @@
 				"icon": "$(debug-disconnect)"
 			},
 			{
+				"command": "iobroker-javascript.view.scriptExplorer.enableAutoSync",
+				"title": "iobroker: Enable auto sync with current script",
+				"icon": "$(sync)"
+			},
+			{
+				"command": "iobroker-javascript.view.scriptExplorer.disableAutoSync",
+				"title": "iobroker: Disable auto sync with current script",
+				"icon": "$(sync-ignored)"
+			},
+			{
 				"command": "iobroker-javascript.logout",
 				"title": "iobroker: Logout from ioBroker"
 			},
@@ -208,6 +218,16 @@
 				{
 					"command": "iobroker-javascript.downloadAll",
 					"when": "view == iobroker-javascript.script-explorer"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.enableAutoSync",
+					"when": "view == iobroker-javascript.script-explorer && !iobrokerAutoSyncEnabled",
+					"group": "navigation"
+				},
+				{
+					"command": "iobroker-javascript.view.scriptExplorer.disableAutoSync",
+					"when": "view == iobroker-javascript.script-explorer && iobrokerAutoSyncEnabled",
+					"group": "navigation"
 				},
 				{
 					"command": "iobroker-javascript.uploadAll",
