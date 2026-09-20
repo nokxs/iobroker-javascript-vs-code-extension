@@ -14,7 +14,6 @@ import { IScriptService } from "../script/IScriptService";
 import { IScriptRepositoryService } from "../scriptRepository/IScriptRepositoryService";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { ILoginService } from "../loginHttpClient/ILoginService";
-import { ILoginCredentialsService } from "../loginCredentialsService/ILoginCredentialsService";
 import { IDebugLogService } from "../debugLogService/IDebugLogService";
 import { IStatusBarService } from "../statusBar/IStatusBarService";
 import { IWindowMessageService } from "../windowMessage/IWindowMessageService";
@@ -30,6 +29,9 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
 
     private isReAuthenticationRunning = false;
 
+    /** Login type which was detected during a regular connect. Needed to re-authenticate without asking the user. */
+    private detectedLoginType: { ioBrokerUrl: string; loginType: LoginType } | undefined = undefined;
+
     constructor(
         @inject(TYPES.services.configCreation) private configCreationService: IConfigCreationService,
         @inject(TYPES.services.configRepository) private configRepository: IConfigRepositoryService,
@@ -39,7 +41,6 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
         @inject(TYPES.services.script) private scriptService: IScriptService,
         @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
         @inject(TYPES.services.login) private loginService: ILoginService,
-        @inject(TYPES.services.loginCredentials) private loginCredentialService: ILoginCredentialsService,
         @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,
         @inject(TYPES.services.statusBarService) private statusBarService: IStatusBarService,
         @inject(TYPES.services.windowMessageService) private windowMessageService: IWindowMessageService,
@@ -65,10 +66,15 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
             this.debugLogService.log("reAuthentication not running", "IobrokerConnectionService");
             this.isReAuthenticationRunning = true;
             this.statusBarService.setText("$(warning) ioBroker disconnected (authentication required)");
-            await this.loginCredentialService.updatePasswordFromUser();
-            await this.connect(true); // force login
-            this.isReAuthenticationRunning = false;
-            this.debugLogService.log("reAuthentication done", "IobrokerConnectionService");
+            try {
+                // The password from the storage is reused here. The login service only asks the user for
+                // a new one, if logging in with the stored password fails.
+                await this.connect(true); // force login
+            }
+            finally {
+                this.isReAuthenticationRunning = false;
+                this.debugLogService.log("reAuthentication done", "IobrokerConnectionService");
+            }
         }
     }
 
@@ -140,7 +146,20 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
             
             this.logDebug(`Force login: ${forceLogin}`);
 
-            const loginType = forceLogin ? LoginType.oAuth2 : await this.loginService.getLoginType(uri, allowSelfSignedCertificate);
+            let loginType: LoginType;
+            if (forceLogin) {
+                // Re-authentication must not run the login detection again, because an expired access
+                // token can lead to a wrong result. Use the type which was detected for this server before.
+                const detected = this.detectedLoginType?.ioBrokerUrl === uri.toString() ? this.detectedLoginType.loginType : undefined;
+                loginType = detected ?? LoginType.oAuth2;
+            }
+            else {
+                loginType = await this.loginService.getLoginType(uri, allowSelfSignedCertificate);
+                if (loginType !== LoginType.noLogin) {
+                    this.detectedLoginType = { ioBrokerUrl: uri.toString(), loginType: loginType };
+                }
+            }
+
             if (forceLogin || loginType !== LoginType.noLogin) {
                 this.logDebug(`Login is necessary`);
 
