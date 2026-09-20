@@ -175,6 +175,7 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 | `username` | The user name for ioBroker. Only necessary for password protected ioBroker installations | No | |
 | `collectDebugLog` | Should the debug log be created directly on start up? | No | false |
 | `scriptExplorer.collapseDirectoriesOnStartup` | Should the directories in the script explorer be collapsed on startup. | No | true |
+| `scriptExplorer.revealCurrentScript` | Should the script of the active editor automatically be selected and revealed in the script explorer? | No | true |
 | `autoUpload` | Automatically upload scripts on save? | No | false |
 | `scriptAutoRun` | Automatically start a uploaded script? | No | false |
 | `forceLogin` | Should login detection be skipped and login to ioBroker be forced? Works only with admin version >= 7.6.2 | No | false |

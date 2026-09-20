@@ -17,7 +17,8 @@ export class Config {
 
 export class ScriptExplorerConfig {
     constructor(
-        readonly collapseDirectoriesOnStartup?: boolean
+        readonly collapseDirectoriesOnStartup?: boolean,
+        readonly revealCurrentScript?: boolean
     ) {}
 }
 
