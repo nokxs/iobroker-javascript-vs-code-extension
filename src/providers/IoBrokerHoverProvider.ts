@@ -17,6 +17,10 @@ export class IoBrokerHoverProvider implements IIobrokerHoverProvider {
         if (wordRange) {
             // slice removes first and last char
             const id = document.getText(wordRange).slice(1, -1);
+            if (id.endsWith(".")) {
+                return undefined;
+            }
+
             const state = await this.stateAndObjectRemoteService.getState(id);
 
             if (!state || token.isCancellationRequested) {
