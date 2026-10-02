@@ -348,18 +348,23 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
 
     private async handleFileChangeOnDisk(): Promise<void> {    
         const config = await this.configRepositoryService.read(this.workspaceService.workspaceToUse);
-        const watchPattern = config.scriptRoot === '/' ? 
-        '**/*.{js,ts}' : 
+        const watchPattern = config.scriptRoot === '/' ?
+        '**/*.{js,ts}' :
         config.scriptRoot + '/**/*.{js,ts}';
 
         const watcher = workspace.createFileSystemWatcher(watchPattern);
-        watcher.onDidChange(async uri => {
+        const updateScriptState = async (uri: Uri) => {
             const script = this.getScriptFromAbsolutUri(uri);
 
             if(script) {
+                await this.evaluateScriptOnRemote(script);
                 await this.evaluateDirtyState(script);
             }
-        });
+        };
+
+        watcher.onDidChange(updateScriptState);
+        watcher.onDidCreate(updateScriptState);
+        watcher.onDidDelete(updateScriptState);
     }
 
     private handleDocumentCreation() {
