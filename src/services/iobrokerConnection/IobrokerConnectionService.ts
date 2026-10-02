@@ -21,6 +21,7 @@ import { IObjectRepositoryService } from "../StateRepository/IObjectRepositorySe
 import { IStateAndObjectRemoteService } from "../stateRemote/IStateAndObjectRemoteService";
 import { IAutoUploadService } from "../autoUpload/IAutoUploadService";
 import { LoginType } from "../loginHttpClient/LoginType";
+import { formatError } from "../formatError";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
@@ -213,8 +214,9 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
                 }
             }
         } catch (error) {
-            this.logDebug("Connection was not possible due to erorr: " + JSON.stringify(error));
-            this.windowMessageService.showError(`Could not connect to ioBroker. Check your '.iobroker-config.json' for wrong configuration: ${error}`);
+            const errorMessage = formatError(error);
+            this.logDebug(`Connection was not possible due to error: ${errorMessage}`);
+            this.windowMessageService.showError(`Could not connect to ioBroker. Check your '.iobroker-config.json' for wrong configuration: ${errorMessage}`);
         }
     }
 
