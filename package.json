@@ -188,6 +188,11 @@
 				"title": "Show diff between local and server script",
 				"enablement": "view == iobroker-javascript.changed-scripts || view == iobroker-javascript.script-explorer",
 				"icon": "$(diff)"
+			},
+			{
+				"command": "iobroker-javascript.view.changed-scripts.scanForChanges",
+				"title": "iobroker: Scan all scripts for changes",
+				"icon": "$(search)"
 			}
 		],
 		"menus": {
@@ -227,6 +232,11 @@
 				{
 					"command": "iobroker-javascript.view.scriptExplorer.disableAutoSync",
 					"when": "view == iobroker-javascript.script-explorer && iobrokerAutoSyncEnabled",
+					"group": "navigation"
+				},
+				{
+					"command": "iobroker-javascript.view.changed-scripts.scanForChanges",
+					"when": "view == iobroker-javascript.changed-scripts",
 					"group": "navigation"
 				},
 				{
