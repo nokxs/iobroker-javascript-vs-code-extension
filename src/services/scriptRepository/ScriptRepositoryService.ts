@@ -8,7 +8,7 @@ import { IDirectoryService } from "../directory/IDirectoryService";
 import { IScriptChangedEventListener } from "../scriptRemote/IScriptChangedListener";
 import { RootDirectory } from "../../models/RootDirectory";
 import { ILocalScript } from "../../models/ILocalScript";
-import { FileCreateEvent, FileDeleteEvent, Uri, workspace } from "vscode";
+import { Disposable, Extension, FileCreateEvent, FileDeleteEvent, Uri, extensions, workspace } from "vscode";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { IScriptService } from "../script/IScriptService";
 import { EngineType } from "../../models/EngineType";
@@ -17,6 +17,33 @@ import { ScriptId } from "../../models/ScriptId";
 import { IScriptIdService } from "../scriptId/IScriptIdService";
 import { IDebugLogService } from "../debugLogService/IDebugLogService";
 import { ISecretPlaceholderService } from "../scriptRemote/ISecretPlaceholderService";
+import * as path from "path";
+
+/**
+ * Minimal typings for the API of the built-in git extension. It is not part of
+ * `@types/vscode`, so only the members used here are declared.
+ */
+interface GitRepositoryState {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    HEAD?: { commit?: string; name?: string };
+    indexChanges: unknown[];
+    workingTreeChanges: unknown[];
+    onDidChange: (listener: () => void) => Disposable;
+}
+
+interface GitRepository {
+    rootUri: Uri;
+    state: GitRepositoryState;
+}
+
+interface GitAPI {
+    repositories: GitRepository[];
+    onDidOpenRepository: (listener: (repository: GitRepository) => void) => Disposable;
+}
+
+interface GitExtension {
+    getAPI(version: number): GitAPI;
+}
 
 @injectable()
 export class ScriptRepositoryService implements IScriptRepositoryService, IScriptChangedEventListener {
@@ -45,6 +72,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         this.handleFileChangeOnDisk();
         this.handleDocumentCreation();
         this.handDocumentDeletion();
+        this.handleGitChanges();
     }
 
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {
@@ -365,6 +393,73 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         watcher.onDidChange(updateScriptState);
         watcher.onDidCreate(updateScriptState);
         watcher.onDidDelete(updateScriptState);
+    }
+
+    /**
+     * Git operations such as pull, checkout or merge move the HEAD and may replace files on disk
+     * without raising reliable file system watcher events. Therefore the repository state of the
+     * built-in git extension is observed additionally to reevaluate all script states.
+     */
+    private handleGitChanges(): void {
+        const gitExtension = extensions.getExtension<GitExtension>("vscode.git");
+        if (!gitExtension) {
+            return;
+        }
+
+        void this.registerGitRepositories(gitExtension);
+    }
+
+    private async registerGitRepositories(gitExtension: Extension<GitExtension>): Promise<void> {
+        let gitApi: GitAPI;
+        try {
+            const exports = gitExtension.isActive ? gitExtension.exports : await gitExtension.activate();
+            gitApi = exports.getAPI(1);
+        } catch (error) {
+            this.logDebug(`Could not access the git extension API to detect changes made by git: ${error}`);
+            return;
+        }
+
+        const workspaceRoot = this.workspaceService.workspaceToUse.uri;
+        const registerRepository = (repository: GitRepository) => {
+            if (!this.isWorkspaceInsideRepository(workspaceRoot, repository.rootUri)) {
+                return;
+            }
+
+            let lastStateSignature = this.getGitStateSignature(repository);
+            repository.state.onDidChange(() => {
+                const stateSignature = this.getGitStateSignature(repository);
+                if (stateSignature === lastStateSignature) {
+                    return;
+                }
+
+                lastStateSignature = stateSignature;
+                this.logDebug("Git repository changed. Reevaluating all scripts...");
+                void this.reevaluateAllScripts();
+            });
+        };
+
+        gitApi.repositories.forEach(registerRepository);
+        gitApi.onDidOpenRepository(registerRepository);
+    }
+
+    private isWorkspaceInsideRepository(workspaceUri: Uri, repositoryRootUri: Uri): boolean {
+        const relativePath = path.relative(repositoryRootUri.fsPath, workspaceUri.fsPath);
+        return relativePath === "" || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath));
+    }
+
+    private getGitStateSignature(repository: GitRepository): string {
+        const head = repository.state.HEAD;
+        return [
+            head?.name ?? "",
+            head?.commit ?? "",
+            repository.state.indexChanges.length,
+            repository.state.workingTreeChanges.length
+        ].join(":");
+    }
+
+    private async reevaluateAllScripts(): Promise<void> {
+        await this.evaluateScriptOnRemoteForAllScripts();
+        await this.evaluateDirtyStateForAllScripts();
     }
 
     private handleDocumentCreation() {
