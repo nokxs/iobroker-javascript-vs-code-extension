@@ -75,6 +75,7 @@ import { MoveCommand } from './commands/MoveCommand';
 import { ObjectRepositoryService } from './services/StateRepository/ObjectRepositoryService';
 import { OpenFileCommand } from './commands/OpenFileCommand';
 import { RefreshCommand } from './commands/RefreshCommand';
+import { ScanForChangesCommand } from './commands/ScanForChangesCommand';
 import { ScriptCreationService } from './services/scriptCreation/ScriptCreationService';
 import { ScriptExplorerProvider } from './views/scriptExplorer/ScriptExplorerProvider';
 import { ScriptIdService } from './services/scriptId/ScriptIdService';
@@ -165,6 +166,7 @@ container.bind<ICommand>(TYPES.command).to(CreateTypeScriptFileCommandy);
 container.bind<ICommand>(TYPES.command).to(CreateJavaScriptFileCommand);
 container.bind<ICommand>(TYPES.command).to(CreateScriptFileCommand);
 container.bind<ICommand>(TYPES.command).to(ShowLocalToServerDiffCommand);
+container.bind<ICommand>(TYPES.command).to(ScanForChangesCommand);
 container.bind<ICommand>(TYPES.command).to(EnableAutoSyncCommand);
 container.bind<ICommand>(TYPES.command).to(DisableAutoSyncCommand);
 
