@@ -26,9 +26,6 @@ export class ScriptItem extends vscode.TreeItem {
     }
 
     private getIconPath(script: IScript): string | undefined {
-        // Tolerate bare / non-canonical engineType values (e.g. "javascript"
-        // without "/js") by normalizing, so the correct icon is shown even
-        // when the script object was uploaded by a REST/MCP client.
         switch (normalizeEngineType(script.common.engineType)) {
             case EngineType.javascript:
                 return this.getJsIcon();

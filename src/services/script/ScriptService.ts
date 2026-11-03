@@ -17,11 +17,6 @@ export class ScriptService implements IScriptService {
     ) {}
         
     getFileExtension(engineType: EngineType): string {
-        // Tolerate bare / non-canonical engineType values (e.g. "javascript"
-        // without the "/js" suffix as written by REST/MCP uploaders) by
-        // normalizing first. Without this the extension would fall through to
-        // the "txt" default and then treat the same script as both
-        // "only local" (.js on disk) and "only remote" (.txt expected).
         switch (normalizeEngineType(engineType)) {
             case EngineType.javascript:
                 return "js";

@@ -149,9 +149,6 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     private getFixedEngineTypeCasing(engineType: string | undefined): string {
-        // Normalize first so bare forms like "javascript" (without "/js") —
-        // as written by some REST/MCP uploaders — are also healed back into
-        // the canonical casing ioBroker admin expects.
         switch (normalizeEngineType(engineType)) {
             case EngineType.typescript:
                 return "TypeScript/ts";
