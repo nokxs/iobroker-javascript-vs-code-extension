@@ -12,7 +12,9 @@ export class Config {
         readonly autoUpload?: boolean,
         readonly scriptAutoRun?: boolean,
         readonly forceLogin?: boolean,
-        readonly iobrokerNodeTypesVersion?: string) {}
+        readonly iobrokerNodeTypesVersion?: string,
+        readonly mirrorIoBrokerJavaScriptLog?: boolean,
+        readonly ioBrokerLogMirrorRelativePath?: string) {}
 }
 
 export class ScriptExplorerConfig {
