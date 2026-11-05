@@ -4,6 +4,9 @@ const CONSTANTS = {
     skriptIds: {
         global: "script.js.global",
         common: "script.js.common"
+    },
+    contexts: {
+        aiToolsEnabled: "iobrokerAiToolsEnabled"
     }
 };
 

@@ -17,7 +17,7 @@
 	"publisher": "nokxs",
 	"icon": "resources/iobroker-logo.png",
 	"engines": {
-		"vscode": "^1.75.0"
+		"vscode": "^1.95.0"
 	},
 	"categories": [
 		"Other"
@@ -115,6 +115,10 @@
 			{
 				"command": "iobroker-javascript.updateTypeDefinition",
 				"title": "iobroker: Update JS type definitions"
+			},
+			{
+				"command": "iobroker-javascript.toggleAiTools",
+				"title": "iobroker: Toggle AI tools"
 			},
 			{
 				"command": "iobroker-javascript.view.scriptExplorer.refresh",
@@ -336,7 +340,325 @@
 					"when": "view == iobroker-javascript.script-explorer && viewItem == scriptDirectory"
 				}
 			]
-		}
+		},
+		"languageModelTools": [
+			{
+				"name": "iobroker_get_scripts",
+				"displayName": "Get ioBroker scripts",
+				"toolReferenceName": "iobrokerScripts",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Lists the ioBroker.javascript directories and scripts that the extension knows about. Returns directory ids (use them as directoryId for creating or moving scripts) and script ids (use them as scriptId for all other tools) together with the local file path, engine type, enabled state and whether the script is dirty or remote only. Use it before any tool that needs a script or directory id. Does not read the script source code, use iobroker_get_script_content for that.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"pathPrefix": {
+							"type": "string",
+							"description": "Only return directories and scripts whose ioBroker id starts with this prefix, e.g. 'script.js.common.Licht'. Omit to get everything."
+						},
+						"limit": {
+							"type": "number",
+							"description": "Maximum number of scripts to return (1-500, default 200). Directories are always returned completely."
+						}
+					},
+					"required": [],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_get_script_content",
+				"displayName": "Get ioBroker script content",
+				"toolReferenceName": "iobrokerScriptContent",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Returns the source code of one ioBroker script. The local file is preferred; when the file does not exist the source stored on the ioBroker server is returned and 'fromDisk' is false. The result is marked as truncated when it exceeds maxLength. Only works for script ids, not for directories.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"scriptId": {
+							"type": "string",
+							"description": "Full ioBroker script id, e.g. 'script.js.common.MyScript'. Use iobroker_get_scripts to look it up."
+						},
+						"maxLength": {
+							"type": "number",
+							"description": "Maximum number of characters to return (default 50000). The result is marked as truncated when the source is longer."
+						}
+					},
+					"required": [
+						"scriptId"
+					],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_get_changed_scripts",
+				"displayName": "Get changed ioBroker scripts",
+				"toolReferenceName": "iobrokerChangedScripts",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Lists the ioBroker scripts whose local file differs from the version on the ioBroker server. Set 'refresh' to true to re-evaluate every script against the server first; that requires an active connection and is slower. Use iobroker_upload_all_changed_scripts to push the changes to the server.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"refresh": {
+							"type": "boolean",
+							"description": "Re-evaluate every script against the ioBroker server before answering. Slower but accurate. Default false."
+						}
+					},
+					"required": [],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_get_js_instances",
+				"displayName": "Get ioBroker javascript instances",
+				"toolReferenceName": "iobrokerInstances",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Lists the installed javascript adapter instances of ioBroker. When a scriptId is given, the result also contains the instance the script currently runs on. Read-only and requires an active ioBroker connection.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"scriptId": {
+							"type": "string",
+							"description": "Optional script id. When given, the result contains the javascript instance the script runs on."
+						}
+					},
+					"required": [],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_get_state",
+				"displayName": "Get ioBroker state",
+				"toolReferenceName": "iobrokerState",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Reads the current value of an ioBroker state, including the acknowledge flag and the timestamps. Use it to inspect what an ioBroker script produced or to debug state based logic. Requires an active ioBroker connection.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"stateId": {
+							"type": "string",
+							"description": "Full ioBroker state id, e.g. 'javascript.0.myState' or '0_userdata.0.temperature'."
+						}
+					},
+					"required": [
+						"stateId"
+					],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_upload_script",
+				"displayName": "Upload ioBroker script",
+				"toolReferenceName": "iobrokerUploadScript",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Uploads the local content of one script to the ioBroker server and overwrites the server version. Unsaved editor content is not included, the file has to be saved first. Use iobroker_upload_all_changed_scripts to upload every changed script at once.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"scriptId": {
+							"type": "string",
+							"description": "Full ioBroker script id of the script that should be uploaded from disk to the ioBroker server."
+						}
+					},
+					"required": [
+						"scriptId"
+					],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_upload_all_changed_scripts",
+				"displayName": "Upload all changed ioBroker scripts",
+				"toolReferenceName": "iobrokerUploadAll",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Uploads every script whose local file differs from the ioBroker server. Returns the uploaded ids and the ids that failed with a reason. Use it after editing several scripts. Unsaved editor content is not included.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {},
+					"required": [],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_download_script",
+				"displayName": "Download ioBroker script",
+				"toolReferenceName": "iobrokerDownloadScript",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Downloads one script from the ioBroker server and overwrites the local file. Fails with the code 'unsaved_changes' when the file has unsaved editor changes; the user has to save or revert it first. Use it before reading a script that might have been changed on the server.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"scriptId": {
+							"type": "string",
+							"description": "Full ioBroker script id of the script that should be downloaded from the ioBroker server to disk. Fails when the file has unsaved editor changes."
+						}
+					},
+					"required": [
+						"scriptId"
+					],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_start_script",
+				"displayName": "Start ioBroker script",
+				"toolReferenceName": "iobrokerStartScript",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Enables a script on the ioBroker server so the javascript adapter starts it. This does not upload anything, the server version is used. Requires an active ioBroker connection.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"scriptId": {
+							"type": "string",
+							"description": "Full ioBroker script id of the script that should be started (enabled) on the ioBroker server."
+						}
+					},
+					"required": [
+						"scriptId"
+					],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_stop_script",
+				"displayName": "Stop ioBroker script",
+				"toolReferenceName": "iobrokerStopScript",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Disables a script on the ioBroker server so the javascript adapter stops running it. The script itself stays on the server. Requires an active ioBroker connection.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"scriptId": {
+							"type": "string",
+							"description": "Full ioBroker script id of the script that should be stopped (disabled) on the ioBroker server."
+						}
+					},
+					"required": [
+						"scriptId"
+					],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_create_script",
+				"displayName": "Create ioBroker script",
+				"toolReferenceName": "iobrokerCreateScript",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Creates a new script on the ioBroker server and the matching local file. The same source is written to both places. Fails when a script or file with that name already exists in the directory. Pass a directoryId to place the script in a subdirectory; omit it to use the root directory.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"directoryId": {
+							"type": "string",
+							"description": "ioBroker id of the target directory, e.g. 'script.js.common'. Omit to create the script in the root directory. Use iobroker_get_scripts to look up available directories."
+						},
+						"fileName": {
+							"type": "string",
+							"description": "File name without extension, e.g. 'MyScript'. Must not contain path separators."
+						},
+						"language": {
+							"type": "string",
+							"enum": [
+								"javascript",
+								"typescript"
+							],
+							"description": "Language of the new script."
+						},
+						"source": {
+							"type": "string",
+							"description": "Initial source code. Written to the ioBroker server and to the local file. Defaults to an empty string."
+						}
+					},
+					"required": [
+						"fileName",
+						"language"
+					],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_rename_script",
+				"displayName": "Rename ioBroker script",
+				"toolReferenceName": "iobrokerRenameScript",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Renames a script on the ioBroker server and renames the local file. The directory does not change; use iobroker_move_script for that. Returns the old and the new script id.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"scriptId": {
+							"type": "string",
+							"description": "Full ioBroker script id of the script to rename."
+						},
+						"newName": {
+							"type": "string",
+							"description": "New script name without path separators. The directory does not change."
+						}
+					},
+					"required": [
+						"scriptId",
+						"newName"
+					],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_move_script",
+				"displayName": "Move ioBroker script",
+				"toolReferenceName": "iobrokerMoveScript",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Moves a script into another directory on the ioBroker server and moves the local file into the matching folder. The directory has to exist already. Returns the old and the new script id.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"scriptId": {
+							"type": "string",
+							"description": "Full ioBroker script id of the script to move."
+						},
+						"targetDirectoryId": {
+							"type": "string",
+							"description": "ioBroker id of the target directory, e.g. 'script.js.common'. Use iobroker_get_scripts to look up available directories."
+						}
+					},
+					"required": [
+						"scriptId",
+						"targetDirectoryId"
+					],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_delete_script",
+				"displayName": "Delete ioBroker script",
+				"toolReferenceName": "iobrokerDeleteScript",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Deletes a script on the ioBroker server and deletes the local file. This cannot be undone. Confirm the exact script id with the user before using this tool.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"scriptId": {
+							"type": "string",
+							"description": "Full ioBroker script id of the script that should be deleted on the ioBroker server and on disk."
+						}
+					},
+					"required": [
+						"scriptId"
+					],
+					"additionalProperties": false
+				}
+			}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run package",
@@ -369,7 +691,7 @@
 		"@types/socket.io": "^2.1.13",
 		"@types/socket.io-client": "^1.4.36",
 		"@types/tar": "^6.1.13",
-		"@types/vscode": "^1.75.0",
+		"@types/vscode": "^1.95.0",
 		"@types/ws": "^8.18.1",
 		"@typescript-eslint/eslint-plugin": "^5.62.0",
 		"@typescript-eslint/parser": "^5.62.0",

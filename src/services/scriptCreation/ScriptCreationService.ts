@@ -10,6 +10,7 @@ import { IScriptRemoteService } from "../scriptRemote/IScriptRemoteService";
 import { IScriptRepositoryService } from "../scriptRepository/IScriptRepositoryService";
 import { IScriptCreationService } from "./IScriptCreationService";
 import { IDirectory } from "../../models/IDirectory";
+import { IScriptFileService } from "../scriptFile/IScriptFileService";
 
 @injectable()
 export class ScriptCreationService implements IScriptCreationService{
@@ -18,7 +19,8 @@ export class ScriptCreationService implements IScriptCreationService{
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
         @inject(TYPES.services.scriptRepository) private scriptRepositoryService: IScriptRepositoryService,
         @inject(TYPES.services.script) private scriptService: IScriptService,
-        @inject(TYPES.services.file) private fileService: IFileService
+        @inject(TYPES.services.file) private fileService: IFileService,
+        @inject(TYPES.services.scriptFile) private scriptFileService: IScriptFileService
     ) {}
 
     async createFileScriptDirectory(scriptDirectory: ScriptDirectory, fileExtension: string, engineType: EngineType) {
@@ -34,15 +36,35 @@ export class ScriptCreationService implements IScriptCreationService{
             }
 
             const script = this.scriptService.getDefaultScript(`${directory._id}.${fileName}`, engineType);
-            const fileUri = Uri.joinPath(directory.absoluteUri, `${fileName}${fileExtension}`);
+            const fileUri = this.scriptFileService.getFileUri(directory, fileName, fileExtension);
 
             if(!await this.shouldFileReallyBeCreated(script, fileUri)) {
                 return;
             }
 
-            await this.scriptRemoteService.uploadScript(script);
-            await this.fileService.saveToFile(fileUri, "");
+            await this.createFileWithName(directory, fileName, fileExtension, engineType, "", true);
         }
+    }
+
+    async createFileWithName(directory: IDirectory, fileName: string, fileExtension: string, engineType: EngineType, source = "", overwrite = false): Promise<IScript> {
+        const script = this.scriptService.getDefaultScript(`${directory._id}.${fileName}`, engineType);
+
+        if (!overwrite) {
+            if (this.scriptRepositoryService.getScriptFromId(script._id)) {
+                throw new Error(`The script '${script._id}' does already exist on the ioBroker server.`);
+            }
+
+            if (this.scriptFileService.exists(directory, fileName, fileExtension)) {
+                throw new Error(`The file '${fileName}${fileExtension}' does already exist in '${directory._id}'.`);
+            }
+        }
+
+        script.common.source = source;
+
+        await this.scriptRemoteService.uploadScript(script);
+        await this.scriptFileService.write(directory, fileName, fileExtension, source);
+
+        return script;
     }
     
     private async shouldFileReallyBeCreated(script: IScript, fileUri: Uri): Promise<boolean> {

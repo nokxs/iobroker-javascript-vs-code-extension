@@ -3,6 +3,7 @@ import { inject, injectable } from "inversify";
 import TYPES from "./Types";
 import { ICommandService } from "./services/command/ICommandService";
 import { CodeActionKind, ExtensionContext, languages, window } from "vscode";
+import { IAiToolService } from "./services/aiTool/IAiToolService";
 import { ScriptExplorerProvider } from "./views/scriptExplorer/ScriptExplorerProvider";
 import { IIobrokerConnectionService } from "./services/iobrokerConnection/IIobrokerConnectionService";
 import { IWorkspaceService } from "./services/workspace/IWorkspaceService";
@@ -25,11 +26,17 @@ export class Startup implements IStartup {
         @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,
         @inject(TYPES.providers.iobrokerHoverProvider) private hoverProvider: IIobrokerHoverProvider,
         @inject(TYPES.providers.iobrokerCompletionItemProvider) private completionItemProvider: IIobrokerCompletionItemProvider,
-        @inject(TYPES.providers.iobrokerCodeActionsItemProvider) private codeActionsProvider: IIobrokerCodeActionItemProvider
+        @inject(TYPES.providers.iobrokerCodeActionsItemProvider) private codeActionsProvider: IIobrokerCodeActionItemProvider,
+        @inject(TYPES.services.aiToolService) private aiToolService: IAiToolService
     ) { }
 
     async init(context: ExtensionContext): Promise<void> {
         this.commandService.registerCommands(context);
+
+        // The tools are registered before connecting, so they are available even when ioBroker is
+        // not reachable. `when` clauses hide them while the opt-in flag is not set.
+        this.aiToolService.registerTools(context);
+        await this.aiToolService.initialize(context);
 
         const workspacesWithConfig = await this.workSpaceService.getWorkspacesWithConfig();
         if (workspacesWithConfig.length === 1) {

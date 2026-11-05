@@ -184,7 +184,10 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     getScriptFromId(id: ScriptId): ILocalScript | undefined {
-        return this.scripts.find(script => script._id === id);
+        // `ScriptId` extends `String`, so comparing the objects directly only matches the very
+        // same instance. Ids built from user input or plain strings never match. Compare the
+        // primitive values instead.
+        return this.scripts.find(script => `${script._id}` === `${id}`);
     }
 
     async getScriptWithLocalContent(localScript: ILocalScript): Promise<IScript | null> {
