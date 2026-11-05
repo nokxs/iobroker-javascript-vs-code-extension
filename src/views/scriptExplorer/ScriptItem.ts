@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 
 import { getEngineTypeInfo } from '../../models/EngineType';
+import { getJsInstanceNumber } from '../../models/Engine';
 import { ILocalScript } from '../../models/ILocalScript';
 import { IScript } from "../../models/IScript";
 
@@ -34,20 +35,9 @@ export class ScriptItem extends vscode.TreeItem {
     private getScriptName(script: IScript) {
         const name = script.common?.name ?? "INVALID NAME";
         const state = script.common.enabled ? "▶️" : "⏹️";
-        const jsInstanceNumber = this.getJsInstanceNumber(script.common?.engine);
+        const jsInstanceNumber = getJsInstanceNumber(script.common?.engine);
 
         return `${state} [${jsInstanceNumber}] ${name}`;
-    }
-
-    private getJsInstanceNumber(engine: string | undefined): number {
-        if (engine) {
-            const lastDot = engine.lastIndexOf(".");
-            const number = engine.substring(lastDot + 1);
-            const parsed = Number.parseInt(number, 10);
-            return Number.isNaN(parsed) ? 0 : parsed;
-        }
-
-        return 0;
     }
 
     private getDescription(script: ILocalScript): string | undefined {
