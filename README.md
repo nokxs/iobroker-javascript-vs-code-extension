@@ -180,6 +180,7 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 | `scriptAutoRun` | Automatically start a uploaded script? | No | false |
 | `forceLogin` | Should login detection be skipped and login to ioBroker be forced? Works only with admin version >= 7.6.2 | No | false |
 | `iobrokerNodeTypesVersion` | Specify the version of @types/node to use for TypeScript definitions. Check [available versions on npm](https://www.npmjs.com/package/@types/node?activeTab=versions) to find a suitable version. Use the version number without the 'v' prefix (e.g., "20.14.10"). | No | "20.14.10" |
+| `aiTools` | Expose the extension to AI agents as an MCP server with language model tools. See [MCP server (optional)](#mcp-server-optional). | No | false |
 
 ### Admin versions
 The extension currently supports the following Admin versions:
@@ -188,6 +189,47 @@ The extension currently supports the following Admin versions:
 - Admin5
 - Admin6
 - Admin7
+
+## MCP server (optional)
+
+The extension can act as an MCP server and expose its functionality to AI agents (for example
+GitHub Copilot agent mode) as
+[language model tools](https://code.visualstudio.com/api/extension-guides/ai/tools).
+The server is **opt-in** and disabled by default.
+
+**Enable:** select `iobroker: Enable/disable MCP server (AI tools)` from the `...` menu of the
+ioBroker view (same place as `iobroker: Download all scripts`), run it from the command palette,
+or set `"aiTools": true` in `.iobroker-config.json`. The flag is watched, so editing the file by
+hand takes effect without restarting VS Code. Running the command again disables the server.
+
+| Tool | Purpose |
+|------|---------|
+| `iobroker_get_scripts` | List directories and scripts (ids, paths, dirty state) |
+| `iobroker_get_script_content` | Read the source of one script |
+| `iobroker_get_changed_scripts` | List scripts whose local file differs from the server |
+| `iobroker_get_js_instances` | List javascript adapter instances |
+| `iobroker_get_state` | Read the current value of an ioBroker state |
+| `iobroker_upload_script` | Upload one script to ioBroker |
+| `iobroker_upload_all_changed_scripts` | Upload all changed scripts |
+| `iobroker_download_script` | Download one script to disk |
+| `iobroker_start_script` | Start (enable) a script on ioBroker |
+| `iobroker_stop_script` | Stop (disable) a script on ioBroker |
+| `iobroker_create_script` | Create a script on the server and as a local file |
+| `iobroker_rename_script` | Rename a script on the server and on disk |
+| `iobroker_move_script` | Move a script to another directory |
+| `iobroker_delete_script` | Delete a script on the server and on disk |
+
+Keep in mind:
+
+- VS Code always shows a confirmation dialog the first time an extension tool is invoked. You can
+  choose "Always Allow" per tool to reduce the prompts. For extension tools there is currently no
+  way to suppress it for read-only tools.
+- Tools never connect or log in on their own. If the connection is lost, the tool reports
+  `not_connected` and you have to run `iobroker: Connect to ioBroker`.
+- Like the commands, the tools work on the files on disk. Unsaved editor content is not uploaded;
+  `iobroker_download_script` refuses to overwrite a file with unsaved changes.
+- Disabling the flag hides the tools and they refuse to run, even if a chat participant invokes
+  them directly.
 
 ## Debug Log
 

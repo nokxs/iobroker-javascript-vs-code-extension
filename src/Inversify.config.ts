@@ -4,6 +4,7 @@ import { DownloadCommand, DownloadCommandProxy } from './commands/DownloadComman
 import { UploadCommand, UploadCommandProxy } from './commands/UploadCommand';
 
 import { AdminVersionDetector } from './services/adminVersionDetector/AdminVersionDetector';
+import { AiToolService } from './services/aiTool/AiToolService';
 import { AutoUploadService } from './services/autoUpload/AutoUploadService';
 import { ChangeJsInstanceCommand } from './commands/ChangeJsInstanceCommand';
 import { ChangedScriptsProvider } from './views/changedScripts/ChangedScriptsProvider';
@@ -29,6 +30,7 @@ import { DownloadAllCommand } from './commands/DownloadAllCommand';
 import { EnableAutoSyncCommand } from './commands/EnableAutoSyncCommand';
 import { FileService } from './services/file/FileService';
 import { IAdminVersionDetector } from './services/adminVersionDetector/IAdminVersionDetector';
+import { IAiToolService } from './services/aiTool/IAiToolService';
 import { IAutoUploadService } from './services/autoUpload/IAutoUploadService';
 import { IChangedScriptsProvider } from './views/changedScripts/IChangedScriptsProvider';
 import { ICommand } from './commands/ICommand';
@@ -50,6 +52,7 @@ import { ILoginService } from './services/loginHttpClient/ILoginService';
 import { IObjectRepositoryService } from './services/StateRepository/IObjectRepositoryService';
 import { IScriptCreationService } from './services/scriptCreation/IScriptCreationService';
 import { IScriptExplorerProvider } from './views/scriptExplorer/IScriptExplorerProvider';
+import { IScriptFileService } from './services/scriptFile/IScriptFileService';
 import { IScriptIdService } from './services/scriptId/IScriptIdService';
 import { ISecretPlaceholderService } from './services/scriptRemote/ISecretPlaceholderService';
 import { IScriptRemoteService } from './services/scriptRemote/IScriptRemoteService';
@@ -78,6 +81,7 @@ import { RefreshCommand } from './commands/RefreshCommand';
 import { ScanForChangesCommand } from './commands/ScanForChangesCommand';
 import { ScriptCreationService } from './services/scriptCreation/ScriptCreationService';
 import { ScriptExplorerProvider } from './views/scriptExplorer/ScriptExplorerProvider';
+import { ScriptFileService } from './services/scriptFile/ScriptFileService';
 import { ScriptIdService } from './services/scriptId/ScriptIdService';
 import { SecretPlaceholderService } from './services/scriptRemote/SecretPlaceholderService';
 import { ScriptRemoteService } from './services/scriptRemote/ScriptRemoteService';
@@ -93,6 +97,7 @@ import { StateAndObjectRemoteService } from './services/stateRemote/StateAndObje
 import { StatusBarService } from './services/statusBar/StatusBarService';
 import { StopCurrentScriptCommand } from './commands/StopCurrentScriptCommand';
 import TYPES from './Types';
+import { ToggleAiToolsCommand } from './commands/ToggleAiToolsCommand';
 import { TypeDefinitionService } from './services/typeDefinition/TypeDefinitionService';
 import { UpdateTypeDefinitionCommand } from './commands/UpdateTypeDefinitionCommand';
 import { UploadAllCommand } from './commands/UploadAllCommand';
@@ -130,6 +135,8 @@ container.bind<IStateAndObjectRemoteService>(TYPES.services.stateAndObjectRemote
 container.bind<IObjectRepositoryService>(TYPES.services.objectRepositoryService).to(ObjectRepositoryService).inSingletonScope();
 container.bind<IAutoUploadService>(TYPES.services.autoUploadService).to(AutoUploadService).inSingletonScope();
 container.bind<IScriptCreationService>(TYPES.services.scriptCreationService).to(ScriptCreationService).inSingletonScope();
+container.bind<IScriptFileService>(TYPES.services.scriptFile).to(ScriptFileService).inSingletonScope();
+container.bind<IAiToolService>(TYPES.services.aiToolService).to(AiToolService).inSingletonScope();
 
 container.bind<ISocketIoClient>(TYPES.services.socketIoClient).to(SocketIoClient).inSingletonScope();
 container.bind<IAdminVersionDetector>(TYPES.services.adminVersionDetector).to(AdminVersionDetector).inSingletonScope();
@@ -169,6 +176,7 @@ container.bind<ICommand>(TYPES.command).to(ShowLocalToServerDiffCommand);
 container.bind<ICommand>(TYPES.command).to(ScanForChangesCommand);
 container.bind<ICommand>(TYPES.command).to(EnableAutoSyncCommand);
 container.bind<ICommand>(TYPES.command).to(DisableAutoSyncCommand);
+container.bind<ICommand>(TYPES.command).to(ToggleAiToolsCommand);
 
 container.bind<IScriptExplorerProvider>(TYPES.views.scriptExplorer).to(ScriptExplorerProvider).inSingletonScope();
 container.bind<IChangedScriptsProvider>(TYPES.views.changedScripts).to(ChangedScriptsProvider).inSingletonScope();

@@ -33,6 +33,9 @@ const TYPES = {
         connectionServiceProvider: Symbol.for("ConnectionServiceProvider"),
         connectionAdmin4: Symbol.for("ConnectionServiceAdmin4"),
         connectionAdmin5: Symbol.for("ConnectionServiceAdmin5"),
+
+        scriptFile: Symbol.for("ScriptFileService"),
+        aiToolService: Symbol.for("AiToolService"),
     },
     views: {
         scriptExplorer: Symbol.for("ScriptExplorerView"),
