@@ -77,13 +77,13 @@ export class AiToolService implements IAiToolService {
     async toggle(): Promise<void> {
         const workspacesWithConfig = await this.workspaceService.getWorkspacesWithConfig();
         if (workspacesWithConfig.length !== 1) {
-            window.showWarningMessage("ioBroker: Cannot change the AI tools setting, because no valid ioBroker configuration was found.");
+            window.showWarningMessage("ioBroker: Cannot change the MCP server setting, because no valid ioBroker configuration was found.");
             return;
         }
 
         const config = this.configRepositoryService.config;
         if (config instanceof NoConfig) {
-            window.showWarningMessage("ioBroker: Cannot change the AI tools setting, because no valid ioBroker configuration was found.");
+            window.showWarningMessage("ioBroker: Cannot change the MCP server setting, because no valid ioBroker configuration was found.");
             return;
         }
 
@@ -92,7 +92,7 @@ export class AiToolService implements IAiToolService {
         await this.configRepositoryService.write(updatedConfig, workspacesWithConfig[0]);
         this.updateContext(enabled);
 
-        window.setStatusBarMessage(`ioBroker: AI tools ${enabled ? "enabled" : "disabled"}`, CONSTANTS.statusBarMessageTime);
+        window.setStatusBarMessage(`ioBroker: MCP server ${enabled ? "enabled" : "disabled"}`, CONSTANTS.statusBarMessageTime);
     }
 
     private createDeps(): ToolDeps {

@@ -118,7 +118,7 @@
 			},
 			{
 				"command": "iobroker-javascript.toggleAiTools",
-				"title": "iobroker: Toggle AI tools"
+				"title": "iobroker: Enable/disable MCP server (AI tools)"
 			},
 			{
 				"command": "iobroker-javascript.view.scriptExplorer.refresh",
@@ -226,6 +226,10 @@
 				},
 				{
 					"command": "iobroker-javascript.downloadAll",
+					"when": "view == iobroker-javascript.script-explorer"
+				},
+				{
+					"command": "iobroker-javascript.toggleAiTools",
 					"when": "view == iobroker-javascript.script-explorer"
 				},
 				{

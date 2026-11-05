@@ -40,7 +40,7 @@ export abstract class BaseTool<TInput> implements ITool<TInput> {
         // The `when` clause only hides the tool in the UI. The tool stays registered and can still
         // be invoked by other chat participants, so the opt-in has to be enforced here as well.
         if (!this.isEnabled()) {
-            throw new Error("The ioBroker AI tools are disabled. Ask the user to run the command 'iobroker: Toggle AI tools' and retry afterwards.");
+            throw new Error("The ioBroker MCP server is disabled. Ask the user to run the command 'iobroker: Enable/disable MCP server (AI tools)' and retry afterwards.");
         }
 
         const outcome = await this.run(options.input ?? <TInput>{});

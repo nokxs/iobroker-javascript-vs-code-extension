@@ -180,7 +180,7 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 | `scriptAutoRun` | Automatically start a uploaded script? | No | false |
 | `forceLogin` | Should login detection be skipped and login to ioBroker be forced? Works only with admin version >= 7.6.2 | No | false |
 | `iobrokerNodeTypesVersion` | Specify the version of @types/node to use for TypeScript definitions. Check [available versions on npm](https://www.npmjs.com/package/@types/node?activeTab=versions) to find a suitable version. Use the version number without the 'v' prefix (e.g., "20.14.10"). | No | "20.14.10" |
-| `aiTools` | Expose the extension to AI agents as language model tools. See [AI tools](#ai-tools-optional). | No | false |
+| `aiTools` | Expose the extension to AI agents as an MCP server with language model tools. See [MCP server (optional)](#mcp-server-optional). | No | false |
 
 ### Admin versions
 The extension currently supports the following Admin versions:
@@ -190,15 +190,17 @@ The extension currently supports the following Admin versions:
 - Admin6
 - Admin7
 
-## AI tools (optional)
+## MCP server (optional)
 
-The extension can expose its functionality to AI agents (for example GitHub Copilot agent
-mode) as [language model tools](https://code.visualstudio.com/api/extension-guides/ai/tools).
-This is **opt-in** and disabled by default.
+The extension can act as an MCP server and expose its functionality to AI agents (for example
+GitHub Copilot agent mode) as
+[language model tools](https://code.visualstudio.com/api/extension-guides/ai/tools).
+The server is **opt-in** and disabled by default.
 
-**Enable:** run `iobroker: Toggle AI tools` from the command palette or set
-`"aiTools": true` in `.iobroker-config.json`. The flag is watched, so editing the file by hand
-takes effect without restarting VS Code.
+**Enable:** select `iobroker: Enable/disable MCP server (AI tools)` from the `...` menu of the
+ioBroker view (same place as `iobroker: Download all scripts`), run it from the command palette,
+or set `"aiTools": true` in `.iobroker-config.json`. The flag is watched, so editing the file by
+hand takes effect without restarting VS Code. Running the command again disables the server.
 
 | Tool | Purpose |
 |------|---------|

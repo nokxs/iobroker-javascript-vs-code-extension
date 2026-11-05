@@ -44,7 +44,18 @@ suite("AI tools contribution", () => {
     });
 
     test("contributes the toggle command", () => {
-        const commands: Array<{ command: string }> = packageJson.contributes.commands;
-        assert.ok(commands.some(command => command.command === "iobroker-javascript.toggleAiTools"));
+        const commands: Array<{ command: string; title: string }> = packageJson.contributes.commands;
+        const command = commands.find(c => c.command === "iobroker-javascript.toggleAiTools");
+
+        assert.ok(command, "the toggle command is not contributed");
+        assert.ok(command.title.toLowerCase().includes("mcp server"), `the command title has to mention the MCP server: ${command.title}`);
+    });
+
+    test("the toggle command is reachable from the ioBroker view menu", () => {
+        const viewTitle: Array<{ command: string; when?: string }> = packageJson.contributes.menus["view/title"];
+        const entry = viewTitle.find(item => item.command === "iobroker-javascript.toggleAiTools");
+
+        assert.ok(entry, "the toggle command is missing in the view/title menu");
+        assert.strictEqual(entry.when, "view == iobroker-javascript.script-explorer");
     });
 });
