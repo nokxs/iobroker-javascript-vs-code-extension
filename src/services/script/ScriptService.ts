@@ -3,7 +3,7 @@ import { Uri } from "vscode";
 import TYPES from "../../Types";
 import { IFileService } from "../file/IFileService";
 import { IScriptService } from "./IScriptService";
-import { EngineType } from "../../models/EngineType";
+import { EngineType, normalizeEngineType } from "../../models/EngineType";
 import { ILocalScript } from "../../models/ILocalScript";
 import { ScriptId } from "../../models/ScriptId";
 import { IScript } from "../../models/IScript";
@@ -17,7 +17,7 @@ export class ScriptService implements IScriptService {
     ) {}
         
     getFileExtension(engineType: EngineType): string {
-        switch (engineType?.toLowerCase()) {
+        switch (normalizeEngineType(engineType)) {
             case EngineType.javascript:
                 return "js";
             case EngineType.typescript:
@@ -26,7 +26,7 @@ export class ScriptService implements IScriptService {
                 return "block";
             case EngineType.rules:
                 return "rules";
-        
+
             default:
                 return "txt";
         }

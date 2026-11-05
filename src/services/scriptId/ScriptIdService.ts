@@ -46,8 +46,6 @@ export class ScriptIdService implements IScriptIdService {
         scriptId = this.replaceAll(<string>scriptId, "\\", "_");
         scriptId = this.replaceAll(<string>scriptId, "&", "_");
         scriptId = this.replaceAll(<string>scriptId, "#", "_");
-        scriptId = this.replaceAll(<string>scriptId, "9", "_");
-        scriptId = this.replaceAll(<string>scriptId, "6", "_");
         scriptId = this.replaceAll(<string>scriptId, ";", "_");
         scriptId = this.replaceAll(<string>scriptId, "<", "_");
         scriptId = this.replaceAll(<string>scriptId, ">", "_");

@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { EngineType } from '../../models/EngineType';
+import { EngineType, normalizeEngineType } from '../../models/EngineType';
 import { ILocalScript } from '../../models/ILocalScript';
 import { IScript } from "../../models/IScript";
 
@@ -26,7 +26,7 @@ export class ScriptItem extends vscode.TreeItem {
     }
 
     private getIconPath(script: IScript): string | undefined {
-        switch (script.common.engineType?.toLowerCase()) {
+        switch (normalizeEngineType(script.common.engineType)) {
             case EngineType.javascript:
                 return this.getJsIcon();
             case EngineType.typescript:
@@ -68,7 +68,8 @@ export class ScriptItem extends vscode.TreeItem {
         if (engine) {
             const lastDot = engine.lastIndexOf(".");
             const number = engine.substring(lastDot + 1);
-            return Number.parseInt(number);            
+            const parsed = Number.parseInt(number, 10);
+            return Number.isNaN(parsed) ? 0 : parsed;
         }
 
         return 0;
