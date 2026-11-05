@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { EngineType, normalizeEngineType } from '../../models/EngineType';
+import { getEngineTypeInfo } from '../../models/EngineType';
 import { ILocalScript } from '../../models/ILocalScript';
 import { IScript } from "../../models/IScript";
 
@@ -26,18 +26,9 @@ export class ScriptItem extends vscode.TreeItem {
     }
 
     private getIconPath(script: IScript): string | undefined {
-        switch (normalizeEngineType(script.common.engineType)) {
-            case EngineType.javascript:
-                return this.getJsIcon();
-            case EngineType.typescript:
-                return this.getTsIcon();
-            case EngineType.blockly:
-                return this.getBlocklyIcon();
-            case EngineType.rules:
-                return this.getRulesIcon();
-            default:
-                return undefined;
-        }
+        const icon = getEngineTypeInfo(script.common.engineType)?.icon;
+
+        return icon ? path.join(__filename, '..', '..', 'resources', icon) : undefined;
     }
 
     private getScriptName(script: IScript) {
@@ -46,22 +37,6 @@ export class ScriptItem extends vscode.TreeItem {
         const jsInstanceNumber = this.getJsInstanceNumber(script.common?.engine);
 
         return `${state} [${jsInstanceNumber}] ${name}`;
-    }
-
-    private getJsIcon(): string {
-        return path.join(__filename, '..', '..', 'resources', 'javascript.svg');
-    }
-
-    private getTsIcon(): string {
-        return path.join(__filename, '..', '..', 'resources', 'typescript.svg');
-    }
-
-    private getBlocklyIcon(): string {
-        return path.join(__filename, '..', '..', 'resources', 'blockly.svg');
-    }
-
-    private getRulesIcon(): string {
-        return path.join(__filename, '..', '..', 'resources', 'rules.svg');
     }
 
     private getJsInstanceNumber(engine: string | undefined): number {

@@ -10,7 +10,7 @@ import { IConnectionEventListener } from "../connection/IConnectionEventListener
 import { IDirectory } from "../../models/IDirectory";
 import { IDirectoryService } from "../directory/IDirectoryService";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
-import { EngineType, normalizeEngineType } from "../../models/EngineType";
+import { getEngineTypeInfo } from "../../models/EngineType";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { ISecretPlaceholderService } from "./ISecretPlaceholderService";
@@ -149,18 +149,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
     }
 
     private getFixedEngineTypeCasing(engineType: string | undefined): string {
-        switch (normalizeEngineType(engineType)) {
-            case EngineType.typescript:
-                return "TypeScript/ts";
-            case EngineType.javascript:
-                return "Javascript/js";
-            case EngineType.blockly:
-                return "Blockly";
-            case EngineType.rules:
-                return "Rules";
-        }
-
-        return engineType ?? "";
+        return getEngineTypeInfo(engineType)?.ioBrokerType ?? engineType ?? "";
     }
 
     private async replaceSecretsFromDotEnvFile(scriptSource: string): Promise<string> {

@@ -11,7 +11,6 @@ import { ILocalScript } from "../../models/ILocalScript";
 import { Disposable, Extension, FileCreateEvent, FileDeleteEvent, Uri, extensions, workspace } from "vscode";
 import { IConfigRepositoryService } from "../configRepository/IConfigRepositoryService";
 import { IScriptService } from "../script/IScriptService";
-import { EngineType } from "../../models/EngineType";
 import { IWorkspaceService } from "../workspace/IWorkspaceService";
 import { ScriptId } from "../../models/ScriptId";
 import { IScriptIdService } from "../scriptId/IScriptIdService";
@@ -306,8 +305,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     private getRelativeFileUri(script: IScript, directories: IDirectory[]): Uri {
-        const engineType = <EngineType>script.common.engineType ?? EngineType.unkown;
-        const extension = this.scriptService.getFileExtension(engineType);
+        const extension = this.scriptService.getFileExtension(script.common.engineType);
 
         let parentDirectory = this.getParentDirectory(script, directories);
 
