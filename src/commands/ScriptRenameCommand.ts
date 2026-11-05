@@ -6,7 +6,6 @@ import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
 import TYPES from "../Types";
 import { IFileService } from "../services/file/IFileService";
 import { IScriptService } from "../services/script/IScriptService";
-import { EngineType } from "../models/EngineType";
 import { IScriptRemoteService } from "../services/scriptRemote/IScriptRemoteService";
 
 @injectable()
@@ -33,7 +32,7 @@ export class ScriptRenameCommand implements ICommand {
                 
                 const oldPath = localScript.absoluteUri;
                 
-                const fileExtension = this.scriptService.getFileExtension(<EngineType>script.common.engineType ?? EngineType.unkown);
+                const fileExtension = this.scriptService.getFileExtension(script.common.engineType);
                 const splittedPath = oldPath.path.split("/");
                 splittedPath.splice(-1,1);
                 splittedPath.push(`${newScriptName}.${fileExtension}`);

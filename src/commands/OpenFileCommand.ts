@@ -4,7 +4,7 @@ import { inject, injectable } from "inversify";
 import TYPES from "../Types";
 import { TextDocument, Uri, window, workspace } from "vscode";
 import { IFileService } from '../services/file/IFileService';
-import { EngineType } from '../models/EngineType';
+import { getEngineTypeInfo } from '../models/EngineType';
 import { IScriptService } from "../services/script/IScriptService";
 import { ILocalScript } from "../models/ILocalScript";
 
@@ -37,18 +37,6 @@ export class OpenFileCommand implements ICommand {
     }
 
     private getScriptLanguage(script: IScript): string {
-        switch (script.common.engineType?.toLowerCase()) {
-            case EngineType.javascript:
-                return "javascript";
-            case EngineType.typescript:
-                return "typescript";
-            case EngineType.blockly:
-                return "blockly";
-            case EngineType.rules:
-                return "rules";
-        
-            default:
-                return "text";
-        }
+        return getEngineTypeInfo(script.common.engineType)?.languageId ?? "text";
     }
 }

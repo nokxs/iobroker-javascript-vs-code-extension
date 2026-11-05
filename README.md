@@ -245,6 +245,12 @@ To help diagnose connection or runtime issues, the extension can write a debug l
 
 If you got any problems, please open a GitHub issue.
 
+### Scripts show up as "only local" and "only remote" after upgrading
+
+Some versions of the extension replaced the digits `6` and `9` with `_` when deriving the script id from the file name. A file called `Pump69.js` therefore got the id `script.js.Pump__` and did not match the script on the server, so the script explorer listed it as both *only local* and *only remote*.
+
+This is fixed, but scripts that were uploaded with such an id keep it on the server. To repair them, rename the affected script in the ioBroker admin UI (or in the explorer, which renames it on the server) so the id matches the file name again. Afterwards delete the leftover id that only exists on the server.
+
 ## Release Notes
 
 See the section [Releases on Github](https://github.com/nokxs/iobroker-javascript-vs-code-extension/releases) for release notes.

@@ -3,7 +3,7 @@ import { Uri } from "vscode";
 import TYPES from "../../Types";
 import { IFileService } from "../file/IFileService";
 import { IScriptService } from "./IScriptService";
-import { EngineType, normalizeEngineType } from "../../models/EngineType";
+import { EngineType, getEngineTypeFromFileExtension, getEngineTypeInfo } from "../../models/EngineType";
 import { ILocalScript } from "../../models/ILocalScript";
 import { ScriptId } from "../../models/ScriptId";
 import { IScript } from "../../models/IScript";
@@ -16,37 +16,17 @@ export class ScriptService implements IScriptService {
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService   
     ) {}
         
-    getFileExtension(engineType: EngineType): string {
-        switch (normalizeEngineType(engineType)) {
-            case EngineType.javascript:
-                return "js";
-            case EngineType.typescript:
-                return "ts";
-            case EngineType.blockly:
-                return "block";
-            case EngineType.rules:
-                return "rules";
-
-            default:
-                return "txt";
-        }
+    getFileExtension(engineType: string | undefined): string {
+        return getEngineTypeInfo(engineType)?.fileExtension ?? "txt";
     }
 
     getEngineType(uri: Uri): EngineType {
-        if (uri.path.endsWith(".js")) {
-            return EngineType.javascript;
-        } 
-        else if (uri.path.endsWith(".ts")) {
-            return EngineType.typescript;
-        } 
-        else if (uri.path.endsWith(".block")) {
-            return EngineType.blockly;
-        } 
-        else if(uri.path.endsWith(".rules")) {
-            return EngineType.rules;
+        const lastDot = uri.path.lastIndexOf(".");
+        if (lastDot < 0) {
+            return EngineType.unkown;
         }
 
-        return EngineType.unkown;
+        return getEngineTypeFromFileExtension(uri.path.substring(lastDot + 1));
     }
 
     getDefaultScript(id: ScriptId, engineType: EngineType): IScript {

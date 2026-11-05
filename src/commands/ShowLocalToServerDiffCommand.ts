@@ -5,7 +5,6 @@ import { IFileService } from '../services/file/IFileService';
 import { IScriptService } from "../services/script/IScriptService";
 import { commands } from "vscode";
 import { ScriptItem } from "../views/scriptExplorer/ScriptItem";
-import { EngineType } from "../models/EngineType";
 import { ISecretPlaceholderService } from "../services/scriptRemote/ISecretPlaceholderService";
 
 @injectable()
@@ -26,7 +25,7 @@ export class ShowLocalToServerDiffCommand implements ICommand {
 
         const script = args[0];
         
-        const fileExtension = this.scriptService.getFileExtension(<EngineType>script.script.ioBrokerScript.common.engineType);
+        const fileExtension = this.scriptService.getFileExtension(script.script.ioBrokerScript.common.engineType);
         const fileName = `${script.script._id.toString()}.${fileExtension}`;
         const normalizedServerSource = await this.secretPlaceholderService.replaceSecretPlaceholdersFromEnvFile(
             script.script.ioBrokerScript.common.source ?? ""

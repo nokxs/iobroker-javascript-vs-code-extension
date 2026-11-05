@@ -1,5 +1,4 @@
 import * as path from "path";
-import { EngineType } from "../../models/EngineType";
 import { IDirectory } from "../../models/IDirectory";
 import { ILocalScript } from "../../models/ILocalScript";
 import { ScriptId } from "../../models/ScriptId";
@@ -71,7 +70,7 @@ export function extensionOf(script: ILocalScript, deps: ToolDeps): string {
         return extension;
     }
 
-    return deps.script.getFileExtension(<EngineType>script.ioBrokerScript.common.engineType ?? EngineType.unkown);
+    return deps.script.getFileExtension(script.ioBrokerScript.common.engineType);
 }
 
 export function toFailure(error: unknown): ToolOutcome<never> {

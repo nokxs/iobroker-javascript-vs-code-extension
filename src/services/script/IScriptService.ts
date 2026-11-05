@@ -5,7 +5,7 @@ import { ScriptId } from "../../models/ScriptId";
 import { Uri } from "vscode";
 
 export interface IScriptService {
-    getFileExtension(engineType: EngineType): string
+    getFileExtension(engineType: string | undefined): string
     getEngineType(uri: Uri): EngineType
     getDefaultScript(id: ScriptId, engineType: EngineType): IScript
 
