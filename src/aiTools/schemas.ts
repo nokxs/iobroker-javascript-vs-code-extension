@@ -74,17 +74,9 @@ export const TOOL_SCHEMAS = {
                 type: "string",
                 description: "Optional full ioBroker host id, e.g. 'system.host.myHost'. Omit only when exactly one host is configured."
             },
-            hours: {
+            lines: {
                 type: "number",
-                description: "Search the current and rotated logs this far back (1-720 hours, default 24)."
-            },
-            limit: {
-                type: "number",
-                description: "Maximum number of matching log entries to return (1-500, default 100)."
-            },
-            before: {
-                type: "number",
-                description: "Optional Unix timestamp in milliseconds. Use the 'nextBefore' value from a previous result to page to older entries."
+                description: "Maximum number of most recent log lines to scan before filtering (1-500, default 100)."
             },
             level: {
                 type: "string",
@@ -93,11 +85,11 @@ export const TOOL_SCHEMAS = {
             },
             source: {
                 type: "string",
-                description: "Optional exact source filter, e.g. 'javascript.0'. The message text is not searched."
+                description: "Optional case-insensitive substring filter for the log source, e.g. 'javascript.0'."
             },
             search: {
                 type: "string",
-                description: "Optional case-insensitive substring to find in an entry, including its continuation lines such as a stack trace. A matching entry is returned completely."
+                description: "Optional case-insensitive substring to find in log lines."
             }
         },
         required: [],

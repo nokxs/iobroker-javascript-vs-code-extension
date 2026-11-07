@@ -459,7 +459,7 @@
 				"toolReferenceName": "iobrokerLogs",
 				"canBeReferencedInPrompt": true,
 				"when": "iobrokerAiToolsEnabled",
-				"modelDescription": "Searches an ioBroker host's current and rotated log files within a lookback window of up to 720 hours (24 by default). Returns up to 500 matching entries (100 by default), filtered by minimum severity, exact source, and text. If nextBefore is returned, pass it as before to continue with older entries. Continuation lines such as stack traces are kept with their entry. Older controllers may transfer full log files to perform the search; each file is limited to 15 MB. The response is capped at 30,000 characters. Specify hostId when more than one host is configured. Requires an active ioBroker connection; log contents may contain sensitive information.",
+				"modelDescription": "Reads a bounded tail of an ioBroker host log. Scans at most 500 recent lines (100 by default), then filters by minimum severity, source substring, and text substring to keep the result focused. Specify hostId when more than one host is configured. The response is also capped at 30,000 characters. Requires an active ioBroker connection; log contents may contain sensitive information.",
 				"inputSchema": {
 					"type": "object",
 					"properties": {
@@ -467,17 +467,9 @@
 							"type": "string",
 							"description": "Optional full ioBroker host id, e.g. 'system.host.myHost'. Omit only when exactly one host is configured."
 						},
-						"hours": {
+						"lines": {
 							"type": "number",
-							"description": "Search the current and rotated logs this far back (1-720 hours, default 24)."
-						},
-						"limit": {
-							"type": "number",
-							"description": "Maximum number of matching log entries to return (1-500, default 100)."
-						},
-						"before": {
-							"type": "number",
-							"description": "Optional Unix timestamp in milliseconds. Use the 'nextBefore' value from a previous result to page to older entries."
+							"description": "Maximum number of most recent log lines to scan before filtering (1-500, default 100)."
 						},
 						"level": {
 							"type": "string",
@@ -486,11 +478,11 @@
 						},
 						"source": {
 							"type": "string",
-							"description": "Optional exact source filter, e.g. 'javascript.0'. The message text is not searched."
+							"description": "Optional case-insensitive substring filter for the log source, e.g. 'javascript.0'."
 						},
 						"search": {
 							"type": "string",
-							"description": "Optional case-insensitive substring to find in an entry, including its continuation lines such as a stack trace. A matching entry is returned completely."
+							"description": "Optional case-insensitive substring to find in log lines."
 						}
 					},
 					"required": [],

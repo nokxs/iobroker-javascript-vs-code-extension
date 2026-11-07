@@ -1,24 +1,29 @@
 import { ensureConnected } from "./connection";
 import { toFailure } from "./helpers";
 import {
-    DEFAULT_LOG_HOURS,
     DEFAULT_LOG_LIMIT,
     failure,
     GetLogsDto,
     GetLogsInput,
-    MAX_LOG_HOURS,
+    LogLevel,
     MAX_LOG_LIMIT,
     MAX_LOG_RESPONSE_CHARACTERS,
     success,
     ToolDeps,
     ToolOutcome
 } from "./types";
-import type { LogLevel } from "../../models/LogLevel";
 import { toBoundedInteger } from "./validation";
 
 const LOG_LEVELS: LogLevel[] = ["silly", "debug", "info", "warn", "error"];
+const LOG_LEVEL_RANK: Record<LogLevel, number> = {
+    silly: 0,
+    debug: 1,
+    info: 2,
+    warn: 3,
+    error: 4
+};
 
-/** Searches a bounded time range of an ioBroker host's current and rotated log files. */
+/** Reads a bounded tail of an ioBroker host log and applies optional filters. */
 export async function getLogs(deps: ToolDeps, input: GetLogsInput): Promise<ToolOutcome<GetLogsDto>> {
     const connectionError = ensureConnected(deps);
     if (connectionError) {
@@ -30,12 +35,7 @@ export async function getLogs(deps: ToolDeps, input: GetLogsInput): Promise<Tool
         return failure("invalid_input", "'hostId' must be a host id without whitespace.", "Use an id such as 'system.host.myHost'.");
     }
 
-    const hours = toBoundedInteger(input.hours, DEFAULT_LOG_HOURS, 1, MAX_LOG_HOURS);
-    const limit = toBoundedInteger(input.limit, DEFAULT_LOG_LIMIT, 1, MAX_LOG_LIMIT);
-    if (input.before !== undefined && (typeof input.before !== "number" || !Number.isFinite(input.before) || input.before <= 0 || input.before > Date.now())) {
-        return failure("invalid_input", "'before' must be a past Unix timestamp in milliseconds.", "Use the 'nextBefore' timestamp returned by a previous log search to continue with older entries.");
-    }
-    const level = typeof input.level === "string" ? input.level.trim().toLowerCase() as LogLevel : input.level;
+    const level = input.level;
     if (level !== undefined && !LOG_LEVELS.includes(level)) {
         return failure("invalid_input", `'level' must be one of ${LOG_LEVELS.join(", ")}.`);
     }
@@ -49,6 +49,8 @@ export async function getLogs(deps: ToolDeps, input: GetLogsInput): Promise<Tool
     if (!source.ok) {
         return source;
     }
+
+    const lines = toBoundedInteger(input.lines, DEFAULT_LOG_LIMIT, 1, MAX_LOG_LIMIT);
 
     try {
         const hosts = await deps.logs.getHosts();
@@ -70,32 +72,25 @@ export async function getLogs(deps: ToolDeps, input: GetLogsInput): Promise<Tool
         } else {
             return failure(
                 "ambiguous",
-                "More than one ioBroker host is available. Specify 'hostId' to select the host whose logs should be searched.",
+                "More than one ioBroker host is available. Specify 'hostId' to select the host whose log should be read.",
                 `Available host ids: ${hosts.map(candidate => candidate.id).join(", ")}.`
             );
         }
 
-        const result = await deps.logs.searchLogs(host.id, {
-            hours: hours,
-            maxRows: limit,
-            before: input.before,
-            level: level,
-            source: source.data || undefined,
-            search: search.data || undefined,
-            controllerVersion: host.controllerVersion
-        });
-        const bounded = boundLogEntries(result.entries);
+        const logLines = await deps.logs.getLogs(host.id, lines);
+        const matchingLines = logLines.filter(line =>
+            matchesLevel(line, level) &&
+            containsFilter(line, search.data) &&
+            containsFilter(line, source.data)
+        );
+        const bounded = boundLogEntries(matchingLines);
 
         return success({
             hostId: host.id,
             hostName: host.name,
-            lookbackHours: hours,
-            scannedFiles: result.scannedFiles,
-            scannedLines: result.scannedLines,
+            scannedLines: logLines.length,
             entries: bounded.entries,
-            truncated: result.truncated || bounded.truncated,
-            until: result.until,
-            nextBefore: result.nextBefore
+            truncated: bounded.truncated
         });
     } catch (error) {
         return toFailure(error);
@@ -111,7 +106,25 @@ function normalizeFilter(raw: unknown, field: string): ToolOutcome<string> {
         return failure("invalid_input", `'${field}' must be a string of at most 200 characters.`);
     }
 
-    return success(raw.trim());
+    return success(raw.trim().toLowerCase());
+}
+
+function containsFilter(line: string, filter: string): boolean {
+    return filter.length === 0 || line.toLowerCase().includes(filter);
+}
+
+function matchesLevel(line: string, requestedLevel: LogLevel | undefined): boolean {
+    if (!requestedLevel) {
+        return true;
+    }
+
+    const match = line.match(/\b(silly|debug|info|warn(?:ing)?|error)\b/i);
+    if (!match) {
+        return false;
+    }
+
+    const lineLevel = match[1].toLowerCase() === "warning" ? "warn" : match[1].toLowerCase() as LogLevel;
+    return LOG_LEVEL_RANK[lineLevel] >= LOG_LEVEL_RANK[requestedLevel];
 }
 
 function boundLogEntries(entries: string[]): { entries: string[], truncated: boolean } {
