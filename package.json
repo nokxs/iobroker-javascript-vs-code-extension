@@ -459,7 +459,7 @@
 				"toolReferenceName": "iobrokerLogs",
 				"canBeReferencedInPrompt": true,
 				"when": "iobrokerAiToolsEnabled",
-				"modelDescription": "Reads a bounded tail of an ioBroker host log. Scans at most 500 recent lines (100 by default), then filters by minimum severity, source substring, and text substring to keep the result focused. Specify hostId when more than one host is configured. The response is also capped at 30,000 characters. Requires an active ioBroker connection; log contents may contain sensitive information.",
+				"modelDescription": "Reads the tail of an ioBroker host log. Requests up to 500 recent log lines (100 by default) and then filters whole entries by minimum severity, source substring and text substring, keeping continuation lines such as stack traces with their entry. Specify hostId when more than one host is configured. The response is capped at 30,000 characters. Requires an active ioBroker connection; log contents may contain sensitive information.",
 				"inputSchema": {
 					"type": "object",
 					"properties": {
@@ -469,7 +469,7 @@
 						},
 						"lines": {
 							"type": "number",
-							"description": "Maximum number of most recent log lines to scan before filtering (1-500, default 100)."
+							"description": "Maximum number of recent log lines to read before filtering (1-500, default 100)."
 						},
 						"level": {
 							"type": "string",
@@ -478,11 +478,11 @@
 						},
 						"source": {
 							"type": "string",
-							"description": "Optional case-insensitive substring filter for the log source, e.g. 'javascript.0'."
+							"description": "Optional case-insensitive substring filter for the source of an entry, e.g. 'javascript.0'. The message text is not searched."
 						},
 						"search": {
 							"type": "string",
-							"description": "Optional case-insensitive substring to find in log lines."
+							"description": "Optional case-insensitive substring to find in an entry, including its continuation lines such as a stack trace. A matching entry is returned completely."
 						}
 					},
 					"required": [],

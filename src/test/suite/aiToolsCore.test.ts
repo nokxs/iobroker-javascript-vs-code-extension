@@ -360,6 +360,21 @@ suite("AI tools core", () => {
         }
     });
 
+    test("get_logs clamps the requested line count", async () => {
+        const world = createWorld();
+        const requested: number[] = [];
+        world.deps.logs.getLogs = async (_hostId: string, lines: number) => {
+            requested.push(lines);
+            return [];
+        };
+
+        await getLogs(world.deps, {});
+        await getLogs(world.deps, { lines: 9999 });
+        await getLogs(world.deps, { lines: 0 });
+
+        assert.deepStrictEqual(requested, [100, 500, 1]);
+    });
+
     test("get_logs caps the response character count", async () => {
         const world = createWorld();
         world.deps.logs.getLogs = async () => ["x".repeat(30001)];
@@ -386,6 +401,67 @@ suite("AI tools core", () => {
         if (!outcome.ok) {
             assert.strictEqual(outcome.error.code, "ambiguous");
             assert.ok(outcome.error.hint?.includes("system.host.server"));
+        }
+    });
+
+    test("get_logs reports an unknown host with the available ids", async () => {
+        const world = createWorld();
+        world.deps.logs.getHosts = async () => [
+            { id: "system.host.home", name: "home" },
+            { id: "system.host.server", name: "server" }
+        ];
+
+        const outcome = await getLogs(world.deps, { hostId: "system.host.unknown" });
+
+        assert.strictEqual(outcome.ok, false);
+        if (!outcome.ok) {
+            assert.strictEqual(outcome.error.code, "not_found");
+            assert.ok(outcome.error.hint?.includes("system.host.home"));
+        }
+    });
+
+    test("get_logs reads the level from the entry header of colorized logs", async () => {
+        const world = createWorld();
+        const escape = String.fromCharCode(27);
+        const errorLine = `2026-11-07 20:00:01.001 - ${escape}[31merror${escape}[39m: javascript.0 (123) script crashed`;
+        const stackTrace = "    at script.js.common.Light:12:3";
+        world.deps.logs.getLogs = async () => [
+            // an info entry whose message mentions the word error
+            "2026-11-07 20:00:00.001 - info: javascript.0 (123) recovered without error",
+            errorLine,
+            stackTrace
+        ];
+
+        const outcome = await getLogs(world.deps, { level: "error" });
+
+        assert.strictEqual(outcome.ok, true);
+        if (outcome.ok) {
+            assert.deepStrictEqual(outcome.data.entries, [errorLine, stackTrace]);
+        }
+
+        const searched = await getLogs(world.deps, { search: "Light:12" });
+        assert.strictEqual(searched.ok, true);
+        if (searched.ok) {
+            assert.deepStrictEqual(searched.data.entries, [errorLine, stackTrace]);
+        }
+    });
+
+    test("get_logs matches the source filter against the entry source only", async () => {
+        const world = createWorld();
+        world.deps.logs.getLogs = async () => [
+            "2026-11-07 20:00:00.001 - info: admin.0 (1) restarted javascript.0"
+        ];
+
+        const mentionedOnly = await getLogs(world.deps, { source: "javascript.0" });
+        assert.strictEqual(mentionedOnly.ok, true);
+        if (mentionedOnly.ok) {
+            assert.deepStrictEqual(mentionedOnly.data.entries, []);
+        }
+
+        const actualSource = await getLogs(world.deps, { source: "ADMIN.0" });
+        assert.strictEqual(actualSource.ok, true);
+        if (actualSource.ok) {
+            assert.strictEqual(actualSource.data.entries.length, 1);
         }
     });
 

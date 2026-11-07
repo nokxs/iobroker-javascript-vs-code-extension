@@ -76,7 +76,7 @@ export const TOOL_SCHEMAS = {
             },
             lines: {
                 type: "number",
-                description: "Maximum number of most recent log lines to scan before filtering (1-500, default 100)."
+                description: "Maximum number of recent log lines to read before filtering (1-500, default 100)."
             },
             level: {
                 type: "string",
@@ -85,11 +85,11 @@ export const TOOL_SCHEMAS = {
             },
             source: {
                 type: "string",
-                description: "Optional case-insensitive substring filter for the log source, e.g. 'javascript.0'."
+                description: "Optional case-insensitive substring filter for the source of an entry, e.g. 'javascript.0'. The message text is not searched."
             },
             search: {
                 type: "string",
-                description: "Optional case-insensitive substring to find in log lines."
+                description: "Optional case-insensitive substring to find in an entry, including its continuation lines such as a stack trace. A matching entry is returned completely."
             }
         },
         required: [],
