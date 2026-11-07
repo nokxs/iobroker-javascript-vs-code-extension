@@ -9,6 +9,7 @@ import { deleteScript } from "../../aiTools/core/deleteScript";
 import { downloadScript } from "../../aiTools/core/downloadScript";
 import { getScriptContent } from "../../aiTools/core/getScriptContent";
 import { getScripts } from "../../aiTools/core/getScripts";
+import { getLogs } from "../../aiTools/core/getLogs";
 import { getState } from "../../aiTools/core/getState";
 import { renameScript } from "../../aiTools/core/renameScript";
 import { uploadScript } from "../../aiTools/core/uploadScript";
@@ -109,6 +110,14 @@ function createWorld(scripts: ILocalScript[] = [], directories: IDirectory[] = [
         jsInstances: { getAvailableInstances: async () => [{ _id: "system.adapter.javascript.0" }] },
         states: {
             getState: async (id: string) => ({ val: 21.5, ack: true, ts: 1000, lc: 900, from: "system.adapter.javascript.0", id: id })
+        },
+        logs: {
+            getHosts: async () => [{ id: "system.host.home", name: "home" }],
+            getLogs: async () => [
+                "2026-11-07 20:00:00.001 - info: javascript.0 (123) script.js.common.Light: started",
+                "2026-11-07 20:00:01.001 - warn: javascript.0 (123) script.js.common.Light: missing state",
+                "2026-11-07 20:00:02.001 - error: system.adapter.admin.0: failed to load"
+            ]
         },
         documents: { isDirty: () => false }
     };
@@ -322,6 +331,61 @@ suite("AI tools core", () => {
         if (outcome.ok) {
             assert.strictEqual(outcome.data.value, 21.5);
             assert.strictEqual(outcome.data.acknowledged, true);
+        }
+    });
+
+    test("get_logs filters by severity, source and text", async () => {
+        const world = createWorld();
+
+        const outcome = await getLogs(world.deps, {
+            source: "javascript.0",
+            search: "missing"
+        });
+
+        assert.strictEqual(outcome.ok, true);
+        if (outcome.ok) {
+            assert.strictEqual(outcome.data.hostId, "system.host.home");
+            assert.strictEqual(outcome.data.scannedLines, 3);
+            assert.deepStrictEqual(outcome.data.entries, [
+                "2026-11-07 20:00:01.001 - warn: javascript.0 (123) script.js.common.Light: missing state"
+            ]);
+            assert.strictEqual(outcome.data.truncated, false);
+        }
+
+        const severityOutcome = await getLogs(world.deps, { level: "warn" });
+        assert.strictEqual(severityOutcome.ok, true);
+        if (severityOutcome.ok) {
+            assert.strictEqual(severityOutcome.data.entries.length, 2);
+            assert.ok(severityOutcome.data.entries.some(line => line.includes("error:")));
+        }
+    });
+
+    test("get_logs caps the response character count", async () => {
+        const world = createWorld();
+        world.deps.logs.getLogs = async () => ["x".repeat(30001)];
+
+        const outcome = await getLogs(world.deps, {});
+
+        assert.strictEqual(outcome.ok, true);
+        if (outcome.ok) {
+            assert.strictEqual(outcome.data.truncated, true);
+            assert.ok(outcome.data.entries.join("").length <= 30000);
+        }
+    });
+
+    test("get_logs requires a host when multiple hosts are configured", async () => {
+        const world = createWorld();
+        world.deps.logs.getHosts = async () => [
+            { id: "system.host.home", name: "home" },
+            { id: "system.host.server", name: "server" }
+        ];
+
+        const outcome = await getLogs(world.deps, {});
+
+        assert.strictEqual(outcome.ok, false);
+        if (!outcome.ok) {
+            assert.strictEqual(outcome.error.code, "ambiguous");
+            assert.ok(outcome.error.hint?.includes("system.host.server"));
         }
     });
 

@@ -248,6 +248,23 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
         throw new Error("Not implemented");
     }
 
+    getLogs(hostId: string, lines: number): Promise<string[]> {
+        return new Promise<string[]>((resolve, reject) => {
+            if (this.client && this.isConnected) {
+                this.client.emit("sendToHost", hostId.replace(/^system\.host\./, ""), "getLogs", lines, (response: unknown) => {
+                    if (!Array.isArray(response) || response.some(line => typeof line !== "string")) {
+                        reject(new Error(`Could not get logs from host '${hostId}': The host returned an invalid response.`));
+                        return;
+                    }
+
+                    resolve(response.slice(0, -1) as string[]);
+                });
+            } else {
+                reject(new Error("Could not get logs: Client is not connected."));
+            }
+        });
+    }
+
     private registerSocketEvents(): void {
         if (this.client) {
             this.client.on("connect", () => {

@@ -236,6 +236,24 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
         });
     }
 
+    getLogs(hostId: string, lines: number): Promise<string[]> {
+        return new Promise<string[]>((resolve, reject) => {
+            if (this.client && this.isConnected) {
+                this.client.emit("sendToHost", hostId.replace(/^system\.host\./, ""), "getLogs", lines, (response: unknown) => {
+                    if (!Array.isArray(response) || response.some(line => typeof line !== "string")) {
+                        reject(new Error(`Could not get logs from host '${hostId}': The host returned an invalid response.`));
+                        return;
+                    }
+
+                    // getLogs appends the current log-file size as the final array item.
+                    resolve(response.slice(0, -1) as string[]);
+                });
+            } else {
+                reject(new Error("Could not get logs: Client is not connected."));
+            }
+        });
+    }
+
     private registerSocketEvents(): void {
         if (this.client) {
             this.client.on("connect", () => {

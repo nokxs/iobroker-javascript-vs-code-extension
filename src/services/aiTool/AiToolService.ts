@@ -17,6 +17,7 @@ import { IScriptIdService } from "../scriptId/IScriptIdService";
 import { IScriptFileService } from "../scriptFile/IScriptFileService";
 import { IJsInstanceService } from "../jsInstanceService/IJsInstanceService";
 import { IStateAndObjectRemoteService } from "../stateRemote/IStateAndObjectRemoteService";
+import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { ScriptExplorerProvider } from "../../views/scriptExplorer/ScriptExplorerProvider";
 import { IAiToolService } from "./IAiToolService";
 
@@ -36,6 +37,7 @@ export class AiToolService implements IAiToolService {
         @inject(TYPES.services.scriptFile) private scriptFileService: IScriptFileService,
         @inject(TYPES.services.jsInstance) private jsInstanceService: IJsInstanceService,
         @inject(TYPES.services.stateAndObjectRemoteService) private stateAndObjectRemoteService: IStateAndObjectRemoteService,
+        @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
         @inject(TYPES.views.scriptExplorer) private scriptExplorerProvider: ScriptExplorerProvider
     ) {}
 
@@ -106,6 +108,18 @@ export class AiToolService implements IAiToolService {
             files: this.scriptFileService,
             jsInstances: this.jsInstanceService,
             states: this.stateAndObjectRemoteService,
+            logs: {
+                getHosts: async () => {
+                    const hosts = await this.connectionServiceProvider.getConnectionService()
+                        .getSystemObjectView<{ _id: string, common?: { name?: string } }>("host", "system.host", "system.host.");
+                    return hosts.map(host => ({
+                        id: host._id,
+                        name: host.common?.name ?? host._id.replace(/^system\.host\./, "")
+                    }));
+                },
+                getLogs: (hostId: string, lines: number) =>
+                    this.connectionServiceProvider.getConnectionService().getLogs(hostId, lines)
+            },
             documents: {
                 isDirty: (filePath: string) => workspace.textDocuments.some(document => document.isDirty && document.uri.fsPath === filePath)
             }

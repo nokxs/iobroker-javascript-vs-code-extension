@@ -1,12 +1,14 @@
 import { BaseTool } from "./BaseTool";
 import { getChangedScripts } from "../core/getChangedScripts";
 import { getJsInstances } from "../core/getJsInstances";
+import { getLogs } from "../core/getLogs";
 import { getScriptContent } from "../core/getScriptContent";
 import { getScripts } from "../core/getScripts";
 import { getState } from "../core/getState";
 import {
     GetChangedScriptsInput,
     GetJsInstancesInput,
+    GetLogsInput,
     GetScriptContentInput,
     GetScriptsInput,
     GetStateInput,
@@ -50,5 +52,13 @@ export class GetStateTool extends BaseTool<GetStateInput> {
 
     protected run(input: GetStateInput): Promise<ToolOutcome<unknown>> {
         return getState(this.deps, input);
+    }
+}
+
+export class GetLogsTool extends BaseTool<GetLogsInput> {
+    readonly name = "iobroker_get_logs" as const;
+
+    protected run(input: GetLogsInput): Promise<ToolOutcome<unknown>> {
+        return getLogs(this.deps, input);
     }
 }

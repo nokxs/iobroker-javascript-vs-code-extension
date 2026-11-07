@@ -30,4 +30,5 @@ export interface IConnectionService {
     getSystemObjectView<TResult>(type: string, startKey: string, endKey: string): Promise<TResult[]>
 
     getState(id: string): Promise<IState>
+    getLogs(hostId: string, lines: number): Promise<string[]>
 }

@@ -209,6 +209,7 @@ hand takes effect without restarting VS Code. Running the command again disables
 | `iobroker_get_changed_scripts` | List scripts whose local file differs from the server |
 | `iobroker_get_js_instances` | List javascript adapter instances |
 | `iobroker_get_state` | Read the current value of an ioBroker state |
+| `iobroker_get_logs` | Read and filter a bounded tail of a host log |
 | `iobroker_upload_script` | Upload one script to ioBroker |
 | `iobroker_upload_all_changed_scripts` | Upload all changed scripts |
 | `iobroker_download_script` | Download one script to disk |
@@ -230,6 +231,9 @@ Keep in mind:
   `iobroker_download_script` refuses to overwrite a file with unsaved changes.
 - Disabling the flag hides the tools and they refuse to run, even if a chat participant invokes
   them directly.
+- `iobroker_get_logs` scans up to 500 recent lines (100 by default), then filters by minimum
+  severity, source, and text. Its response is capped at 30,000 characters. If multiple hosts are
+  configured, pass `hostId`. Logs may contain sensitive information.
 
 ## Debug Log
 

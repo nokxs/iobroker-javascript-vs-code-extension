@@ -454,6 +454,42 @@
 				}
 			},
 			{
+				"name": "iobroker_get_logs",
+				"displayName": "Get ioBroker logs",
+				"toolReferenceName": "iobrokerLogs",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Reads a bounded tail of an ioBroker host log. Scans at most 500 recent lines (100 by default), then filters by minimum severity, source substring, and text substring to keep the result focused. Specify hostId when more than one host is configured. The response is also capped at 30,000 characters. Requires an active ioBroker connection; log contents may contain sensitive information.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"hostId": {
+							"type": "string",
+							"description": "Optional full ioBroker host id, e.g. 'system.host.myHost'. Omit only when exactly one host is configured."
+						},
+						"lines": {
+							"type": "number",
+							"description": "Maximum number of most recent log lines to scan before filtering (1-500, default 100)."
+						},
+						"level": {
+							"type": "string",
+							"enum": ["silly", "debug", "info", "warn", "error"],
+							"description": "Minimum severity to include. For example, 'warn' returns warnings and errors."
+						},
+						"source": {
+							"type": "string",
+							"description": "Optional case-insensitive substring filter for the log source, e.g. 'javascript.0'."
+						},
+						"search": {
+							"type": "string",
+							"description": "Optional case-insensitive substring to find in log lines."
+						}
+					},
+					"required": [],
+					"additionalProperties": false
+				}
+			},
+			{
 				"name": "iobroker_upload_script",
 				"displayName": "Upload ioBroker script",
 				"toolReferenceName": "iobrokerUploadScript",
