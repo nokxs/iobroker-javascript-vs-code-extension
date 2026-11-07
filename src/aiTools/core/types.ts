@@ -12,6 +12,9 @@ import type { IStateAndObjectRemoteService } from "../../services/stateRemote/IS
 export const MAX_SCRIPT_CONTENT_LENGTH = 50000;
 export const DEFAULT_SCRIPT_LIMIT = 200;
 export const MAX_SCRIPT_LIMIT = 500;
+export const DEFAULT_LOG_LIMIT = 100;
+export const MAX_LOG_LIMIT = 500;
+export const MAX_LOG_RESPONSE_CHARACTERS = 30000;
 
 export type ToolErrorCode =
     "invalid_input" |
@@ -81,6 +84,10 @@ export interface ToolDeps {
     files: Pick<IScriptFileService, "exists" | "write" | "writeContent" | "rename" | "move" | "delete" | "getFileUri">
     jsInstances: Pick<IJsInstanceService, "getAvailableInstances">
     states: Pick<IStateAndObjectRemoteService, "getState">
+    logs: {
+        getHosts(): Promise<LogHost[]>
+        getLogs(hostId: string, lines: number): Promise<string[]>
+    }
     documents: IDocumentState
 }
 
@@ -110,6 +117,21 @@ export interface GetJsInstancesInput {
 
 export interface GetStateInput {
     stateId: string
+}
+
+export type LogLevel = "silly" | "debug" | "info" | "warn" | "error";
+
+export interface GetLogsInput {
+    hostId?: string
+    lines?: number
+    level?: LogLevel
+    source?: string
+    search?: string
+}
+
+export interface LogHost {
+    id: string
+    name: string
 }
 
 export interface UploadScriptInput {
@@ -207,6 +229,14 @@ export interface GetStateDto {
     timestamp: number
     lastChanged: number
     from: string
+}
+
+export interface GetLogsDto {
+    hostId: string
+    hostName: string
+    scannedLines: number
+    entries: string[]
+    truncated: boolean
 }
 
 export interface ChangedScriptResult {

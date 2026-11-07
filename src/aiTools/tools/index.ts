@@ -3,6 +3,7 @@ import { ToolDeps } from "../core/types";
 import {
     GetChangedScriptsTool,
     GetJsInstancesTool,
+    GetLogsTool,
     GetScriptContentTool,
     GetScriptsTool,
     GetStateTool
@@ -27,6 +28,7 @@ export function createTools(deps: ToolDeps, isEnabled: () => boolean, refreshTre
         new GetChangedScriptsTool(deps, isEnabled, refreshTree),
         new GetJsInstancesTool(deps, isEnabled, refreshTree),
         new GetStateTool(deps, isEnabled, refreshTree),
+        new GetLogsTool(deps, isEnabled, refreshTree),
         new UploadScriptTool(deps, isEnabled, refreshTree),
         new UploadAllChangedScriptsTool(deps, isEnabled, refreshTree),
         new DownloadScriptTool(deps, isEnabled, refreshTree),

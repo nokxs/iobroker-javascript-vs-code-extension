@@ -9,6 +9,7 @@ import TYPES from '../../Types';
 import { ISocketIoClient } from "../socketIoClient/ISocketIoClient";
 import { IState } from "../../models/IState";
 import { IObjectList } from "../../models/IObjectList";
+import { HOST_COMMAND_TIMEOUT_MS, readLogLinesAnswer } from "./hostCommandAnswer";
 
 @injectable()
 export class ConnectionServiceAdmin5 implements IConnectionService {
@@ -232,6 +233,51 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                 });
             } else {
                 reject(new Error(`Could not get state with id '${id}': Client is not connect`));
+            }
+        });
+    }
+
+    getLogs(hostId: string, lines: number): Promise<string[]> {
+        return new Promise<string[]>((resolve, reject) => {
+            const client = this.client;
+            if (!client || !this.isConnected) {
+                reject(new Error("Could not get logs: Client is not connected."));
+                return;
+            }
+
+            let settled = false;
+            // A host in a multihost setup can be unreachable, and then the command is never answered.
+            const timeout = setTimeout(() => {
+                if (settled) {
+                    return;
+                }
+
+                settled = true;
+                reject(new Error(`Could not get logs from host '${hostId}': The host did not answer within ${HOST_COMMAND_TIMEOUT_MS / 1000} seconds.`));
+            }, HOST_COMMAND_TIMEOUT_MS);
+
+            const onAnswer = (response: unknown) => {
+                if (settled) {
+                    return;
+                }
+
+                settled = true;
+                clearTimeout(timeout);
+
+                const answer = readLogLinesAnswer(response);
+                if ("error" in answer) {
+                    reject(new Error(`Could not get logs from host '${hostId}': ${answer.error}`));
+                } else {
+                    resolve(answer.lines);
+                }
+            };
+
+            try {
+                client.emit("sendToHost", hostId.replace(/^system\.host\./, ""), "getLogs", lines, onAnswer);
+            } catch (error) {
+                settled = true;
+                clearTimeout(timeout);
+                reject(error instanceof Error ? error : new Error(`Could not get logs from host '${hostId}': ${error}`));
             }
         });
     }

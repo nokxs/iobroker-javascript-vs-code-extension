@@ -67,6 +67,34 @@ export const TOOL_SCHEMAS = {
         required: ["stateId"],
         additionalProperties: false
     },
+    iobroker_get_logs: {
+        type: "object",
+        properties: {
+            hostId: {
+                type: "string",
+                description: "Optional full ioBroker host id, e.g. 'system.host.myHost'. Omit only when exactly one host is configured."
+            },
+            lines: {
+                type: "number",
+                description: "Maximum number of recent log lines to read before filtering (1-500, default 100)."
+            },
+            level: {
+                type: "string",
+                enum: ["silly", "debug", "info", "warn", "error"],
+                description: "Minimum severity to include. For example, 'warn' returns warnings and errors."
+            },
+            source: {
+                type: "string",
+                description: "Optional case-insensitive substring filter for the source of an entry, e.g. 'javascript.0'. The message text is not searched."
+            },
+            search: {
+                type: "string",
+                description: "Optional case-insensitive substring to find in an entry, including its continuation lines such as a stack trace. A matching entry is returned completely."
+            }
+        },
+        required: [],
+        additionalProperties: false
+    },
     iobroker_upload_script: {
         type: "object",
         properties: {
