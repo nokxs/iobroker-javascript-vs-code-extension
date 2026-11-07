@@ -8,12 +8,16 @@ import type { IScriptRemoteService } from "../../services/scriptRemote/IScriptRe
 import type { IScriptRepositoryService } from "../../services/scriptRepository/IScriptRepositoryService";
 import type { IScriptService } from "../../services/script/IScriptService";
 import type { IStateAndObjectRemoteService } from "../../services/stateRemote/IStateAndObjectRemoteService";
+import type { LogHistoryOptions, LogHistoryResult } from "../../models/LogHistory";
+import type { LogLevel } from "../../models/LogLevel";
 
 export const MAX_SCRIPT_CONTENT_LENGTH = 50000;
 export const DEFAULT_SCRIPT_LIMIT = 200;
 export const MAX_SCRIPT_LIMIT = 500;
 export const DEFAULT_LOG_LIMIT = 100;
 export const MAX_LOG_LIMIT = 500;
+export const DEFAULT_LOG_HOURS = 24;
+export const MAX_LOG_HOURS = 720;
 export const MAX_LOG_RESPONSE_CHARACTERS = 30000;
 
 export type ToolErrorCode =
@@ -86,7 +90,7 @@ export interface ToolDeps {
     states: Pick<IStateAndObjectRemoteService, "getState">
     logs: {
         getHosts(): Promise<LogHost[]>
-        getLogs(hostId: string, lines: number): Promise<string[]>
+        searchLogs(hostId: string, options: LogHistoryOptions): Promise<LogHistoryResult>
     }
     documents: IDocumentState
 }
@@ -119,11 +123,11 @@ export interface GetStateInput {
     stateId: string
 }
 
-export type LogLevel = "silly" | "debug" | "info" | "warn" | "error";
-
 export interface GetLogsInput {
     hostId?: string
-    lines?: number
+    hours?: number
+    limit?: number
+    before?: number
     level?: LogLevel
     source?: string
     search?: string
@@ -132,6 +136,7 @@ export interface GetLogsInput {
 export interface LogHost {
     id: string
     name: string
+    controllerVersion?: string
 }
 
 export interface UploadScriptInput {
@@ -234,9 +239,13 @@ export interface GetStateDto {
 export interface GetLogsDto {
     hostId: string
     hostName: string
+    lookbackHours: number
+    scannedFiles: number
     scannedLines: number
     entries: string[]
     truncated: boolean
+    until: number
+    nextBefore: number | null
 }
 
 export interface ChangedScriptResult {

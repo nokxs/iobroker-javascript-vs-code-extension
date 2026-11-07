@@ -10,6 +10,8 @@ import { IState } from '../../models/IState';
 import { ScriptId } from "../../models/ScriptId";
 import { injectable } from "inversify";
 import { HOST_COMMAND_TIMEOUT_MS, readLogLinesAnswer } from "./hostCommandAnswer";
+import { LogHistoryOptions, LogHistoryResult } from "../../models/LogHistory";
+import { searchHostLogs } from "./logHistory";
 
 @injectable()
 export class ConnectionServiceAdmin4 implements IConnectionService {
@@ -290,6 +292,48 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
                 settled = true;
                 clearTimeout(timeout);
                 reject(error instanceof Error ? error : new Error(`Could not get logs from host '${hostId}': ${error}`));
+            }
+        });
+    }
+
+    searchLogs(hostId: string, options: LogHistoryOptions): Promise<LogHistoryResult> {
+        return searchHostLogs(
+            (command, message, timeoutMs) => this.requestHostCommand(hostId, command, message, timeoutMs),
+            options
+        );
+    }
+
+    private requestHostCommand(hostId: string, command: string, message: unknown, timeoutMs = HOST_COMMAND_TIMEOUT_MS): Promise<unknown> {
+        return new Promise<unknown>((resolve, reject) => {
+            const client = this.client;
+            if (!client || !this.isConnected) {
+                reject(new Error("Could not request host logs: Client is not connected."));
+                return;
+            }
+
+            let settled = false;
+            const timeout = setTimeout(() => {
+                if (!settled) {
+                    settled = true;
+                    reject(new Error(`Host '${hostId}' did not answer the '${command}' request within ${timeoutMs / 1000} seconds.`));
+                }
+            }, timeoutMs);
+
+            const onAnswer = (answer: unknown) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                clearTimeout(timeout);
+                resolve(answer);
+            };
+
+            try {
+                client.emit("sendToHost", hostId.replace(/^system\.host\./, ""), command, message, onAnswer);
+            } catch (error) {
+                settled = true;
+                clearTimeout(timeout);
+                reject(error instanceof Error ? error : new Error(`Could not request host logs: ${error}`));
             }
         });
     }

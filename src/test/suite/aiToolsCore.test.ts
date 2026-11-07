@@ -112,12 +112,19 @@ function createWorld(scripts: ILocalScript[] = [], directories: IDirectory[] = [
             getState: async (id: string) => ({ val: 21.5, ack: true, ts: 1000, lc: 900, from: "system.adapter.javascript.0", id: id })
         },
         logs: {
-            getHosts: async () => [{ id: "system.host.home", name: "home" }],
-            getLogs: async () => [
-                "2026-11-07 20:00:00.001 - info: javascript.0 (123) script.js.common.Light: started",
-                "2026-11-07 20:00:01.001 - warn: javascript.0 (123) script.js.common.Light: missing state",
-                "2026-11-07 20:00:02.001 - error: system.adapter.admin.0: failed to load"
-            ]
+            getHosts: async () => [{ id: "system.host.home", name: "home", controllerVersion: "7.1.0" }],
+            searchLogs: async () => ({
+                entries: [
+                    "2026-11-07 20:00:00.001 - info: javascript.0 (123) script.js.common.Light: started",
+                    "2026-11-07 20:00:01.001 - warn: javascript.0 (123) script.js.common.Light: missing state",
+                    "2026-11-07 20:00:02.001 - error: system.adapter.admin.0: failed to load"
+                ],
+                scannedFiles: 1,
+                scannedLines: 3,
+                truncated: false,
+                until: 1000,
+                nextBefore: null
+            })
         },
         documents: { isDirty: () => false }
     };
@@ -334,50 +341,94 @@ suite("AI tools core", () => {
         }
     });
 
-    test("get_logs filters by severity, source and text", async () => {
+    test("get_logs filters by severity, source and text and forwards pagination", async () => {
         const world = createWorld();
+        let receivedOptions: { hours: number, maxRows: number, before?: number, level?: string, source?: string, search?: string, controllerVersion?: string } | undefined;
+        const before = Date.now() - 1000;
+        world.deps.logs.searchLogs = async (_hostId, options) => {
+            receivedOptions = options;
+            return {
+                entries: ["2026-11-07 20:00:01.001 - warn: javascript.0 (123) script.js.common.Light: missing state"],
+                scannedFiles: 2,
+                scannedLines: 1000,
+                truncated: false,
+                until: 1000,
+                nextBefore: null
+            };
+        };
 
         const outcome = await getLogs(world.deps, {
             source: "javascript.0",
-            search: "missing"
+            search: "missing",
+            hours: 48,
+            level: "warn",
+            before: before
         });
 
         assert.strictEqual(outcome.ok, true);
         if (outcome.ok) {
             assert.strictEqual(outcome.data.hostId, "system.host.home");
-            assert.strictEqual(outcome.data.scannedLines, 3);
+            assert.strictEqual(outcome.data.scannedFiles, 2);
+            assert.strictEqual(outcome.data.scannedLines, 1000);
+            assert.strictEqual(outcome.data.lookbackHours, 48);
             assert.deepStrictEqual(outcome.data.entries, [
                 "2026-11-07 20:00:01.001 - warn: javascript.0 (123) script.js.common.Light: missing state"
             ]);
             assert.strictEqual(outcome.data.truncated, false);
         }
 
-        const severityOutcome = await getLogs(world.deps, { level: "warn" });
-        assert.strictEqual(severityOutcome.ok, true);
-        if (severityOutcome.ok) {
-            assert.strictEqual(severityOutcome.data.entries.length, 2);
-            assert.ok(severityOutcome.data.entries.some(line => line.includes("error:")));
-        }
+        assert.deepStrictEqual(receivedOptions, {
+            hours: 48,
+            maxRows: 100,
+            before: before,
+            level: "warn",
+            source: "javascript.0",
+            search: "missing",
+            controllerVersion: "7.1.0"
+        });
     });
 
-    test("get_logs clamps the requested line count", async () => {
+    test("get_logs clamps the lookback and result limits", async () => {
         const world = createWorld();
-        const requested: number[] = [];
-        world.deps.logs.getLogs = async (_hostId: string, lines: number) => {
-            requested.push(lines);
-            return [];
+        const requested: Array<{ hours: number, maxRows: number }> = [];
+        world.deps.logs.searchLogs = async (_hostId, options) => {
+            requested.push({ hours: options.hours, maxRows: options.maxRows });
+            return { entries: [], scannedFiles: 0, scannedLines: 0, truncated: false, until: 1000, nextBefore: null };
         };
 
         await getLogs(world.deps, {});
-        await getLogs(world.deps, { lines: 9999 });
-        await getLogs(world.deps, { lines: 0 });
+        await getLogs(world.deps, { limit: 9999, hours: 9999 });
+        await getLogs(world.deps, { limit: 0, hours: 0 });
 
-        assert.deepStrictEqual(requested, [100, 500, 1]);
+        assert.deepStrictEqual(requested, [
+            { hours: 24, maxRows: 100 },
+            { hours: 720, maxRows: 500 },
+            { hours: 1, maxRows: 1 }
+        ]);
+    });
+
+    test("get_logs validates the pagination timestamp", async () => {
+        const world = createWorld();
+
+        const outcome = await getLogs(world.deps, { before: Date.now() + 1000 });
+
+        assert.strictEqual(outcome.ok, false);
+        if (!outcome.ok) {
+            assert.strictEqual(outcome.error.code, "invalid_input");
+            assert.ok(outcome.error.hint?.includes("nextBefore"));
+        }
     });
 
     test("get_logs caps the response character count", async () => {
         const world = createWorld();
-        world.deps.logs.getLogs = async () => ["x".repeat(30001)];
+        world.deps.logs.searchLogs = async () => ({
+            entries: ["x".repeat(30001)],
+            scannedFiles: 1,
+            scannedLines: 1,
+            truncated: false,
+            until: 1000,
+            nextBefore: null
+        });
 
         const outcome = await getLogs(world.deps, {});
 
@@ -417,51 +468,6 @@ suite("AI tools core", () => {
         if (!outcome.ok) {
             assert.strictEqual(outcome.error.code, "not_found");
             assert.ok(outcome.error.hint?.includes("system.host.home"));
-        }
-    });
-
-    test("get_logs reads the level from the entry header of colorized logs", async () => {
-        const world = createWorld();
-        const escape = String.fromCharCode(27);
-        const errorLine = `2026-11-07 20:00:01.001 - ${escape}[31merror${escape}[39m: javascript.0 (123) script crashed`;
-        const stackTrace = "    at script.js.common.Light:12:3";
-        world.deps.logs.getLogs = async () => [
-            // an info entry whose message mentions the word error
-            "2026-11-07 20:00:00.001 - info: javascript.0 (123) recovered without error",
-            errorLine,
-            stackTrace
-        ];
-
-        const outcome = await getLogs(world.deps, { level: "error" });
-
-        assert.strictEqual(outcome.ok, true);
-        if (outcome.ok) {
-            assert.deepStrictEqual(outcome.data.entries, [errorLine, stackTrace]);
-        }
-
-        const searched = await getLogs(world.deps, { search: "Light:12" });
-        assert.strictEqual(searched.ok, true);
-        if (searched.ok) {
-            assert.deepStrictEqual(searched.data.entries, [errorLine, stackTrace]);
-        }
-    });
-
-    test("get_logs matches the source filter against the entry source only", async () => {
-        const world = createWorld();
-        world.deps.logs.getLogs = async () => [
-            "2026-11-07 20:00:00.001 - info: admin.0 (1) restarted javascript.0"
-        ];
-
-        const mentionedOnly = await getLogs(world.deps, { source: "javascript.0" });
-        assert.strictEqual(mentionedOnly.ok, true);
-        if (mentionedOnly.ok) {
-            assert.deepStrictEqual(mentionedOnly.data.entries, []);
-        }
-
-        const actualSource = await getLogs(world.deps, { source: "ADMIN.0" });
-        assert.strictEqual(actualSource.ok, true);
-        if (actualSource.ok) {
-            assert.strictEqual(actualSource.data.entries.length, 1);
         }
     });
 

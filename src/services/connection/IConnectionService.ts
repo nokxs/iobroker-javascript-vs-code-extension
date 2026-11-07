@@ -4,6 +4,7 @@ import { ScriptId } from "../../models/ScriptId";
 import { Uri } from "vscode";
 import { IState } from "../../models/IState";
 import { IObjectList } from "../../models/IObjectList";
+import { LogHistoryOptions, LogHistoryResult } from "../../models/LogHistory";
 
 export interface IConnectionService {
     isConnected: boolean;
@@ -31,4 +32,5 @@ export interface IConnectionService {
 
     getState(id: string): Promise<IState>
     getLogs(hostId: string, lines: number): Promise<string[]>
+    searchLogs(hostId: string, options: LogHistoryOptions): Promise<LogHistoryResult>
 }

@@ -1,45 +1,24 @@
 import { ensureConnected } from "./connection";
 import { toFailure } from "./helpers";
 import {
+    DEFAULT_LOG_HOURS,
     DEFAULT_LOG_LIMIT,
     failure,
     GetLogsDto,
     GetLogsInput,
-    LogLevel,
+    MAX_LOG_HOURS,
     MAX_LOG_LIMIT,
     MAX_LOG_RESPONSE_CHARACTERS,
     success,
     ToolDeps,
     ToolOutcome
 } from "./types";
+import type { LogLevel } from "../../models/LogLevel";
 import { toBoundedInteger } from "./validation";
 
-/** Log levels from the least to the most severe, the order ioBroker uses. */
 const LOG_LEVELS: LogLevel[] = ["silly", "debug", "info", "warn", "error"];
-const LOG_LEVEL_RANK: Record<LogLevel, number> = {
-    silly: 0,
-    debug: 1,
-    info: 2,
-    warn: 3,
-    error: 4
-};
 
-/**
- * The ioBroker logger writes one entry per line, starting with a time stamp, and continues an entry
- * over further lines - a stack trace - which carry no time stamp. The level can be wrapped in color
- * codes, so they have to be removed before the header can be read.
- */
-const ANSI_ESCAPE = new RegExp(`${String.fromCharCode(27)}\\[[0-?]*[ -/]*[@-~]`, "g");
-const ENTRY_HEADER = /^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)\s+-\s+(silly|debug|info|warn|error):(?:\s+(\S+).*)?\r?$/i;
-
-interface LogEntry {
-    lines: string[]
-    /** Undefined for a line that does not start an entry, e.g. the tail of a rotated file. */
-    level?: LogLevel
-    source: string
-}
-
-/** Reads a bounded tail of an ioBroker host log and applies the optional filters to whole entries. */
+/** Searches a bounded time range of an ioBroker host's current and rotated log files. */
 export async function getLogs(deps: ToolDeps, input: GetLogsInput): Promise<ToolOutcome<GetLogsDto>> {
     const connectionError = ensureConnected(deps);
     if (connectionError) {
@@ -51,6 +30,11 @@ export async function getLogs(deps: ToolDeps, input: GetLogsInput): Promise<Tool
         return failure("invalid_input", "'hostId' must be a host id without whitespace.", "Use an id such as 'system.host.myHost'.");
     }
 
+    const hours = toBoundedInteger(input.hours, DEFAULT_LOG_HOURS, 1, MAX_LOG_HOURS);
+    const limit = toBoundedInteger(input.limit, DEFAULT_LOG_LIMIT, 1, MAX_LOG_LIMIT);
+    if (input.before !== undefined && (typeof input.before !== "number" || !Number.isFinite(input.before) || input.before <= 0 || input.before > Date.now())) {
+        return failure("invalid_input", "'before' must be a past Unix timestamp in milliseconds.", "Use the 'nextBefore' timestamp returned by a previous log search to continue with older entries.");
+    }
     const level = typeof input.level === "string" ? input.level.trim().toLowerCase() as LogLevel : input.level;
     if (level !== undefined && !LOG_LEVELS.includes(level)) {
         return failure("invalid_input", `'level' must be one of ${LOG_LEVELS.join(", ")}.`);
@@ -65,8 +49,6 @@ export async function getLogs(deps: ToolDeps, input: GetLogsInput): Promise<Tool
     if (!source.ok) {
         return source;
     }
-
-    const lines = toBoundedInteger(input.lines, DEFAULT_LOG_LIMIT, 1, MAX_LOG_LIMIT);
 
     try {
         const hosts = await deps.logs.getHosts();
@@ -88,69 +70,36 @@ export async function getLogs(deps: ToolDeps, input: GetLogsInput): Promise<Tool
         } else {
             return failure(
                 "ambiguous",
-                "More than one ioBroker host is available. Specify 'hostId' to select the host whose log should be read.",
+                "More than one ioBroker host is available. Specify 'hostId' to select the host whose logs should be searched.",
                 `Available host ids: ${hosts.map(candidate => candidate.id).join(", ")}.`
             );
         }
 
-        const logLines = await deps.logs.getLogs(host.id, lines);
-        const entries = toLogEntries(logLines).filter(entry =>
-            matchesLevel(entry, level) &&
-            matchesSource(entry, source.data) &&
-            matchesSearch(entry, search.data)
-        );
-        const bounded = boundLogEntries(toLines(entries));
+        const result = await deps.logs.searchLogs(host.id, {
+            hours: hours,
+            maxRows: limit,
+            before: input.before,
+            level: level,
+            source: source.data || undefined,
+            search: search.data || undefined,
+            controllerVersion: host.controllerVersion
+        });
+        const bounded = boundLogEntries(result.entries);
 
         return success({
             hostId: host.id,
             hostName: host.name,
-            scannedLines: logLines.length,
+            lookbackHours: hours,
+            scannedFiles: result.scannedFiles,
+            scannedLines: result.scannedLines,
             entries: bounded.entries,
-            truncated: bounded.truncated
+            truncated: result.truncated || bounded.truncated,
+            until: result.until,
+            nextBefore: result.nextBefore
         });
     } catch (error) {
         return toFailure(error);
     }
-}
-
-/** Groups the lines of the tail into entries: a header line starts one, every other line continues it. */
-function toLogEntries(lines: string[]): LogEntry[] {
-    const entries: LogEntry[] = [];
-
-    for (const line of lines) {
-        const header = parseEntryHeader(line);
-        if (header) {
-            entries.push({ lines: [line], level: header.level, source: header.source });
-            continue;
-        }
-
-        const current = entries[entries.length - 1];
-        if (current) {
-            current.lines.push(line);
-        } else {
-            entries.push({ lines: [line], source: "" });
-        }
-    }
-
-    return entries;
-}
-
-function parseEntryHeader(line: string): { level: LogLevel, source: string } | undefined {
-    const match = line.replace(ANSI_ESCAPE, "").match(ENTRY_HEADER);
-    if (!match) {
-        return undefined;
-    }
-
-    return {
-        level: match[3].toLowerCase() as LogLevel,
-        source: (match[4] ?? "").toLowerCase()
-    };
-}
-
-function toLines(entries: LogEntry[]): string[] {
-    const lines: string[] = [];
-    entries.forEach(entry => lines.push(...entry.lines));
-    return lines;
 }
 
 function normalizeFilter(raw: unknown, field: string): ToolOutcome<string> {
@@ -162,27 +111,7 @@ function normalizeFilter(raw: unknown, field: string): ToolOutcome<string> {
         return failure("invalid_input", `'${field}' must be a string of at most 200 characters.`);
     }
 
-    return success(raw.trim().toLowerCase());
-}
-
-function matchesLevel(entry: LogEntry, requestedLevel: LogLevel | undefined): boolean {
-    if (!requestedLevel) {
-        return true;
-    }
-
-    if (!entry.level) {
-        return false;
-    }
-
-    return LOG_LEVEL_RANK[entry.level] >= LOG_LEVEL_RANK[requestedLevel];
-}
-
-function matchesSource(entry: LogEntry, filter: string): boolean {
-    return filter.length === 0 || entry.source.includes(filter);
-}
-
-function matchesSearch(entry: LogEntry, filter: string): boolean {
-    return filter.length === 0 || entry.lines.some(line => line.toLowerCase().includes(filter));
+    return success(raw.trim());
 }
 
 function boundLogEntries(entries: string[]): { entries: string[], truncated: boolean } {

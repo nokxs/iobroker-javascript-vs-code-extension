@@ -111,14 +111,15 @@ export class AiToolService implements IAiToolService {
             logs: {
                 getHosts: async () => {
                     const hosts = await this.connectionServiceProvider.getConnectionService()
-                        .getSystemObjectView<{ _id: string, common?: { name?: string } }>("host", "system.host", "system.host.");
+                        .getSystemObjectView<{ _id: string, common?: { name?: string, installedVersion?: string } }>("host", "system.host", "system.host.");
                     return hosts.map(host => ({
                         id: host._id,
-                        name: host.common?.name ?? host._id.replace(/^system\.host\./, "")
+                        name: host.common?.name ?? host._id.replace(/^system\.host\./, ""),
+                        controllerVersion: host.common?.installedVersion
                     }));
                 },
-                getLogs: (hostId: string, lines: number) =>
-                    this.connectionServiceProvider.getConnectionService().getLogs(hostId, lines)
+                searchLogs: (hostId, options) =>
+                    this.connectionServiceProvider.getConnectionService().searchLogs(hostId, options)
             },
             documents: {
                 isDirty: (filePath: string) => workspace.textDocuments.some(document => document.isDirty && document.uri.fsPath === filePath)
