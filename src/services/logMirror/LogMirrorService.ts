@@ -226,7 +226,8 @@ export class LogMirrorService implements ILogMirrorService {
             }
 
             try {
-                this.renameRotated(target);
+                // Windows can keep the file locked briefly after end()/close.
+                await this.renameRotatedAsync(target);
             } catch (e) {
                 this.warnOnce(`ioBroker: log mirror rotation failed: ${formatError(e)}`);
             }
@@ -273,6 +274,27 @@ export class LogMirrorService implements ILogMirrorService {
             /* ignore missing previous rotation */
         }
         fs.renameSync(target, rotated);
+    }
+
+    private async renameRotatedAsync(target: string): Promise<void> {
+        const rotated = `${target}.1`;
+        try {
+            fs.unlinkSync(rotated);
+        } catch {
+            /* ignore missing previous rotation */
+        }
+
+        let lastError: unknown;
+        for (let attempt = 0; attempt < 20; attempt++) {
+            try {
+                fs.renameSync(target, rotated);
+                return;
+            } catch (e) {
+                lastError = e;
+                await new Promise(resolve => setTimeout(resolve, 25));
+            }
+        }
+        throw lastError;
     }
 
     private openStream(target: string): void {
