@@ -10,6 +10,7 @@ import { IIobrokerConnectionService } from '../../services/iobrokerConnection/II
 import { NoConfig } from '../../models/Config';
 import { IScriptRepositoryService } from '../../services/scriptRepository/IScriptRepositoryService';
 import { IDirectory } from '../../models/IDirectory';
+import { ROOT_DIRECTORY_ID } from '../../models/ScriptIdPath';
 import { RootDirectory } from '../../models/RootDirectory';
 import { ILocalScript } from '../../models/ILocalScript';
 import { IWorkspaceService } from '../../services/workspace/IWorkspaceService';
@@ -20,7 +21,6 @@ import { ILocalOnlyScript } from '../../models/ILocalOnlyScript';
 import { IConfigRepositoryService } from '../../services/configRepository/IConfigRepositoryService';
 import { OnlyRemoteScriptItem } from './OnlyRemoteScriptItem';
 
-const ROOT_DIRECTORY_ID = "script.js";
 const AUTO_SYNC_CONTEXT_KEY = "iobrokerAutoSyncEnabled";
 
 @injectable()

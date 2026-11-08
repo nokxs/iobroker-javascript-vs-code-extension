@@ -2,21 +2,16 @@ import * as path from "path";
 import { IDirectory } from "../../models/IDirectory";
 import { ILocalScript } from "../../models/ILocalScript";
 import { ScriptId } from "../../models/ScriptId";
+import { ROOT_DIRECTORY_ID, lastSegmentOf } from "../../models/ScriptIdPath";
 import { DirectoryDto, failure, ScriptSummaryDto, ToolDeps, ToolOutcome } from "./types";
 import { toMessage } from "./validation";
-
-export const ROOT_DIRECTORY_ID = "script.js";
 
 export function scriptIdOf(script: ILocalScript): string {
     return `${script._id}`;
 }
 
-export function lastSegment(id: string): string {
-    return id.substring(id.lastIndexOf(".") + 1);
-}
-
 export function scriptNameOf(script: ILocalScript): string {
-    return script.ioBrokerScript.common.name ?? lastSegment(scriptIdOf(script));
+    return script.ioBrokerScript.common.name ?? lastSegmentOf(scriptIdOf(script));
 }
 
 export function filePathOf(script: ILocalScript): string {

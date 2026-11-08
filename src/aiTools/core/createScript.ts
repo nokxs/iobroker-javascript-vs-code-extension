@@ -1,7 +1,8 @@
 import { EngineType } from "../../models/EngineType";
+import { ROOT_DIRECTORY_ID } from "../../models/ScriptIdPath";
 import { CreateScriptDto, CreateScriptInput, failure, success, ToolDeps, ToolOutcome } from "./types";
 import { ensureConnected } from "./connection";
-import { findDirectory, refreshScriptInCache, ROOT_DIRECTORY_ID, toFailure } from "./helpers";
+import { findDirectory, refreshScriptInCache, toFailure } from "./helpers";
 import { toDirectoryId, toMessage, validateName } from "./validation";
 
 const KNOWN_EXTENSIONS = [".js", ".ts"];

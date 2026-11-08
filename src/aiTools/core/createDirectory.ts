@@ -1,7 +1,8 @@
 import { IDirectory } from "../../models/IDirectory";
 import { ScriptId } from "../../models/ScriptId";
+import { ROOT_DIRECTORY_ID, isDirectoryId, lastSegmentOf, parentIdOf } from "../../models/ScriptIdPath";
 import { ensureConnected } from "./connection";
-import { findDirectory, lastSegment, refreshScriptInCache, ROOT_DIRECTORY_ID, toFailure } from "./helpers";
+import { findDirectory, refreshScriptInCache, toFailure } from "./helpers";
 import { CreateDirectoryDto, CreateDirectoryInput, failure, success, ToolDeps, ToolOutcome } from "./types";
 import { toDirectoryId, toMessage, validateName } from "./validation";
 
@@ -149,7 +150,7 @@ function resolveTarget(input: CreateDirectoryInput): ToolOutcome<DirectoryTarget
         }
 
         parentId = rawId.substring(0, rawId.lastIndexOf("."));
-        name = lastSegment(rawId);
+        name = lastSegmentOf(rawId);
 
         const nameResult = validateName(name, "name");
         if (!nameResult.ok) {
@@ -157,7 +158,7 @@ function resolveTarget(input: CreateDirectoryInput): ToolOutcome<DirectoryTarget
         }
     }
 
-    if (!isValidDirectoryId(parentId)) {
+    if (!isDirectoryId(parentId)) {
         return failure("invalid_input", `'${parentId}' is not a valid parent directory id.`, "Use 'script.js' for the root directory or a full id like 'script.js.common'.");
     }
 
@@ -166,22 +167,11 @@ function resolveTarget(input: CreateDirectoryInput): ToolOutcome<DirectoryTarget
     }
 
     const targetId = `${parentId}.${name}`;
-    if (!isValidDirectoryId(targetId)) {
+    if (!isDirectoryId(targetId)) {
         return failure("invalid_input", `'${targetId}' is not a valid directory id.`);
     }
 
     return success({ parentId: parentId, targetId: targetId, name: name, requireKnownParent: hasName });
-}
-
-function isValidDirectoryId(id: string): boolean {
-    if (id === ROOT_DIRECTORY_ID) {
-        return true;
-    }
-
-    return id.startsWith(`${ROOT_DIRECTORY_ID}.`)
-        && !id.endsWith(".")
-        && !id.includes("..")
-        && id.split(".").every(segment => segment.length > 0);
 }
 
 /** Walks up the id until a directory that is known to the extension is found. */
@@ -191,12 +181,8 @@ function findDeepestKnownAncestor(deps: ToolDeps, directoryId: string): KnownAnc
         return { id: directoryId, directory: directory };
     }
 
-    const parent = directoryId.substring(0, directoryId.lastIndexOf("."));
-    if (parent.length === 0 || parent === directoryId) {
-        return undefined;
-    }
-
-    return findDeepestKnownAncestor(deps, parent);
+    const parentId = parentIdOf(directoryId);
+    return parentId === undefined ? undefined : findDeepestKnownAncestor(deps, parentId);
 }
 
 /** All directory ids between the known ancestor (exclusive) and the target (inclusive). */
@@ -223,7 +209,7 @@ function mapLocalUris(deps: ToolDeps, ancestor: KnownAncestor, targetId: string)
     let currentUri = ancestor.directory.absoluteUri;
     for (const id of ids) {
         const known = findDirectory(deps, id);
-        const uri = known ? known.absoluteUri : deps.files.getDirectoryUri(currentUri, lastSegment(id));
+        const uri = known ? known.absoluteUri : deps.files.getDirectoryUri(currentUri, lastSegmentOf(id));
 
         result.push({ id: id, uri: uri });
         currentUri = uri;
