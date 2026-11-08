@@ -240,14 +240,15 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
     getSystemObjectView<TResult>(type: string, startKey: string, endKey: string): Promise<TResult[]> {
         return new Promise<TResult[]>((resolve, reject) => {
             if (this.client && this.isConnected) {
-                this.client.emit("getObjectView", "system", type,{"startkey": startKey,"endkey": `${endKey}\u9999`}, (err: any, doc: { rows: {id: string, value: TResult}[] }) => {
+                this.client.emit("getObjectView", "system", type,{"startkey": startKey,"endkey": `${endKey}\u9999`}, (err: any, doc: { rows: {id: string, value: TResult}[] } | undefined) => {
                     if (err) {
-                        reject(new Error(`Error while retreiving object view: Type: ${type} | startKey: ${startKey} | endKey: ${endKey}`));
+                        reject(new Error(`Error while retrieving object view (type: ${type}, startKey: ${startKey}): ${err}`));
+                        return;
                     }
-                    resolve(doc.rows.map(row => row.value));
+                    resolve((doc?.rows ?? []).map(row => row.value));
                 });
             } else {
-                reject(`Error while retreiving object view: Type: ${type} | startKey: ${startKey} | endKey: ${endKey}`);
+                reject(new Error(`Error while retrieving object view (type: ${type}, startKey: ${startKey}): Not connected`));
             }
         });
     }

@@ -6,7 +6,8 @@ const CONSTANTS = {
         common: "script.js.common"
     },
     contexts: {
-        aiToolsEnabled: "iobrokerAiToolsEnabled"
+        aiToolsEnabled: "iobrokerAiToolsEnabled",
+        connectionState: "iobroker-javascript.connectionState"
     }
 };
 

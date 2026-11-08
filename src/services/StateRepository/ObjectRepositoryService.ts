@@ -12,17 +12,53 @@ import { ObjectRepositoryDictionary } from "./ObjectRepositoryDictionary";
 export class ObjectRepositoryService implements IObjectRepositoryService, IObjectChangedEventListener {
     private allObjectsPlain: IObjectList = {};
     private allObjects: ObjectRepositoryDictionary = {};
+    private loaded = false;
+    private loadPromise: Promise<void> | undefined;
     
     constructor(
         @inject(TYPES.services.stateAndObjectRemoteService) private stateRemoteService: IStateAndObjectRemoteService,
     ) { }
 
-    async init(): Promise<void> {
-        this.allObjectsPlain = await this.stateRemoteService.getAllObjects();
-
-        for (const id in this.allObjectsPlain) {
-            this.handleId(id);
+    /** Loads all objects once per session; objectChange events keep the index current afterwards. */
+    init(): Promise<void> {
+        if (this.loaded) {
+            return Promise.resolve();
         }
+        return this.load();
+    }
+
+    rebuild(): Promise<void> {
+        return this.load();
+    }
+
+    isLoaded(): boolean {
+        return this.loaded;
+    }
+
+    getObjectCount(): number {
+        return Object.keys(this.allObjectsPlain).length;
+    }
+
+    private load(): Promise<void> {
+        if (!this.loadPromise) {
+            this.loadPromise = this.loadFromServer().finally(() => {
+                this.loadPromise = undefined;
+            });
+        }
+        return this.loadPromise;
+    }
+
+    private async loadFromServer(): Promise<void> {
+        const plain = await this.stateRemoteService.getAllObjects();
+        const tree: ObjectRepositoryDictionary = {};
+        for (const id in plain) {
+            this.handleId(id, plain, tree);
+        }
+
+        // Swap at once, so lookups keep working with the old index during a rebuild.
+        this.allObjectsPlain = plain;
+        this.allObjects = tree;
+        this.loaded = true;
 
         this.stateRemoteService.registerObjectChangedEventListener(this);
     }
@@ -102,7 +138,7 @@ export class ObjectRepositoryService implements IObjectRepositoryService, IObjec
         // value was added or changed
         if (value) {
             this.allObjectsPlain[id] = value;
-            this.handleId(id);            
+            this.handleId(id, this.allObjectsPlain, this.allObjects);
         }
         // value was deleted
         else {
@@ -134,15 +170,15 @@ export class ObjectRepositoryService implements IObjectRepositoryService, IObjec
         }
     }
 
-    private handleId(id: string) {
+    private handleId(id: string, plain: IObjectList, tree: ObjectRepositoryDictionary) {
         const idParts = id.split(".");
-        let lastRepositoryItem: IObjectRepositoryItem = { item: undefined, children: this.allObjects};
+        let lastRepositoryItem: IObjectRepositoryItem = { item: undefined, children: tree };
 
         for (const idPart of idParts) {
             lastRepositoryItem = this.handleIdPart(lastRepositoryItem.children, idPart);
         }
 
-        lastRepositoryItem.item = this.allObjectsPlain[id];
+        lastRepositoryItem.item = plain[id];
     }
 
     private handleIdPart(states: ObjectRepositoryDictionary, part: string): IObjectRepositoryItem {

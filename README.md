@@ -12,7 +12,9 @@ Open the command palette (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> OR <
 
 Connect to your ioBroker instance by invoking the command `iobroker: Connect to ioBroker`. You can see the process in the gif above. If your connection fails, check the created file `.iobroker-config.json` and re-run the command `iobroker: Connect to ioBroker` for another connection attempt. 
 
-If `.iobroker-config.json` is found in the root of your workspace, the extension automatically starts a connection attempt.
+If `.iobroker-config.json` is found in the root of your workspace, the extension automatically starts a connection attempt in the background.
+
+While connected, `iobroker: Connect to ioBroker` (or a click on the status bar item) only reloads the script list. After a reconnect the script list is reloaded automatically. The object index used for hover and completion is loaded once per session in the background; run `iobroker: Rebuild object index` to download it again.
 
 ### Password protected ioBroker installations
 

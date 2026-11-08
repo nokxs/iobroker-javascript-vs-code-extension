@@ -38,18 +38,6 @@ export class Startup implements IStartup {
         this.aiToolService.registerTools(context);
         await this.aiToolService.initialize(context);
 
-        const workspacesWithConfig = await this.workSpaceService.getWorkspacesWithConfig();
-        if (workspacesWithConfig.length === 1) {
-            const config = await this.configRepositoryService.read(workspacesWithConfig[0]);
-            if (config.collectDebugLog) {
-                this.debugLogService.startCollecting();
-            }
-
-            await this.iobrokerConnectionService.connect();
-        } else if (workspacesWithConfig.length > 1) {
-            window.setStatusBarMessage("ioBroker: No auto connect possible. Multiple 'iobroker-config.json' found.");
-        }
-
         this.scriptExplorerProvider.treeView = window.createTreeView("iobroker-javascript.script-explorer", { treeDataProvider: this.scriptExplorerProvider });
         const changedScriptTreeView = window.createTreeView("iobroker-javascript.changed-scripts", { treeDataProvider: this.changedScriptsProvider });
 
@@ -85,5 +73,19 @@ export class Startup implements IStartup {
 
         context.subscriptions.push(languages.registerCodeActionsProvider({language: "javascript"}, this.codeActionsProvider, { providedCodeActionKinds: [CodeActionKind.RefactorRewrite] }));
         context.subscriptions.push(languages.registerCodeActionsProvider({language: "typescript"}, this.codeActionsProvider, { providedCodeActionKinds: [CodeActionKind.RefactorRewrite] }));
+
+        const workspacesWithConfig = await this.workSpaceService.getWorkspacesWithConfig();
+        if (workspacesWithConfig.length === 1) {
+            const config = await this.configRepositoryService.read(workspacesWithConfig[0]);
+            if (config.collectDebugLog) {
+                this.debugLogService.startCollecting();
+            }
+            this.scriptExplorerProvider.updateAutoSyncContext();
+
+            // Not awaited: on slow links connecting and loading take long and must not block activation.
+            void this.iobrokerConnectionService.connect();
+        } else if (workspacesWithConfig.length > 1) {
+            window.setStatusBarMessage("ioBroker: No auto connect possible. Multiple 'iobroker-config.json' found.");
+        }
     }
 }

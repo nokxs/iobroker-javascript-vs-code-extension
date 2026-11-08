@@ -11,6 +11,8 @@ export interface IScriptRepositoryService {
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void
 
     updateFromServer(): Promise<void>
+    /** updateFromServer() plus a change event, so views refresh. */
+    reloadFromServer(): Promise<void>
     updateSingleScriptOrDirectoryFromServer(script: ScriptId): Promise<void>
 
     evaluateDirtyStateForAllScripts(): Promise<void>

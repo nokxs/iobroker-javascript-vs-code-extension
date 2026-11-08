@@ -56,7 +56,33 @@
 		"viewsWelcome": [
 			{
 				"view": "iobroker-javascript.script-explorer",
-				"contents": "In order to use the ioBroker extension, you must connect to your ioBroker instance.\n[Connect to ioBroker](command:iobroker-javascript.connect)\n\nTo learn more about how to use the extension [read the docs](https://github.com/nokxs/iobroker-javascript-vs-code-extension)."
+				"contents": "In order to use the ioBroker extension, you must connect to your ioBroker instance.\n[Connect to ioBroker](command:iobroker-javascript.connect)\n\nTo learn more about how to use the extension [read the docs](https://github.com/nokxs/iobroker-javascript-vs-code-extension).",
+				"when": "!iobroker-javascript.connectionState || iobroker-javascript.connectionState == disconnected"
+			},
+			{
+				"view": "iobroker-javascript.script-explorer",
+				"contents": "Connecting to ioBroker...",
+				"when": "iobroker-javascript.connectionState == connecting"
+			},
+			{
+				"view": "iobroker-javascript.script-explorer",
+				"contents": "Connection to ioBroker lost. Reconnecting automatically (see status bar).\n[Reconnect now](command:iobroker-javascript.connect)",
+				"when": "iobroker-javascript.connectionState == reconnecting"
+			},
+			{
+				"view": "iobroker-javascript.script-explorer",
+				"contents": "Connected to ioBroker. Loading scripts...",
+				"when": "iobroker-javascript.connectionState == loading"
+			},
+			{
+				"view": "iobroker-javascript.script-explorer",
+				"contents": "Connected to ioBroker, but the script list could not be loaded.\n[Retry](command:iobroker-javascript.connect)",
+				"when": "iobroker-javascript.connectionState == loadFailed"
+			},
+			{
+				"view": "iobroker-javascript.script-explorer",
+				"contents": "No scripts found on ioBroker.\n[Reload scripts](command:iobroker-javascript.connect)",
+				"when": "iobroker-javascript.connectionState == connected"
 			}
 		],
 		"commands": [
@@ -107,6 +133,10 @@
 				"command": "iobroker-javascript.view.scriptExplorer.disableAutoSync",
 				"title": "iobroker: Disable auto sync with current script",
 				"icon": "$(sync-ignored)"
+			},
+			{
+				"command": "iobroker-javascript.rebuildObjectIndex",
+				"title": "iobroker: Rebuild object index"
 			},
 			{
 				"command": "iobroker-javascript.logout",
