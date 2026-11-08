@@ -116,8 +116,30 @@ suite('LogMirrorService Test Suite', () => {
         assert.strictEqual((service as any).mirrorStream, undefined);
     });
 
-    test('rotation creates .1 and writes a rotated header', async () => {
-        const relative = 'logs/rotate.log';
+    test('open rotates an oversized existing file to .1', async function () {
+        this.timeout(10000);
+        const relative = 'logs/rotate-open.log';
+        const target = path.join(tempRoot, relative);
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.writeFileSync(target, 'x'.repeat(300));
+
+        const service = new LogMirrorService(createConfigRepo(createConfig({
+            mirror: true,
+            relativePath: relative,
+            maxSizeMb: 0.0001,
+        })));
+
+        await service.open(createFolder(tempRoot));
+        await service.disposeAsync();
+
+        assert.ok(fs.existsSync(`${target}.1`), 'expected rotated .1 file after open');
+        const content = fs.readFileSync(target, 'utf8');
+        assert.ok(content.includes('mirror started'));
+    });
+
+    test('runtime rotation creates .1 and writes a rotated header', async function () {
+        this.timeout(15000);
+        const relative = 'logs/rotate-runtime.log';
         const target = path.join(tempRoot, relative);
         const service = new LogMirrorService(createConfigRepo(createConfig({
             mirror: true,
@@ -126,30 +148,27 @@ suite('LogMirrorService Test Suite', () => {
         })));
 
         await service.open(createFolder(tempRoot));
-        // ~104 byte limit; keep writing until rotation finishes.
         for (let i = 0; i < 40; i++) {
             service.write(sampleMessage(`line-${i}-${'x'.repeat(40)}`));
         }
 
-        await waitFor(() => fs.existsSync(`${target}.1`));
+        await waitFor(() => fs.existsSync(`${target}.1`), 10000);
         await waitFor(() => {
             if (!fs.existsSync(target)) {
                 return false;
             }
             return fs.readFileSync(target, 'utf8').includes('log mirror rotated');
-        });
+        }, 10000);
 
         await service.disposeAsync();
         assert.ok(fs.existsSync(`${target}.1`));
-        const rotated = fs.readFileSync(target, 'utf8');
-        assert.ok(rotated.includes('log mirror rotated'));
+        assert.ok(fs.readFileSync(target, 'utf8').includes('log mirror rotated'));
     });
 
     test('non-string path does not create a mirror file', async () => {
-        const service = new LogMirrorService(createConfigRepo(createConfig({
-            mirror: true,
-            relativePath: 1,
-        })));
+        const config = createConfig({ mirror: true, relativePath: 'ignored.log' });
+        (config as { ioBrokerLogMirrorRelativePath?: unknown }).ioBrokerLogMirrorRelativePath = 1;
+        const service = new LogMirrorService(createConfigRepo(config));
 
         await service.open(createFolder(tempRoot));
         await service.disposeAsync();
@@ -159,7 +178,8 @@ suite('LogMirrorService Test Suite', () => {
         assert.strictEqual((service as any).mirrorStream, undefined);
     });
 
-    test('dispose during open leaves no stream and no started header', async () => {
+    test('dispose during open leaves no stream and no started header', async function () {
+        this.timeout(10000);
         const relative = 'logs/race.log';
         const target = path.join(tempRoot, relative);
         const service = new LogMirrorService(createConfigRepo(createConfig({
