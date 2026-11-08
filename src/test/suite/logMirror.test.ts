@@ -173,6 +173,26 @@ suite('LogMirror Test Suite', () => {
 
             assert.strictEqual(isRealPathInsideWorkspace(root, link), false);
         });
+
+        test('should reject when the .1 rotation file is a symlink outside the workspace', function () {
+            const nested = path.join(root, 'docs');
+            fs.mkdirSync(nested, { recursive: true });
+            const target = path.join(nested, 'live.log');
+            fs.writeFileSync(target, 'current');
+            const outsideFile = path.join(outside, 'secret.log');
+            fs.writeFileSync(outsideFile, 'secret');
+            const rotatedLink = `${target}.1`;
+            try {
+                fs.symlinkSync(outsideFile, rotatedLink, process.platform === 'win32' ? 'file' : undefined);
+            } catch (e: any) {
+                if (e && (e.code === 'EPERM' || e.code === 'EACCES')) {
+                    this.skip();
+                }
+                throw e;
+            }
+
+            assert.strictEqual(isRealPathInsideWorkspace(root, target), false);
+        });
     });
 
     suite('endWriteStream', () => {

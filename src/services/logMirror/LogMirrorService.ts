@@ -265,6 +265,18 @@ export class LogMirrorService implements ILogMirrorService {
                 return;
             }
 
+            // Reject symlink escapes before rename/copyFileSync can follow <.1>.
+            const root = this.workspaceRoot;
+            if (!root || !isRealPathInsideWorkspace(root, target)) {
+                const queued = this.rotationQueue.length;
+                this.rotationQueue = [];
+                this.rotationQueueBytes = 0;
+                this.rotationQueueOverflow = 0;
+                const extra = queued > 0 ? ` (discarded ${queued} queued line(s))` : "";
+                this.warnOnce(`ioBroker: log mirror path resolves outside the workspace (symlink).${extra}`);
+                return;
+            }
+
             try {
                 // Windows can keep the file locked briefly after end()/close.
                 await this.renameRotatedAsync(target);
@@ -273,15 +285,6 @@ export class LogMirrorService implements ILogMirrorService {
             }
 
             if (!this.isCurrent(gen)) {
-                return;
-            }
-
-            const root = this.workspaceRoot;
-            if (!root || !isRealPathInsideWorkspace(root, target)) {
-                this.warnOnce("ioBroker: log mirror path resolves outside the workspace (symlink).");
-                this.rotationQueue = [];
-                this.rotationQueueBytes = 0;
-                this.rotationQueueOverflow = 0;
                 return;
             }
 
