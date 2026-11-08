@@ -154,6 +154,7 @@ suite('LogMirrorService Test Suite', () => {
         }
 
         await waitFor(() => fs.existsSync(`${target}.1`), 10000);
+        await waitFor(() => (service as any).rotating === false, 10000);
         // Flush buffered writes before asserting file contents.
         await service.disposeAsync();
         assert.ok(fs.existsSync(`${target}.1`));
