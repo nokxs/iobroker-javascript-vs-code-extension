@@ -220,6 +220,7 @@ hand takes effect without restarting VS Code. Running the command again disables
 | `iobroker_rename_script` | Rename a script on the server and on disk |
 | `iobroker_move_script` | Move a script to another directory |
 | `iobroker_delete_script` | Delete a script on the server and on disk |
+| `iobroker_delete_directory` | Delete an empty directory on the server and on disk |
 
 Keep in mind:
 

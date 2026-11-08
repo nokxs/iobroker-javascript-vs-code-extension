@@ -224,6 +224,17 @@ export const TOOL_SCHEMAS = {
         },
         required: ["scriptId"],
         additionalProperties: false
+    },
+    iobroker_delete_directory: {
+        type: "object",
+        properties: {
+            directoryId: {
+                type: "string",
+                description: "ioBroker id of the empty directory that should be deleted, e.g. 'script.js.common.OldFolder'. Use iobroker_get_scripts to look up available directories."
+            }
+        },
+        required: ["directoryId"],
+        additionalProperties: false
     }
 } as const;
 

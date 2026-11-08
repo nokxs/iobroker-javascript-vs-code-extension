@@ -79,6 +79,15 @@ export class FileService implements IFileService {
         });
     }
 
+    listDirectory(uri: Uri): string[] {
+        try {
+            return fs.readdirSync(uri.fsPath);
+        } catch {
+            // A missing folder is treated like an empty one. Callers check `directoryExists` first.
+            return [];
+        }
+    }
+
     createTemporaryFile(fileName: string, content: string): Promise<Uri> {
         return new Promise((resolve, reject) => {
             const tempDir = os.tmpdir();

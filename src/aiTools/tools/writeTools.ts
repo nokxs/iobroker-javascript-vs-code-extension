@@ -1,6 +1,7 @@
 import { BaseTool, InvocationDescription } from "./BaseTool";
 import { createDirectory } from "../core/createDirectory";
 import { createScript } from "../core/createScript";
+import { deleteDirectory } from "../core/deleteDirectory";
 import { deleteScript } from "../core/deleteScript";
 import { downloadScript } from "../core/downloadScript";
 import { moveScript } from "../core/moveScript";
@@ -10,6 +11,7 @@ import { uploadAllChangedScripts, uploadScript } from "../core/uploadScript";
 import {
     CreateDirectoryInput,
     CreateScriptInput,
+    DeleteDirectoryInput,
     DeleteScriptInput,
     DownloadScriptInput,
     MoveScriptInput,
@@ -180,6 +182,21 @@ export class DeleteScriptTool extends WriteTool<DeleteScriptInput> {
         return {
             title: "Delete script",
             message: `Delete ${code(input.scriptId)} on the ioBroker server and on disk? This cannot be undone.`
+        };
+    }
+}
+
+export class DeleteDirectoryTool extends WriteTool<DeleteDirectoryInput> {
+    readonly name = "iobroker_delete_directory" as const;
+
+    protected run(input: DeleteDirectoryInput): Promise<ToolOutcome<unknown>> {
+        return deleteDirectory(this.deps, input);
+    }
+
+    protected describe(input: DeleteDirectoryInput): InvocationDescription {
+        return {
+            title: "Delete directory in ioBroker",
+            message: `Delete the empty directory ${code(input.directoryId)} on the ioBroker server and on disk? This cannot be undone.`
         };
     }
 }

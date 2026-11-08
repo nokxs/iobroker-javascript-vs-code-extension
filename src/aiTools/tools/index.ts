@@ -11,6 +11,7 @@ import {
 import {
     CreateDirectoryTool,
     CreateScriptTool,
+    DeleteDirectoryTool,
     DeleteScriptTool,
     DownloadScriptTool,
     MoveScriptTool,
@@ -39,7 +40,8 @@ export function createTools(deps: ToolDeps, isEnabled: () => boolean, refreshTre
         new CreateDirectoryTool(deps, isEnabled, refreshTree),
         new RenameScriptTool(deps, isEnabled, refreshTree),
         new MoveScriptTool(deps, isEnabled, refreshTree),
-        new DeleteScriptTool(deps, isEnabled, refreshTree)
+        new DeleteScriptTool(deps, isEnabled, refreshTree),
+        new DeleteDirectoryTool(deps, isEnabled, refreshTree)
     ];
 
     return tools;

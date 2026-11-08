@@ -10,5 +10,6 @@ export interface IFileService {
     deleteDirectory(uri: Uri): Promise<void> 
     move(oldPath: Uri, newPath: Uri): Promise<void>
     createDirectory(uri: Uri): Promise<void>
+    listDirectory(uri: Uri): string[]
     createTemporaryFile(fileName: string, content: string): Promise<Uri>
 }

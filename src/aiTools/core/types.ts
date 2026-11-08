@@ -83,7 +83,7 @@ export interface ToolDeps {
     scriptCreation: Pick<IScriptCreationService, "createFileWithName">
     scriptId: Pick<IScriptIdService, "sanatizeId">
     directories: Pick<IDirectoryService, "downloadDirectory" | "createDirectory" | "createDirectoriesRecursively" | "deleteDirectory">
-    files: Pick<IScriptFileService, "exists" | "write" | "writeContent" | "rename" | "move" | "delete" | "getFileUri" | "getDirectoryUri" | "directoryExists" | "createDirectory">
+    files: Pick<IScriptFileService, "exists" | "write" | "writeContent" | "rename" | "move" | "delete" | "getFileUri" | "getDirectoryUri" | "directoryExists" | "isEmptyDirectory" | "createDirectory" | "deleteDirectory">
     jsInstances: Pick<IJsInstanceService, "getAvailableInstances">
     states: Pick<IStateAndObjectRemoteService, "getState">
     logs: {
@@ -174,6 +174,10 @@ export interface DeleteScriptInput {
 export interface CreateDirectoryInput {
     directoryId: string
     name?: string
+}
+
+export interface DeleteDirectoryInput {
+    directoryId: string
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -296,4 +300,9 @@ export interface CreateDirectoryDto {
     directoryId: string
     name: string
     path: string
+}
+
+export interface DeleteDirectoryDto {
+    directoryId: string
+    deletedFolderPath: string | null
 }

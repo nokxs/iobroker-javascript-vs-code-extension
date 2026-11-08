@@ -12,7 +12,9 @@ export interface IScriptFileService {
 
     getDirectoryUri(parentDirectoryUri: Uri, name: string): Uri
     directoryExists(uri: Uri): boolean
+    isEmptyDirectory(uri: Uri): boolean
     createDirectory(uri: Uri): Promise<void>
+    deleteDirectory(uri: Uri): Promise<void>
 
     write(directory: IDirectory, fileName: string, fileExtension: string, content: string): Promise<Uri>
     writeContent(fileUri: Uri, content: string): Promise<void>
