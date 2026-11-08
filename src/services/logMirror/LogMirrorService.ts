@@ -285,13 +285,21 @@ export class LogMirrorService implements ILogMirrorService {
         }
 
         let lastError: unknown;
-        for (let attempt = 0; attempt < 20; attempt++) {
+        for (let attempt = 0; attempt < 40; attempt++) {
             try {
                 fs.renameSync(target, rotated);
                 return;
             } catch (e) {
                 lastError = e;
-                await new Promise(resolve => setTimeout(resolve, 25));
+                try {
+                    // Fallback when Windows still holds a delete-pending lock on the path.
+                    fs.copyFileSync(target, rotated);
+                    fs.unlinkSync(target);
+                    return;
+                } catch (copyError) {
+                    lastError = copyError;
+                }
+                await new Promise(resolve => setTimeout(resolve, 50));
             }
         }
         throw lastError;
