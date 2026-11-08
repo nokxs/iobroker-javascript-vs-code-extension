@@ -7,7 +7,7 @@
   "connectionTimeoutMs": 30000,
   "readyTimeoutMs": 20000,
   "heartbeatTimeoutMs": 45000,
-  "reconnectMaxDelayMs": 60000,
+  "reconnectMaxDelayMs": 30000,
   "allowSelfSignedCertificate": false,
   "username": "admin",
   "scriptExplorer": {

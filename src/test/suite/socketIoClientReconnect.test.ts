@@ -8,6 +8,7 @@ import {
     ConnectionTimeouts,
     DEFAULT_CONNECTION_TIMEOUTS,
     computeReconnectDelay,
+    isFastReconnectPhase,
     resolveConnectionTimeouts,
 } from '../../services/socketIoClient/ConnectionTimeouts';
 
@@ -25,6 +26,8 @@ const FAST: ConnectionTimeouts = {
     heartbeatTimeoutMs: 400,
     reconnectBaseDelayMs: 50,
     reconnectMaxDelayMs: 200,
+    fastReconnectDelayMs: 50,
+    fastReconnectWindowMs: 1000,
 };
 
 type ServerMode = 'ready' | 'silent';
@@ -317,7 +320,7 @@ suite('SocketIoClient reconnect', function () {
     test('reconnectNow skips a long backoff wait', async () => {
         server = await startServer('ready');
         client = createClient();
-        client.configure({ ...FAST, reconnectBaseDelayMs: 5000, reconnectMaxDelayMs: 5000 });
+        client.configure({ ...FAST, reconnectBaseDelayMs: 5000, reconnectMaxDelayMs: 5000, fastReconnectWindowMs: 1000, fastReconnectDelayMs: 5000 });
         let reconnected = false;
         client.on('reconnect', () => { reconnected = true; });
 
@@ -329,6 +332,53 @@ suite('SocketIoClient reconnect', function () {
         client.reconnectNow();
         await waitFor(() => reconnected, 1500);
         assert.deepStrictEqual(uncaught, []);
+    });
+
+    test('loss of an established connection retries at the fast delay instead of growing the backoff', async () => {
+        server = await startServer('ready');
+        client = createClient();
+        client.configure({ ...FAST, reconnectBaseDelayMs: 2000, reconnectMaxDelayMs: 2000, fastReconnectDelayMs: 50, fastReconnectWindowMs: 5000 });
+        const delays: number[] = [];
+        client.on('reconnecting', (_: number, delay: number) => delays.push(delay));
+
+        await client.connect(server.url, {}, false);
+        await waitFor(() => client!.connected);
+        server.mode = 'silent';
+        server.dropAll();
+        await waitFor(() => delays.length >= 3);
+
+        assert.deepStrictEqual(delays.slice(0, 3), [50, 50, 50]);
+        assert.deepStrictEqual(uncaught, []);
+    });
+
+    test('after the fast window the exponential backoff takes over', async () => {
+        server = await startServer('ready');
+        client = createClient();
+        client.configure({ ...FAST, reconnectBaseDelayMs: 300, reconnectMaxDelayMs: 300, fastReconnectDelayMs: 50, fastReconnectWindowMs: 200 });
+        const delays: number[] = [];
+        client.on('reconnecting', (_: number, delay: number) => delays.push(delay));
+
+        await client.connect(server.url, {}, false);
+        await waitFor(() => client!.connected);
+        server.mode = 'silent';
+        server.dropAll();
+        await waitFor(() => delays.some(d => d >= 300), 4000);
+
+        assert.strictEqual(delays[0], 50);
+        assert.deepStrictEqual(uncaught, []);
+    });
+
+    test('a failed initial connect uses the exponential backoff, not the fast delay', async () => {
+        server = await startServer('silent');
+        client = createClient();
+        client.configure({ ...FAST, reconnectBaseDelayMs: 120, reconnectMaxDelayMs: 120, fastReconnectDelayMs: 10, fastReconnectWindowMs: 5000 });
+        const delays: number[] = [];
+        client.on('reconnecting', (_: number, delay: number) => delays.push(delay));
+
+        await client.connect(server.url, {}, false);
+        await waitFor(() => delays.length >= 2);
+
+        assert.ok(delays.every(d => d >= 120), delays.join(','));
     });
 
     test('emit while disconnected after a connection answers the callback', async () => {
@@ -360,6 +410,13 @@ suite('ConnectionTimeouts', () => {
         assert.strictEqual(resolved.heartbeatTimeoutMs, 6000);
         assert.strictEqual(resolved.pingIntervalMs, 2000);
         assert.strictEqual(resolved.reconnectMaxDelayMs, 10 * 60 * 1000);
+    });
+
+    test('fast reconnect phase is limited to its window', () => {
+        assert.strictEqual(isFastReconnectPhase(1000, undefined, 45000), false);
+        assert.strictEqual(isFastReconnectPhase(1000, 0, 45000), true);
+        assert.strictEqual(isFastReconnectPhase(45000, 0, 45000), false);
+        assert.strictEqual(DEFAULT_CONNECTION_TIMEOUTS.reconnectMaxDelayMs, 30000);
     });
 
     test('reconnect delay grows exponentially and is capped', () => {

@@ -15,7 +15,7 @@ import { inject, injectable } from "inversify";
 import WebSocket = require("ws");
 import TYPES from "../../Types";
 import { IDebugLogService } from "../debugLogService/IDebugLogService";
-import { ConnectionTimeouts, DEFAULT_CONNECTION_TIMEOUTS, computeReconnectDelay } from "./ConnectionTimeouts";
+import { ConnectionTimeouts, DEFAULT_CONNECTION_TIMEOUTS, FAST_RECONNECT_COOLDOWN_MS, computeReconnectDelay, isFastReconnectPhase } from "./ConnectionTimeouts";
 
 // Close codes: 1000 normal, 1001 going away, 1006 abnormal (no close frame), 1011 server error,
 // 1012 service restart, 1015 TLS handshake failure.
@@ -49,6 +49,9 @@ export class SocketIoClient implements ISocketIoClient {
     private wasConnected = false;
     private explicitlyClosed = false;
     private reconnectAttempt = 0;
+    /** Counts only the attempts of the exponential phase, so the fast phase does not grow the backoff. */
+    private backoffAttempt = 0;
+    private fastPhaseStartedAt: number | undefined = undefined;
     private connectTimer: any = null;
     private connectingTimer: any = null;
     private callbacks: any = [];
@@ -205,6 +208,7 @@ export class SocketIoClient implements ISocketIoClient {
 
                 const attempts = this.reconnectAttempt;
                 this.reconnectAttempt = 0;
+                this.backoffAttempt = 0;
 
                 if (this.wasConnected) {
                     this.fire("reconnect", true, attempts);
@@ -395,6 +399,7 @@ export class SocketIoClient implements ISocketIoClient {
         if (this.connected || !this.url) {
             return;
         }
+        this.startFastPhase(true);
         if (this.connectTimer || !this.socket) {
             this.clearConnectTimer();
             this.connect(this.url, this.options, this.allowSelfSignedCertificate).catch(e => {
@@ -409,15 +414,29 @@ export class SocketIoClient implements ISocketIoClient {
         this.explicitlyClosed = true;
         this.clearConnectTimer();
         this.reconnectAttempt = 0;
+        this.backoffAttempt = 0;
+        this.fastPhaseStartedAt = undefined;
         this.pending = [];
         this.teardownSocket("closed by client", true);
         return Promise.resolve(this);
     }
 
     private handleConnectionLoss(reason: string): void {
+        const wasEstablished = this.connected;
         this.teardownSocket(reason, true);
         if (this.autoReconnect && !this.explicitlyClosed) {
+            if (wasEstablished) {
+                this.startFastPhase(false);
+            }
             this.scheduleReconnect();
+        }
+    }
+
+    private startFastPhase(force: boolean): void {
+        const now = Date.now();
+        if (force || this.fastPhaseStartedAt === undefined || now - this.fastPhaseStartedAt >= FAST_RECONNECT_COOLDOWN_MS) {
+            this.fastPhaseStartedAt = now;
+            this.backoffAttempt = 0;
         }
     }
 
@@ -483,7 +502,9 @@ export class SocketIoClient implements ISocketIoClient {
             return;
         }
         this.reconnectAttempt++;
-        const delay = computeReconnectDelay(this.reconnectAttempt, this.timeouts.reconnectBaseDelayMs, this.timeouts.reconnectMaxDelayMs);
+        const delay = isFastReconnectPhase(Date.now(), this.fastPhaseStartedAt, this.timeouts.fastReconnectWindowMs)
+            ? this.timeouts.fastReconnectDelayMs
+            : computeReconnectDelay(++this.backoffAttempt, this.timeouts.reconnectBaseDelayMs, this.timeouts.reconnectMaxDelayMs);
         this.log.debug(`Reconnect attempt ${this.reconnectAttempt} in ${delay} ms`);
         this.fire("reconnecting", this.reconnectAttempt, delay);
         this.connectTimer = setTimeout(() => {

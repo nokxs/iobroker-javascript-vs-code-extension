@@ -16,7 +16,17 @@ export interface ConnectionTimeouts {
     reconnectBaseDelayMs: number;
     /** Upper bound for the reconnect delay. */
     reconnectMaxDelayMs: number;
+    /**
+     * Fixed delay right after an established connection was lost. Short network outages (Wi-Fi, VPN)
+     * would otherwise grow the backoff while offline and delay the reconnect long after the network is back.
+     */
+    fastReconnectDelayMs: number;
+    /** How long after a connection loss the fixed fast delay is used before the exponential backoff starts. */
+    fastReconnectWindowMs: number;
 }
+
+/** A new fast phase starts at most once per this period, so a flapping server is not hammered. */
+export const FAST_RECONNECT_COOLDOWN_MS = 60000;
 
 export const DEFAULT_CONNECTION_TIMEOUTS: Readonly<ConnectionTimeouts> = Object.freeze({
     connectionTimeoutMs: 30000,
@@ -25,7 +35,9 @@ export const DEFAULT_CONNECTION_TIMEOUTS: Readonly<ConnectionTimeouts> = Object.
     pingIntervalMs: 5000,
     heartbeatTimeoutMs: 45000,
     reconnectBaseDelayMs: 2000,
-    reconnectMaxDelayMs: 60000,
+    reconnectMaxDelayMs: 30000,
+    fastReconnectDelayMs: 1000,
+    fastReconnectWindowMs: 45000,
 });
 
 export interface ConnectionTimeoutConfig {
@@ -57,7 +69,13 @@ export function resolveConnectionTimeouts(config: ConnectionTimeoutConfig | unde
         heartbeatTimeoutMs,
         reconnectBaseDelayMs: d.reconnectBaseDelayMs,
         reconnectMaxDelayMs: normalizeMs(config?.reconnectMaxDelayMs, d.reconnectMaxDelayMs),
+        fastReconnectDelayMs: d.fastReconnectDelayMs,
+        fastReconnectWindowMs: d.fastReconnectWindowMs,
     };
+}
+
+export function isFastReconnectPhase(now: number, fastPhaseStartedAt: number | undefined, windowMs: number): boolean {
+    return fastPhaseStartedAt !== undefined && now - fastPhaseStartedAt < windowMs;
 }
 
 /**
