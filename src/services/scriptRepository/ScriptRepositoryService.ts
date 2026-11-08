@@ -50,6 +50,13 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     private directories: IDirectory[] = [];
     private scriptEventListeners: Array<IScriptChangedEventListener> = new Array();
 
+    /**
+     * Updates that are currently running, keyed by the lower cased script id. A single operation
+     * such as a move raises a socket event and an explicit refresh at the same time. Both would
+     * look at the cache before the other one has inserted the script and insert it twice.
+     */
+    private runningUpdates = new Map<string, Promise<void>>();
+
     constructor(
         @inject(TYPES.services.scriptRemote) private scriptRemoteService: IScriptRemoteService,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
@@ -94,6 +101,26 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     }
 
     async updateSingleScriptOrDirectoryFromServer(id: ScriptId): Promise<void> {
+        const key = `${id}`.toLowerCase();
+
+        const runningUpdate = this.runningUpdates.get(key);
+        if (runningUpdate) {
+            this.logDebug(`'${id}' is already being updated. Waiting for the running update...`);
+            await runningUpdate;
+            return;
+        }
+
+        const update = this.applyScriptOrDirectoryUpdate(id);
+        this.runningUpdates.set(key, update);
+
+        try {
+            await update;
+        } finally {
+            this.runningUpdates.delete(key);
+        }
+    }
+
+    private async applyScriptOrDirectoryUpdate(id: ScriptId): Promise<void> {
         const updatedScript = await this.scriptRemoteService.downloadScriptWithId(id);
 
         // Id is not a script, but a directory
@@ -116,7 +143,10 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
             }
             else {
                 this.logDebug(`'${id}' was removed and was found locally. Removing the script...`);
-                this.scripts = this.scripts.filter(s => s._id !== script._id);
+                // Compare the ids by value. The removed script may be listed more than once if an
+                // earlier duplicate slipped through, and all of those entries are gone now.
+                const removedId = `${script._id}`.toLowerCase();
+                this.scripts = this.scripts.filter(s => `${s._id}`.toLowerCase() !== removedId);
                 this.raiseScriptChangedEvent(script._id);
                 return;
             }
@@ -125,8 +155,16 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
             // Hack: Sleep 1 seconds to give the local file system time to create the file
             await new Promise(resolve => setTimeout(resolve, 1000));
 
-            this.logDebug(`'${id}' was changed and was not found locally. Adding the script...`);
             const localScript = await this.createLocalScript(updatedScript);
+
+            // The script may have been added by another update (socket event, file watcher or
+            // refresh) while this one was waiting. Adding it again would list it twice.
+            if (this.getScriptFromId(localScript._id)) {
+                this.logDebug(`'${id}' was added by another update in the meantime. Skipping the duplicate entry.`);
+                return;
+            }
+
+            this.logDebug(`'${id}' was changed and was not found locally. Adding the script...`);
             this.scripts.push(localScript);
             this.scripts = this.sortScripts(this.scripts);
         }
