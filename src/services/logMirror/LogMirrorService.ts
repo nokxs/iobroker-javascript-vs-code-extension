@@ -87,7 +87,7 @@ export class LogMirrorService implements ILogMirrorService {
             }
 
             const header = `\n######## ${new Date().toISOString()} — ioBroker javascript log mirror started ########\n`;
-            this.writeRaw(header);
+            this.writeRaw(header, false);
         } catch (e) {
             if (this.isCurrent(gen)) {
                 this.warnOnce(`ioBroker: log mirror disabled: ${formatError(e)}`);
@@ -144,7 +144,7 @@ export class LogMirrorService implements ILogMirrorService {
         this.warnedThisSession = false;
     }
 
-    private writeRaw(chunk: string): void {
+    private writeRaw(chunk: string, allowRotate: boolean = true): void {
         if (!this.mirrorStream || this.rotating) {
             if (this.rotating) {
                 this.droppedWhileRotating += 1;
@@ -157,7 +157,11 @@ export class LogMirrorService implements ILogMirrorService {
             return;
         }
 
-        if (shouldRotate(this.bytesWritten + Buffer.byteLength(chunk), this.maxSizeMb) && this.mirrorPath) {
+        if (
+            allowRotate &&
+            shouldRotate(this.bytesWritten + Buffer.byteLength(chunk), this.maxSizeMb) &&
+            this.mirrorPath
+        ) {
             this.scheduleRotation();
             this.droppedWhileRotating += 1;
             return;
@@ -248,10 +252,11 @@ export class LogMirrorService implements ILogMirrorService {
             if (this.droppedWhileRotating > 0) {
                 const marker = `${new Date().toISOString()} warn: log mirror dropped ${this.droppedWhileRotating} line(s) during rotation\n`;
                 this.droppedWhileRotating = 0;
-                this.writeRaw(marker);
+                // Do not let housekeeping lines re-enter rotation immediately.
+                this.writeRaw(marker, false);
             }
             const header = `\n######## ${new Date().toISOString()} — ioBroker javascript log mirror rotated ########\n`;
-            this.writeRaw(header);
+            this.writeRaw(header, false);
         } catch (e) {
             if (this.isCurrent(gen)) {
                 this.warnOnce(`ioBroker: log mirror rotation failed: ${formatError(e)}`);
