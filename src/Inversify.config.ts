@@ -47,6 +47,8 @@ import { IIobrokerHoverProvider } from './providers/IIobrokerHoverProvider';
 import { IJsInstanceService } from './services/jsInstanceService/IJsInstanceService';
 import { ILocalOnlyScriptRepositoryService } from './services/localOnlyScriptRepository/ILocalOnlyScriptRepositoryService';
 import { ILogService } from './services/log/ILogService';
+import { ILogMirrorService } from './services/logMirror/ILogMirrorService';
+import { LogMirrorService } from './services/logMirror/LogMirrorService';
 import { ILoginCredentialsService } from './services/loginCredentialsService/ILoginCredentialsService';
 import { ILoginService } from './services/loginHttpClient/ILoginService';
 import { IObjectRepositoryService } from './services/StateRepository/IObjectRepositoryService';
@@ -121,6 +123,7 @@ container.bind<IScriptRepositoryService>(TYPES.services.scriptRepository).to(Scr
 container.bind<ILocalOnlyScriptRepositoryService>(TYPES.services.localOnlyScriptRepository).to(LocalOnlyScriptRepositoryService).inSingletonScope();
 container.bind<IDirectoryService>(TYPES.services.directory).to(DirectoryService).inSingletonScope();
 container.bind<ILogService>(TYPES.services.log).to(LogService).inSingletonScope();
+container.bind<ILogMirrorService>(TYPES.services.logMirror).to(LogMirrorService).inSingletonScope();
 container.bind<ITypeDefinitionService>(TYPES.services.typeDefinition).to(TypeDefinitionService).inSingletonScope();
 container.bind<IIobrokerConnectionService>(TYPES.services.iobrokerConnection).to(IobrokerConnectionService).inSingletonScope();
 container.bind<IConfigRepositoryService>(TYPES.services.configRepository).to(ConfigRepositoryService).inSingletonScope();

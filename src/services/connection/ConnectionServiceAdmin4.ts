@@ -96,9 +96,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
         return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
 
-                this.client.on("log", (message: ILogMessage) => {
-                    logAction(message);
-                });
+                this.client.on("log", logAction);
     
                 this.client.emit("requireLog", true, (err: any) => {
                     if (err) {

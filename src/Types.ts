@@ -13,6 +13,7 @@ const TYPES = {
         localOnlyScriptRepository: Symbol.for("LocalOnlyScriptRepositoryService"),
         directory: Symbol.for("DirectoryService"),
         log: Symbol.for("LogService"),
+        logMirror: Symbol.for("LogMirrorService"),
         typeDefinition: Symbol.for("TypeDefinitionService"),
         login: Symbol.for("LoginService"),
         loginCredentials: Symbol.for("LoginServiceCredentials"),

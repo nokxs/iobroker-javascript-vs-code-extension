@@ -57,6 +57,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
     }
 
     onDisconnected(): void {
+        this.logService.dispose();
         this.statusBarService.setText("$(warning) ioBroker disconnected");
     }
 
