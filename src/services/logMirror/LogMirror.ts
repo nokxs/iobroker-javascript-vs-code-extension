@@ -6,9 +6,14 @@ export const DEFAULT_MIRROR_MAX_SIZE_MB = 10;
 
 /**
  * Resolves a configured mirror path against the workspace root.
- * Returns undefined when the path would leave the workspace (absolute or `..`).
+ * Returns undefined when the path would leave the workspace (absolute or `..`),
+ * or when `configured` is set to a non-string value.
  */
 export function resolveMirrorPath(workspaceRoot: string, configured: unknown): string | undefined {
+    if (configured !== undefined && typeof configured !== "string") {
+        return undefined;
+    }
+
     const relative = typeof configured === "string" && configured.trim() !== ""
         ? configured.trim()
         : DEFAULT_MIRROR_RELATIVE_PATH;
@@ -46,4 +51,18 @@ export function normalizeMaxSizeMb(raw: unknown): number {
         return raw;
     }
     return DEFAULT_MIRROR_MAX_SIZE_MB;
+}
+
+/** End a write stream and wait until the underlying fd is closed (flushes the buffer). */
+export function endWriteStream(stream: NodeJS.WritableStream): Promise<void> {
+    return new Promise(resolve => {
+        const done = () => resolve();
+        stream.once("close", done);
+        stream.once("error", done);
+        try {
+            stream.end();
+        } catch {
+            resolve();
+        }
+    });
 }
