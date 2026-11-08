@@ -158,8 +158,10 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
             const localScript = await this.createLocalScript(updatedScript);
 
             // The script may have been added by another update (socket event, file watcher or
-            // refresh) while this one was waiting. Adding it again would list it twice.
-            if (this.getScriptFromId(localScript._id)) {
+            // refresh) while this one was waiting. Adding it again would list it twice. Compare
+            // the ids by value and case insensitively, like the lookup above.
+            const addedId = `${localScript._id}`.toLowerCase();
+            if (this.scripts.some(s => `${s._id}`.toLowerCase() === addedId)) {
                 this.logDebug(`'${id}' was added by another update in the meantime. Skipping the duplicate entry.`);
                 return;
             }

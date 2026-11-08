@@ -22,6 +22,11 @@ interface ExistingDirectories {
     conflictingIds: string[]
 }
 
+interface LocalFolder {
+    id: string
+    uri: IDirectory["absoluteUri"]
+}
+
 /**
  * Creates a directory (an ioBroker `channel` of the script namespace) on the server and the
  * matching local folder. Missing intermediate directories are created as well, so a script can be
@@ -94,19 +99,26 @@ export async function createDirectory(deps: ToolDeps, input: CreateDirectoryInpu
         };
     }
 
+    const createdFolders: LocalFolder[] = [];
     try {
         for (const entry of localUris) {
-            if (!deps.files.directoryExists(entry.uri)) {
-                await deps.files.createDirectory(entry.uri);
+            if (deps.files.directoryExists(entry.uri)) {
+                continue;
             }
+
+            await deps.files.createDirectory(entry.uri);
+            createdFolders.push(entry);
         }
     } catch (error) {
+        // The server directories and the local folders created so far are rolled back, so the tool
+        // can simply be retried after the disk problem is solved.
+        await deleteLocalFolders(deps, createdFolders);
         await deleteDirectories(deps, createdIds);
         return {
             ok: false,
             error: {
                 code: "server_error",
-                message: `The directory '${target.targetId}' was created on the ioBroker server, but the local folder '${targetUri.fsPath}' could not be created: ${toMessage(error)}. The server directory was removed again.`,
+                message: `The directory '${target.targetId}' was created on the ioBroker server, but the local folder '${targetUri.fsPath}' could not be created: ${toMessage(error)}. The changes were rolled back.`,
                 hint: "Check the permissions of the workspace folder and retry."
             }
         };
@@ -128,7 +140,9 @@ function resolveTarget(input: CreateDirectoryInput): ToolOutcome<DirectoryTarget
     }
 
     const rawId = directoryIdResult.data;
-    const hasName = typeof input.name === "string" && input.name.trim().length > 0;
+    // A given name always means that the id is the parent. A blank name is rejected by
+    // `validateName` instead of being silently treated as "no name".
+    const hasName = input.name !== undefined;
 
     let parentId: string;
     let name: string;
@@ -206,9 +220,9 @@ function idsBelow(ancestorId: string, targetId: string): string[] {
  * Maps every new directory id to the local folder. Known directories use their cached absolute
  * uri, missing ones are appended to the uri of the previous segment.
  */
-function mapLocalUris(deps: ToolDeps, ancestor: KnownAncestor, targetId: string): { id: string, uri: typeof ancestor.directory.absoluteUri }[] {
+function mapLocalUris(deps: ToolDeps, ancestor: KnownAncestor, targetId: string): LocalFolder[] {
     const ids = idsBelow(ancestor.id, targetId);
-    const result: { id: string, uri: typeof ancestor.directory.absoluteUri }[] = [];
+    const result: LocalFolder[] = [];
 
     let currentUri = ancestor.directory.absoluteUri;
     for (const id of ids) {
@@ -258,6 +272,17 @@ async function deleteDirectories(deps: ToolDeps, ids: string[]): Promise<void> {
     for (const id of ids.slice().reverse()) {
         try {
             await deps.directories.deleteDirectory(new ScriptId(id));
+        } catch {
+            // ignored, see comment above
+        }
+    }
+}
+
+/** Best effort rollback of the local folders that were created before a later folder failed. */
+async function deleteLocalFolders(deps: ToolDeps, folders: LocalFolder[]): Promise<void> {
+    for (const folder of folders.slice().reverse()) {
+        try {
+            await deps.files.deleteDirectory(folder.uri);
         } catch {
             // ignored, see comment above
         }

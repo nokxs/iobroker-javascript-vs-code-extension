@@ -729,7 +729,7 @@
 				"toolReferenceName": "iobrokerDeleteDirectory",
 				"canBeReferencedInPrompt": true,
 				"when": "iobrokerAiToolsEnabled",
-				"modelDescription": "Deletes an empty directory on the ioBroker server and the matching local folder. The directory has to be empty: move or delete its scripts and subdirectories first. This cannot be undone; the root directory cannot be deleted. Confirm the exact directory id with the user before using this tool.",
+				"modelDescription": "Deletes an empty directory on the ioBroker server and the matching local folder. The directory has to be empty: move or delete its scripts and subdirectories first. This cannot be undone; the root directory, 'script.js.common' and 'script.js.global' cannot be deleted. Confirm the exact directory id with the user before using this tool.",
 				"inputSchema": {
 					"type": "object",
 					"properties": {

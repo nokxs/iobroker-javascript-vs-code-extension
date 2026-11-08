@@ -1,5 +1,6 @@
 import { IDirectory } from "../../models/IDirectory";
 import { ScriptId } from "../../models/ScriptId";
+import CONSTANTS from "../../Constants";
 import { ensureConnected } from "./connection";
 import { findDirectory, refreshScriptInCache, scriptIdOf } from "./helpers";
 import { DeleteDirectoryDto, DeleteDirectoryInput, failure, success, ToolDeps, ToolOutcome } from "./types";
@@ -19,6 +20,11 @@ export async function deleteDirectory(deps: ToolDeps, input: DeleteDirectoryInpu
     const directoryId = directoryIdResult.data;
     if (directoryId === ScriptId.rootId) {
         return failure("invalid_input", "The root directory cannot be deleted.", "Delete or move the scripts and directories inside it instead.");
+    }
+
+    // The same rule as in the tree view command: ioBroker needs these two directories.
+    if (directoryId === CONSTANTS.skriptIds.common || directoryId === CONSTANTS.skriptIds.global) {
+        return failure("invalid_input", `The directory '${directoryId}' is needed by ioBroker and cannot be deleted.`, "Delete or move the scripts and directories inside it instead.");
     }
 
     const directory = findDirectory(deps, directoryId);

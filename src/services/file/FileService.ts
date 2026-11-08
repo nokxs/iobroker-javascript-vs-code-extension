@@ -47,9 +47,16 @@ export class FileService implements IFileService {
     }
 
     deleteDirectory(uri: Uri): Promise<void> {
-        return new Promise((resolve) => {
-            fs.rmdir(uri.fsPath, { recursive: true }, () => {
-                resolve();
+        return new Promise((resolve, reject) => {
+            fs.rmdir(uri.fsPath, { recursive: true }, (err) => {
+                // A folder that is already gone counts as deleted, everything else is reported so
+                // callers do not silently continue with a folder that still exists on disk.
+                if (!err || err.code === "ENOENT") {
+                    resolve();
+                }
+                else {
+                    reject(err);
+                }
             });
         });
     }
