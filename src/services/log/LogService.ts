@@ -14,6 +14,7 @@ export class LogService implements ILogService {
     
     private allOutputChannel: OutputChannel | undefined = undefined;
     private currentScriptOutputChannel: OutputChannel | undefined = undefined;
+    private receiving = false;
     private readonly logCallbackRef = async (message: ILogMessage) => await this.logCallback(message);
 
     constructor(
@@ -31,11 +32,20 @@ export class LogService implements ILogService {
         await this.stopReceiving();
         await this.openMirrorIfConfigured();
         await this.connectionServiceProvider.getConnectionService().registerForLogs(this.logCallbackRef);
+        this.receiving = true;
     }
     
     async stopReceiving(): Promise<void> {
+        this.receiving = false;
         await this.connectionServiceProvider.getConnectionService().unregisterForLogs(this.logCallbackRef);
         this.dispose();
+    }
+
+    async reopenMirror(): Promise<void> {
+        if (!this.receiving) {
+            return;
+        }
+        await this.openMirrorIfConfigured();
     }
 
     dispose(): void {

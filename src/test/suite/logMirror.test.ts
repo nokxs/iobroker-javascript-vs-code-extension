@@ -1,8 +1,11 @@
 import * as assert from 'assert';
+import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import {
     DEFAULT_MIRROR_MAX_SIZE_MB,
     DEFAULT_MIRROR_RELATIVE_PATH,
+    endWriteStream,
     formatMirrorLine,
     normalizeMaxSizeMb,
     resolveMirrorPath,
@@ -33,9 +36,8 @@ suite('LogMirror Test Suite', () => {
             assert.strictEqual(resolveMirrorPath(workspaceRoot, absolute), undefined);
         });
 
-        test('should treat a non-string config value as the default path', () => {
-            const result = resolveMirrorPath(workspaceRoot, 1 as unknown as string);
-            assert.strictEqual(result, path.resolve(workspaceRoot, DEFAULT_MIRROR_RELATIVE_PATH));
+        test('should reject a non-string config value', () => {
+            assert.strictEqual(resolveMirrorPath(workspaceRoot, 1), undefined);
         });
     });
 
@@ -85,6 +87,25 @@ suite('LogMirror Test Suite', () => {
             assert.strictEqual(normalizeMaxSizeMb(undefined), DEFAULT_MIRROR_MAX_SIZE_MB);
             assert.strictEqual(normalizeMaxSizeMb('10'), DEFAULT_MIRROR_MAX_SIZE_MB);
             assert.strictEqual(normalizeMaxSizeMb(5), 5);
+        });
+    });
+
+    suite('endWriteStream', () => {
+        test('should flush written data before resolving', async () => {
+            const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'iobroker-mirror-'));
+            const file = path.join(dir, 'flush.log');
+            const stream = fs.createWriteStream(file, { flags: 'a' });
+            stream.write('flushed-line\n');
+
+            await endWriteStream(stream);
+
+            assert.strictEqual(fs.readFileSync(file, 'utf8'), 'flushed-line\n');
+            try {
+                fs.unlinkSync(file);
+                fs.rmdirSync(dir);
+            } catch {
+                /* ignore cleanup errors */
+            }
         });
     });
 });
