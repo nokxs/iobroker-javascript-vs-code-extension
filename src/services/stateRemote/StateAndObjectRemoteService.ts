@@ -53,10 +53,12 @@ export class StateAndObjectRemoteService implements IStateAndObjectRemoteService
     private registerSocketEvents(): void {
         this.connectionServiceProvider.getConnectionService().registerForObjectChange("*", (id: string, value:  any) => {
             this.objectEventListeners.forEach(listener => listener.onObjectChanged(id, value));
+        }).catch(() => {
+            // Renewed in onConnected after the next reconnect.
         });
     }
 
     private unregisterSocketEvents(): void {
-        this.connectionServiceProvider.getConnectionService().unregisterObjectChange("*");
+        this.connectionServiceProvider.getConnectionService().unregisterObjectChange("*").catch(() => undefined);
     }
 }

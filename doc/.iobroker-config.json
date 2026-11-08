@@ -4,6 +4,10 @@
   "scriptRoot": "/",
   "adminVersion": "admin7",
   "autoReconnect": true,
+  "connectionTimeoutMs": 30000,
+  "readyTimeoutMs": 20000,
+  "heartbeatTimeoutMs": 45000,
+  "reconnectMaxDelayMs": 60000,
   "allowSelfSignedCertificate": false,
   "username": "admin",
   "scriptExplorer": {

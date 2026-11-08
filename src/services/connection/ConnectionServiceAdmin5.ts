@@ -10,19 +10,53 @@ import { ISocketIoClient } from "../socketIoClient/ISocketIoClient";
 import { IState } from "../../models/IState";
 import { IObjectList } from "../../models/IObjectList";
 import { HOST_COMMAND_TIMEOUT_MS, readLogLinesAnswer } from "./hostCommandAnswer";
+import { ConnectionTimeouts, DEFAULT_CONNECTION_TIMEOUTS } from "../socketIoClient/ConnectionTimeouts";
 
 @injectable()
 export class ConnectionServiceAdmin5 implements IConnectionService {
     public isConnected: boolean = false;
 
-    private connectionTimeout = 10 * 1000;
+    private timeouts: ConnectionTimeouts = { ...DEFAULT_CONNECTION_TIMEOUTS };
 
     private connectionEventListeners: Array<IConnectionEventListener> = new Array();
     private client: ISocketIoClient | undefined = undefined;
+    private socketEventsRegistered = false;
+    /** Server-side subscriptions belong to one websocket session and must be renewed after a reconnect. */
+    private readonly logCallbacks = new Set<(logMessage: ILogMessage) => void>();
+    private readonly objectChangeHandlers = new Map<string, (id: string, value: any) => void>();
 
     constructor(
         @inject(TYPES.services.socketIoClient) private socketIoClient: ISocketIoClient
     ) { }
+
+    configureTimeouts(timeouts: ConnectionTimeouts): void {
+        this.timeouts = { ...timeouts };
+    }
+
+    reconnectNow(): Promise<boolean> {
+        if (this.isConnected) {
+            return Promise.resolve(true);
+        }
+        if (!this.client) {
+            return Promise.resolve(false);
+        }
+
+        const client = this.client;
+        return new Promise<boolean>((resolve) => {
+            const finish = (result: boolean) => {
+                clearTimeout(timeout);
+                client.off("connect", onConnected);
+                client.off("reconnect", onConnected);
+                resolve(result);
+            };
+            const onConnected = () => finish(true);
+            const timeout = setTimeout(() => finish(this.isConnected), this.timeouts.connectionTimeoutMs);
+
+            client.on("connect", onConnected);
+            client.on("reconnect", onConnected);
+            client.reconnectNow();
+        });
+    }
 
     registerConnectionEventListener(listener: IConnectionEventListener): void {
         if (this.connectionEventListeners.includes(listener)) {
@@ -44,23 +78,15 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
 
     async disconnect(): Promise<void> {
         await this.client?.close();
-        return new Promise<void>((resolve) => {
-            this.isConnected = false;
-
-            this.client?.on("disconnect", () => {
-                resolve();
-            });
-        });
+        this.isConnected = false;
     }
 
     registerForLogs(logAction: (logMessage: ILogMessage) => void): Promise<void> {
         return new Promise<void>((resolve, reject) => {
+            this.logCallbacks.add(logAction);
+            this.socketIoClient.on("log", logAction);
+
             if (this.client && this.isConnected) {
-
-                this.client.on("log", (message: ILogMessage) => {
-                    logAction(message);
-                });
-
                 this.client.emit("requireLog", true, (err: any) => {
                     if (err) {
                         reject(new Error(`Could not register for logs: ${err}`));
@@ -68,15 +94,19 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                         resolve();
                     }
                 });
+            } else {
+                // Subscribed on the server as soon as the connection is (re-)established.
+                resolve();
             }
         });
     }
 
     unregisterForLogs(logAction: (logMessage: ILogMessage) => void): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            if (this.client && this.isConnected) {
+            this.logCallbacks.delete(logAction);
+            this.socketIoClient.off("log", logAction);
 
-                this.client.off("log", logAction);
+            if (this.client && this.isConnected) {
                 this.client.emit("requireLog", false, (err: any) => {
                     if (err) {
                         reject(new Error(`Could not unregister for logs: ${err}`));
@@ -84,6 +114,8 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                         resolve();
                     }
                 });
+            } else {
+                resolve();
             }
         });
     }
@@ -91,13 +123,20 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     registerForObjectChange(pattern: string, onChangeAction: (id: string, value: any) => void): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
-                this.client.on("objectChange", (id: string, value: any) => {
-                    // https://stackoverflow.com/questions/52143451/javascript-filter-with-wildcard
-                    const regex = '^' + pattern.replace(".", "\\.").replace(/\*/g, '.*') + '$';
-                    if (new RegExp(regex).test(id)) {
+                const previous = this.objectChangeHandlers.get(pattern);
+                if (previous) {
+                    this.client.off("objectChange", previous);
+                }
+
+                // https://stackoverflow.com/questions/52143451/javascript-filter-with-wildcard
+                const regex = new RegExp('^' + pattern.replace(".", "\\.").replace(/\*/g, '.*') + '$');
+                const handler = (id: string, value: any) => {
+                    if (regex.test(id)) {
                         onChangeAction(id, value);
                     }
-                });
+                };
+                this.objectChangeHandlers.set(pattern, handler);
+                this.client.on("objectChange", handler);
 
                 this.client.emit("subscribeObjects", pattern, (err: any) => {
                     if (err) {
@@ -114,6 +153,12 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
 
     unregisterObjectChange(pattern: string): Promise<void> {
         return new Promise<void>((resolve, reject) => {
+            const handler = this.objectChangeHandlers.get(pattern);
+            if (handler) {
+                this.socketIoClient.off("objectChange", handler);
+                this.objectChangeHandlers.delete(pattern);
+            }
+
             if (this.client && this.isConnected) {
                 this.client.emit("unsubscribeObjects", pattern, (err: any) => {
                     if (err) {
@@ -283,69 +328,113 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     }
 
     private registerSocketEvents(): void {
-        if (this.client) {
-            this.client.on("connect", () => {
-                this.isConnected = true;
-                this.connectionEventListeners.forEach(listener => listener.onConnected());
-            });
-
-            this.client.on("reconnect", () => {
-                this.isConnected = true;
-                this.connectionEventListeners.forEach(listener => listener.onConnected());
-            });
-
-            this.client.on("disconnect", () => {
-                this.isConnected = false;
-                this.connectionEventListeners.forEach(listener => listener.onDisconnected());
-            });
-
-            this.client.on("reauthenticate", () => {
-                this.isConnected = false;
-                this.connectionEventListeners.forEach(listener => listener.onReAuthenticate());
-            });
+        if (this.socketEventsRegistered) {
+            return;
         }
+        this.socketEventsRegistered = true;
+        const client = this.socketIoClient;
+
+        client.on("connect", () => {
+            this.isConnected = true;
+            this.connectionEventListeners.forEach(listener => listener.onConnected());
+        });
+
+        client.on("reconnect", (_: boolean, attempts?: number) => {
+            this.isConnected = true;
+            this.renewLogSubscription();
+            this.connectionEventListeners.forEach(listener => listener.onConnected(attempts ?? 0));
+        });
+
+        client.on("connectionLost", (reason: string) => {
+            this.connectionEventListeners.forEach(listener => listener.onConnectionLost?.(reason));
+        });
+
+        client.on("disconnect", () => {
+            this.isConnected = false;
+            this.connectionEventListeners.forEach(listener => listener.onDisconnected());
+        });
+
+        client.on("reconnecting", (attempt: number, delayMs: number) => {
+            this.connectionEventListeners.forEach(listener => listener.onReconnecting?.(attempt, delayMs));
+        });
+
+        client.on("reauthenticate", () => {
+            this.isConnected = false;
+            this.connectionEventListeners.forEach(listener => listener.onReAuthenticate());
+        });
+    }
+
+    private renewLogSubscription(): void {
+        if (this.logCallbacks.size === 0) {
+            return;
+        }
+        this.socketIoClient.emit("requireLog", true, (err: any) => {
+            if (err) {
+                window.showWarningMessage(`ioBroker: could not renew log subscription after reconnect: ${err}`);
+            }
+        });
     }
 
     private async connectInternal(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean, options: any): Promise<void> {
         const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
 
-        if (this.client && this.client.connected) {
+        if (this.client) {
+            // Also stops a reconnect loop that may still be running from a previous connection.
             await this.client.close();
             this.isConnected = false;
         }
 
+        this.registerSocketEvents();
         this.socketIoClient.autoReconnect = autoReconnect;
-        this.client = await this.socketIoClient.connect(uri.toString(), options, allowSelfSignedCertificate);
+        this.socketIoClient.configure(this.timeouts);
+
+        const client = this.socketIoClient;
+        const connectionTimeoutMs = this.timeouts.connectionTimeoutMs;
 
         const connectionPromise = new Promise<void>((resolve, reject) => {
-            this.registerSocketEvents();
+            let lastError: string | undefined;
+
+            const cleanup = () => {
+                clearTimeout(timeout);
+                message.dispose();
+                client.off("connect", onConnected);
+                client.off("reconnect", onConnected);
+                client.off("error", onError);
+            };
+
+            const onConnected = () => {
+                this.isConnected = true;
+                cleanup();
+                resolve();
+            };
+
+            const onError = (err: any) => {
+                lastError = `${err}`;
+                if (!autoReconnect) {
+                    cleanup();
+                    reject(new Error(`The connection to ioBroker was not possible. Reason: ${err}`));
+                }
+                // With auto reconnect the client retries on its own; only the overall timeout fails the connect.
+            };
 
             const timeout = setTimeout(() => {
-                if (!this.isConnected) {
-                    message.dispose();
-                    reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
+                if (this.isConnected) {
+                    return;
                 }
-            }, this.connectionTimeout);
+                cleanup();
+                const reason = lastError ? ` Last error: ${lastError}.` : "";
+                const retry = autoReconnect ? " Still retrying in the background." : "";
+                reject(new Error(`Could not connect to '${uri}' after ${connectionTimeoutMs / 1000} seconds.${reason}${retry}`));
+            }, connectionTimeoutMs);
 
-            this.client!.on("connect", () => {
-                this.isConnected = true;
-                message.dispose();
-                resolve();
-            });
-
-            this.client!.on("reconnect", () => {
-                this.isConnected = true;
-                message.dispose();
-                resolve();
-            });
-
-            this.client!.on("error", (err: any) => {
-                message.dispose();
-                clearTimeout(timeout);
-                 reject(new Error(`The connection to ioBroker was not possible. Reason: ${err}`));
-            });
+            client.on("connect", onConnected);
+            client.on("reconnect", onConnected);
+            client.on("error", onError);
         });
+
+        this.client = await client.connect(uri.toString(), options, allowSelfSignedCertificate);
 
         return connectionPromise;
     }
 }
+

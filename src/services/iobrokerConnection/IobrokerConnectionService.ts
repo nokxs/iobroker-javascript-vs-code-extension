@@ -22,6 +22,7 @@ import { IStateAndObjectRemoteService } from "../stateRemote/IStateAndObjectRemo
 import { IAutoUploadService } from "../autoUpload/IAutoUploadService";
 import { LoginType } from "../loginHttpClient/LoginType";
 import { formatError } from "../formatError";
+import { resolveConnectionTimeouts } from "../socketIoClient/ConnectionTimeouts";
 
 @injectable()
 export class IobrokerConnectionService implements IIobrokerConnectionService, IConnectionEventListener {
@@ -29,6 +30,7 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
     config: Config = new NoConfig();
 
     private isReAuthenticationRunning = false;
+    private isInitialized = false;
 
     /** Login type which was detected during a regular connect. Needed to re-authenticate without asking the user. */
     private detectedLoginType: { ioBrokerUrl: string; loginType: LoginType } | undefined = undefined;
@@ -52,12 +54,23 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
         statusBarService.init();
     }
 
-    onConnected(): void {
+    onConnected(reconnectAttempts?: number): void {
         this.statusBarService.setText("$(check) ioBroker connected");
+        if (reconnectAttempts !== undefined) {
+            this.logDebug(`Connection restored after ${reconnectAttempts} reconnect attempt(s)`);
+        }
     }
 
     onDisconnected(): void {
         this.statusBarService.setText("$(warning) ioBroker disconnected");
+    }
+
+    onConnectionLost(reason: string): void {
+        this.logDebug(`Connection lost: ${reason}`);
+    }
+
+    onReconnecting(attempt: number, delayMs: number): void {
+        this.statusBarService.setText(`$(sync~spin) ioBroker reconnecting (attempt ${attempt}, next in ${Math.round(delayMs / 1000)}s)`);
     }
 
     async onReAuthenticate(): Promise<void> {
@@ -84,6 +97,10 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
     }
 
     async connect(forceLogin: boolean = false): Promise<void> {
+        if (!forceLogin && await this.tryRestoreSession()) {
+            return;
+        }
+
         try {
             let isInitialConnect = false;
             let workspaceFolder = await this.workspaceService.getWorkspaceToUse();
@@ -132,6 +149,9 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
             const useAutoReconnect = this.config?.autoReconnect ?? true;
             const allowSelfSignedCertificate = this.config.allowSelfSignedCertificate ?? false;
             const uri = Uri.parse(`${this.config.ioBrokerUrl}:${this.config.socketIoPort}`);
+            const timeouts = resolveConnectionTimeouts(this.config);
+            connectionService.configureTimeouts(timeouts);
+            this.logDebug(`Connection timeouts: ${JSON.stringify(timeouts)}`);
             
             this.logDebug(`Connection Url is '${uri}'`);
 
@@ -201,6 +221,8 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
                 this.autoUploadService.init();
             }
 
+            this.isInitialized = true;
+
             if (isInitialConnect) {
                 this.logDebug("This is the initial connect. Ask to download all scripts");
                 const answer = await window.showQuickPick(["Yes", "No"], { placeHolder: "Download all scripts" });
@@ -217,6 +239,27 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
             const errorMessage = formatError(error);
             this.logDebug(`Connection was not possible due to error: ${errorMessage}`);
             this.windowMessageService.showError(`Could not connect to ioBroker. Check your '.iobroker-config.json' for wrong configuration: ${errorMessage}`);
+        }
+    }
+
+    /**
+     * Commands call connect() whenever the connection is down. During an auto reconnect this only skips the
+     * backoff wait: a full connect would reload all objects, which takes long on slow links.
+     */
+    private async tryRestoreSession(): Promise<boolean> {
+        if (!this.isInitialized || this.isConnected() || !this.connectionServiceProvider.isConnectionServiceAvailable()) {
+            return false;
+        }
+
+        this.logDebug("Session initialized before. Trying fast reconnect...");
+        this.statusBarService.setText("$(sync~spin) ioBroker reconnecting now");
+        try {
+            const restored = await this.connectionServiceProvider.getConnectionService().reconnectNow();
+            this.logDebug(`Fast reconnect ${restored ? "succeeded" : "failed, falling back to a full connect"}`);
+            return restored;
+        } catch (error) {
+            this.logDebug(`Fast reconnect failed: ${formatError(error)}`);
+            return false;
         }
     }
 

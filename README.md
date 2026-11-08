@@ -171,6 +171,10 @@ An example with all available settings can be found [here](./doc/.iobroker-confi
 | `scriptRoot` | Relative directory path, which is used as root of ioBroker scripts. | Yes | |
 | `adminVersion` | The admin version to connect to. Valid values: `Admin4`, `Admin5`, `Admin6`, `Admin7` | Yes | |
 | `autoReconnect` | Should a lost connection be automatically be restored? | No | true |
+| `connectionTimeoutMs` | Maximum time for the initial connect and for login HTTP requests. With `autoReconnect`, the extension keeps retrying in the background after this time. | No | 30000 |
+| `readyTimeoutMs` | Maximum time between opening the websocket and the server's ready message. Increase on slow or high-latency links (VPN, mobile). | No | 20000 |
+| `heartbeatTimeoutMs` | The connection is considered dead when nothing was received for this long. Independently, the extension sends a ping whenever it sent nothing for 5 seconds, because the ioBroker websocket server closes sockets that stay silent for 15 seconds. | No | 45000 |
+| `reconnectMaxDelayMs` | Upper bound for the reconnect delay. Reconnects start after 2 seconds and double with every failed attempt. | No | 60000 |
 | `allowSelfSignedCertificate` | Is it allowed to connect to a self signed certificate? | No | false |
 | `username` | The user name for ioBroker. Only necessary for password protected ioBroker installations | No | |
 | `collectDebugLog` | Should the debug log be created directly on start up? | No | false |
