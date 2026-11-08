@@ -148,11 +148,18 @@ suite('LogMirrorService Test Suite', () => {
         })));
 
         await service.open(createFolder(tempRoot));
+        assert.strictEqual((service as any).maxSizeMb, 0.0001, 'maxSizeMb should come from config');
         for (let i = 0; i < 40; i++) {
             service.write(sampleMessage(`line-${i}-${'x'.repeat(40)}`));
         }
 
-        await waitFor(() => fs.existsSync(`${target}.1`), 10000);
+        try {
+            await waitFor(() => fs.existsSync(`${target}.1`), 10000);
+        } catch (e) {
+            const dir = path.dirname(target);
+            const listing = fs.existsSync(dir) ? fs.readdirSync(dir).join(', ') : '(missing dir)';
+            throw new Error(`${(e as Error).message}; dir=${listing}; rotating=${(service as any).rotating}; bytes=${(service as any).bytesWritten}`);
+        }
         await waitFor(() => {
             if (!fs.existsSync(target)) {
                 return false;
