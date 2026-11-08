@@ -5,4 +5,5 @@ export interface ILogMirrorService {
     open(workspaceFolder: WorkspaceFolder): Promise<void>;
     write(message: ILogMessage): void;
     dispose(): void;
+    disposeAsync(): Promise<void>;
 }

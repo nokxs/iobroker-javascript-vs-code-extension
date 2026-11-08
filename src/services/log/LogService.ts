@@ -52,6 +52,10 @@ export class LogService implements ILogService {
         this.logMirrorService.dispose();
     }
 
+    async disposeAsync(): Promise<void> {
+        await this.logMirrorService.disposeAsync();
+    }
+
     private async openMirrorIfConfigured(): Promise<void> {
         try {
             const folder = await this.workspaceService.getWorkspaceToUse();
