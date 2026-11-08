@@ -1,7 +1,7 @@
 import { ScriptId } from "../../models/ScriptId";
 import { failure, MoveScriptDto, MoveScriptInput, success, ToolDeps, ToolOutcome } from "./types";
 import { ensureConnected } from "./connection";
-import { findDirectory, lastSegment, refreshScriptInCache, scriptIdOf, toFailure } from "./helpers";
+import { findDirectory, refreshScriptInCache, scriptIdOf, toFailure } from "./helpers";
 import { toDirectoryId, toScriptId } from "./validation";
 
 /** Moves a script into another directory on the ioBroker server and on disk. */
@@ -33,7 +33,7 @@ export async function moveScript(deps: ToolDeps, input: MoveScriptInput): Promis
     }
 
     const oldScriptId = scriptIdOf(localScript);
-    const newScriptId = `${targetDirectory._id}.${lastSegment(oldScriptId)}`;
+    const newScriptId = `${targetDirectory._id}.${ScriptId.lastSegmentOf(oldScriptId)}`;
 
     if (newScriptId === oldScriptId) {
         return failure("invalid_input", `The script '${oldScriptId}' is already located in '${targetDirectory._id}'.`);

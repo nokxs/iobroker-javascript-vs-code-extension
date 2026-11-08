@@ -216,9 +216,11 @@ hand takes effect without restarting VS Code. Running the command again disables
 | `iobroker_start_script` | Start (enable) a script on ioBroker |
 | `iobroker_stop_script` | Stop (disable) a script on ioBroker |
 | `iobroker_create_script` | Create a script on the server and as a local file |
+| `iobroker_create_directory` | Create a directory on the server and as a local folder |
 | `iobroker_rename_script` | Rename a script on the server and on disk |
 | `iobroker_move_script` | Move a script to another directory |
 | `iobroker_delete_script` | Delete a script on the server and on disk |
+| `iobroker_delete_directory` | Delete an empty directory on the server and on disk |
 
 Keep in mind:
 

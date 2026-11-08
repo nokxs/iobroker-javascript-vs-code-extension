@@ -626,6 +626,31 @@
 				}
 			},
 			{
+				"name": "iobroker_create_directory",
+				"displayName": "Create ioBroker directory",
+				"toolReferenceName": "iobrokerCreateDirectory",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Creates a directory on the ioBroker server and the matching local folder. Pass the full directory id to create missing intermediate directories in one step, or an existing parent id together with a name. Fails when the directory or folder already exists.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"directoryId": {
+							"type": "string",
+							"description": "ioBroker id of the new directory, e.g. 'script.js.common.NewFolder'. When 'name' is given this is the parent directory id (e.g. 'script.js.common', or 'script.js' for the root) and it has to exist already. When the full id is passed without 'name', missing intermediate directories are created as well."
+						},
+						"name": {
+							"type": "string",
+							"description": "Optional directory name. When omitted, the last segment of 'directoryId' is used. Must not contain dots or path separators."
+						}
+					},
+					"required": [
+						"directoryId"
+					],
+					"additionalProperties": false
+				}
+			},
+			{
 				"name": "iobroker_rename_script",
 				"displayName": "Rename ioBroker script",
 				"toolReferenceName": "iobrokerRenameScript",
@@ -694,6 +719,27 @@
 					},
 					"required": [
 						"scriptId"
+					],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_delete_directory",
+				"displayName": "Delete ioBroker directory",
+				"toolReferenceName": "iobrokerDeleteDirectory",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Deletes an empty directory on the ioBroker server and the matching local folder. The directory has to be empty: move or delete its scripts and subdirectories first. This cannot be undone; the root directory, 'script.js.common' and 'script.js.global' cannot be deleted. Confirm the exact directory id with the user before using this tool.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"directoryId": {
+							"type": "string",
+							"description": "ioBroker id of the empty directory that should be deleted, e.g. 'script.js.common.OldFolder'. Use iobroker_get_scripts to look up available directories."
+						}
+					},
+					"required": [
+						"directoryId"
 					],
 					"additionalProperties": false
 				}

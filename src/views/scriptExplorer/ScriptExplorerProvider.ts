@@ -10,6 +10,7 @@ import { IIobrokerConnectionService } from '../../services/iobrokerConnection/II
 import { NoConfig } from '../../models/Config';
 import { IScriptRepositoryService } from '../../services/scriptRepository/IScriptRepositoryService';
 import { IDirectory } from '../../models/IDirectory';
+import { ScriptId } from '../../models/ScriptId';
 import { RootDirectory } from '../../models/RootDirectory';
 import { ILocalScript } from '../../models/ILocalScript';
 import { IWorkspaceService } from '../../services/workspace/IWorkspaceService';
@@ -20,7 +21,6 @@ import { ILocalOnlyScript } from '../../models/ILocalOnlyScript';
 import { IConfigRepositoryService } from '../../services/configRepository/IConfigRepositoryService';
 import { OnlyRemoteScriptItem } from './OnlyRemoteScriptItem';
 
-const ROOT_DIRECTORY_ID = "script.js";
 const AUTO_SYNC_CONTEXT_KEY = "iobrokerAutoSyncEnabled";
 
 @injectable()
@@ -326,7 +326,7 @@ export class ScriptExplorerProvider implements IScriptExplorerProvider, IScriptC
         let currentChildId: string | undefined = childId;
         while (currentChildId) {
             const parentId = currentChildId.substring(0, currentChildId.lastIndexOf("."));
-            if (!parentId || parentId === ROOT_DIRECTORY_ID) {
+            if (!parentId || parentId === ScriptId.rootId) {
                 return;
             }
 

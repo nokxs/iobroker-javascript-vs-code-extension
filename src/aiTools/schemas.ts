@@ -169,6 +169,21 @@ export const TOOL_SCHEMAS = {
         required: ["fileName", "language"],
         additionalProperties: false
     },
+    iobroker_create_directory: {
+        type: "object",
+        properties: {
+            directoryId: {
+                type: "string",
+                description: "ioBroker id of the new directory, e.g. 'script.js.common.NewFolder'. When 'name' is given this is the parent directory id (e.g. 'script.js.common', or 'script.js' for the root) and it has to exist already. When the full id is passed without 'name', missing intermediate directories are created as well."
+            },
+            name: {
+                type: "string",
+                description: "Optional directory name. When omitted, the last segment of 'directoryId' is used. Must not contain dots or path separators."
+            }
+        },
+        required: ["directoryId"],
+        additionalProperties: false
+    },
     iobroker_rename_script: {
         type: "object",
         properties: {
@@ -208,6 +223,17 @@ export const TOOL_SCHEMAS = {
             }
         },
         required: ["scriptId"],
+        additionalProperties: false
+    },
+    iobroker_delete_directory: {
+        type: "object",
+        properties: {
+            directoryId: {
+                type: "string",
+                description: "ioBroker id of the empty directory that should be deleted, e.g. 'script.js.common.OldFolder'. Use iobroker_get_scripts to look up available directories."
+            }
+        },
+        required: ["directoryId"],
         additionalProperties: false
     }
 } as const;

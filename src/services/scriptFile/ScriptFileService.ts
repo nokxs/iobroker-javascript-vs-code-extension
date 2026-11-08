@@ -21,6 +21,26 @@ export class ScriptFileService implements IScriptFileService {
         return this.fileService.fileExists(this.getFileUri(directory, fileName, fileExtension));
     }
 
+    getDirectoryUri(parentDirectoryUri: Uri, name: string): Uri {
+        return Uri.joinPath(parentDirectoryUri, name);
+    }
+
+    directoryExists(uri: Uri): boolean {
+        return this.fileService.directoryExists(uri);
+    }
+
+    isEmptyDirectory(uri: Uri): boolean {
+        return this.fileService.listDirectory(uri).length === 0;
+    }
+
+    async createDirectory(uri: Uri): Promise<void> {
+        await this.fileService.createDirectory(uri);
+    }
+
+    async deleteDirectory(uri: Uri): Promise<void> {
+        await this.fileService.deleteDirectory(uri);
+    }
+
     async write(directory: IDirectory, fileName: string, fileExtension: string, content: string): Promise<Uri> {
         const fileUri = this.getFileUri(directory, fileName, fileExtension);
         await this.fileService.saveToFile(fileUri, content);

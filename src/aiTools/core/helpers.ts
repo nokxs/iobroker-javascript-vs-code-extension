@@ -5,18 +5,12 @@ import { ScriptId } from "../../models/ScriptId";
 import { DirectoryDto, failure, ScriptSummaryDto, ToolDeps, ToolOutcome } from "./types";
 import { toMessage } from "./validation";
 
-export const ROOT_DIRECTORY_ID = "script.js";
-
 export function scriptIdOf(script: ILocalScript): string {
     return `${script._id}`;
 }
 
-export function lastSegment(id: string): string {
-    return id.substring(id.lastIndexOf(".") + 1);
-}
-
 export function scriptNameOf(script: ILocalScript): string {
-    return script.ioBrokerScript.common.name ?? lastSegment(scriptIdOf(script));
+    return script.ioBrokerScript.common.name ?? ScriptId.lastSegmentOf(scriptIdOf(script));
 }
 
 export function filePathOf(script: ILocalScript): string {
@@ -45,7 +39,7 @@ export function toDirectoryDto(directory: IDirectory): DirectoryDto {
 
 /** Resolves a directory id against all known directories including the root directory. */
 export function findDirectory(deps: ToolDeps, directoryId: string): IDirectory | undefined {
-    if (directoryId === ROOT_DIRECTORY_ID) {
+    if (directoryId === ScriptId.rootId) {
         return deps.scripts.getRootDirectory();
     }
 

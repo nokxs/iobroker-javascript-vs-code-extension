@@ -6,4 +6,5 @@ export interface IDirectoryService {
     downloadAllDirectories(): Promise<IDirectory[]>
     createDirectory(id: ScriptId, name: string): Promise<void>
     createDirectoriesRecursively(scriptId: ScriptId): Promise<void>
+    deleteDirectory(id: ScriptId): Promise<void>
 }

@@ -47,9 +47,16 @@ export class FileService implements IFileService {
     }
 
     deleteDirectory(uri: Uri): Promise<void> {
-        return new Promise((resolve) => {
-            fs.rmdir(uri.fsPath, { recursive: true }, () => {
-                resolve();
+        return new Promise((resolve, reject) => {
+            fs.rmdir(uri.fsPath, { recursive: true }, (err) => {
+                // A folder that is already gone counts as deleted, everything else is reported so
+                // callers do not silently continue with a folder that still exists on disk.
+                if (!err || err.code === "ENOENT") {
+                    resolve();
+                }
+                else {
+                    reject(err);
+                }
             });
         });
     }
@@ -60,7 +67,10 @@ export class FileService implements IFileService {
 
     createDirectory(uri: Uri): Promise<void> {
         return new Promise((resolve, reject) => {
-            fs.mkdir(uri.fsPath, (err) => {
+            // `recursive` also creates missing parent folders, which is required when a nested
+            // directory is created before its local counterparts exist. Existing folders are not
+            // an error in that mode.
+            fs.mkdir(uri.fsPath, { recursive: true }, (err) => {
                 if(err) {
                     if (err.code === "EEXIST") {
                         // Directory already exists
@@ -74,6 +84,15 @@ export class FileService implements IFileService {
                 }
             });
         });
+    }
+
+    listDirectory(uri: Uri): string[] {
+        try {
+            return fs.readdirSync(uri.fsPath);
+        } catch {
+            // A missing folder is treated like an empty one. Callers check `directoryExists` first.
+            return [];
+        }
     }
 
     createTemporaryFile(fileName: string, content: string): Promise<Uri> {

@@ -4,13 +4,16 @@ import { IDirectory } from "../../models/IDirectory";
 import { ILocalScript } from "../../models/ILocalScript";
 import { IScript } from "../../models/IScript";
 import { ScriptId } from "../../models/ScriptId";
+import { createDirectory } from "../../aiTools/core/createDirectory";
 import { createScript } from "../../aiTools/core/createScript";
+import { deleteDirectory } from "../../aiTools/core/deleteDirectory";
 import { deleteScript } from "../../aiTools/core/deleteScript";
 import { downloadScript } from "../../aiTools/core/downloadScript";
 import { getScriptContent } from "../../aiTools/core/getScriptContent";
 import { getScripts } from "../../aiTools/core/getScripts";
 import { getLogs } from "../../aiTools/core/getLogs";
 import { getState } from "../../aiTools/core/getState";
+import { moveScript } from "../../aiTools/core/moveScript";
 import { renameScript } from "../../aiTools/core/renameScript";
 import { uploadScript } from "../../aiTools/core/uploadScript";
 import { ToolDeps } from "../../aiTools/core/types";
@@ -22,6 +25,8 @@ interface FakeWorld {
     directories: IDirectory[]
     written: Map<string, string>
     uploaded: IScript[]
+    localDirectories: Set<string>
+    localFiles: Map<string, string[]>
 }
 
 function fakeUri(filePath: string): Uri {
@@ -54,6 +59,8 @@ function localScript(scriptId: string, source = "", isDirty = false): ILocalScri
 function createWorld(scripts: ILocalScript[] = [], directories: IDirectory[] = []): FakeWorld {
     const written = new Map<string, string>();
     const uploaded: IScript[] = [];
+    const localDirectories = new Set<string>();
+    const localFiles = new Map<string, string[]>();
     const root: IDirectory = {
         _id: <ScriptId><unknown>"script.js",
         common: {},
@@ -98,6 +105,39 @@ function createWorld(scripts: ILocalScript[] = [], directories: IDirectory[] = [
             }
         },
         scriptId: { sanatizeId: (id: ScriptId) => id },
+        directories: {
+            downloadDirectory: async (id: ScriptId) => directories.find(d => `${d._id}` === `${id}`) ?? <IDirectory><unknown>null,
+            createDirectory: async (id: ScriptId, name: string) => {
+                directories.push({
+                    _id: id,
+                    common: { name: name },
+                    relativeUri: fakeUri(`/${id}/`),
+                    absoluteUri: fakeUri(`/ws/scripts/${(`${id}`.split(".").slice(2).join("/"))}`)
+                });
+            },
+            createDirectoriesRecursively: async (id: ScriptId) => {
+                const parts = `${id}`.split(".");
+                for (let count = 3; count <= parts.length; count++) {
+                    const directoryId = parts.slice(0, count).join(".");
+                    if (directories.some(d => `${d._id}` === directoryId)) {
+                        continue;
+                    }
+
+                    directories.push({
+                        _id: <ScriptId><unknown>directoryId,
+                        common: { name: parts[count - 1] },
+                        relativeUri: fakeUri(`/${directoryId}/`),
+                        absoluteUri: fakeUri(`/ws/scripts/${parts.slice(2, count).join("/")}`)
+                    });
+                }
+            },
+            deleteDirectory: async (id: ScriptId) => {
+                const index = directories.findIndex(d => `${d._id}` === `${id}`);
+                if (index >= 0) {
+                    directories.splice(index, 1);
+                }
+            }
+        },
         files: {
             exists: () => false,
             write: async () => fakeUri("/ws/scripts/x.js"),
@@ -105,7 +145,12 @@ function createWorld(scripts: ILocalScript[] = [], directories: IDirectory[] = [
             rename: async () => fakeUri("/ws/scripts/renamed.js"),
             move: async () => fakeUri("/ws/scripts/moved.js"),
             delete: async () => true,
-            getFileUri: (directory: IDirectory, fileName: string, fileExtension: string) => fakeUri(`${directory.absoluteUri.fsPath}/${fileName}${fileExtension}`)
+            getFileUri: (directory: IDirectory, fileName: string, fileExtension: string) => fakeUri(`${directory.absoluteUri.fsPath}/${fileName}${fileExtension}`),
+            getDirectoryUri: (parentDirectoryUri: Uri, name: string) => fakeUri(`${parentDirectoryUri.fsPath}/${name}`),
+            directoryExists: (uri: Uri) => localDirectories.has(uri.fsPath),
+            isEmptyDirectory: (uri: Uri) => (localFiles.get(uri.fsPath) ?? []).length === 0,
+            createDirectory: async (uri: Uri) => { localDirectories.add(uri.fsPath); },
+            deleteDirectory: async (uri: Uri) => { localDirectories.delete(uri.fsPath); }
         },
         jsInstances: { getAvailableInstances: async () => [{ _id: "system.adapter.javascript.0" }] },
         states: {
@@ -122,7 +167,7 @@ function createWorld(scripts: ILocalScript[] = [], directories: IDirectory[] = [
         documents: { isDirty: () => false }
     };
 
-    return { deps: deps, scripts: scripts, directories: directories, written: written, uploaded: uploaded };
+    return { deps: deps, scripts: scripts, directories: directories, written: written, uploaded: uploaded, localDirectories: localDirectories, localFiles: localFiles };
 }
 
 suite("AI tools core", () => {
@@ -298,6 +343,134 @@ suite("AI tools core", () => {
         }
     });
 
+    test("create_directory creates the server directory and the local folder", async () => {
+        const world = createWorld();
+
+        const outcome = await createDirectory(world.deps, { directoryId: "script.js", name: "common" });
+
+        assert.strictEqual(outcome.ok, true);
+        if (outcome.ok) {
+            assert.strictEqual(outcome.data.directoryId, "script.js.common");
+            assert.strictEqual(outcome.data.path, "/ws/scripts/common");
+        }
+
+        assert.ok(world.directories.some(d => `${d._id}` === "script.js.common"));
+        assert.ok(world.localDirectories.has("/ws/scripts/common"));
+    });
+
+    test("create_directory rejects an existing server directory", async () => {
+        const directory: IDirectory = { _id: <ScriptId><unknown>"script.js.common", common: { name: "common" }, relativeUri: fakeUri("/ws/scripts/common"), absoluteUri: fakeUri("/ws/scripts/common") };
+        const world = createWorld([], [directory]);
+
+        const outcome = await createDirectory(world.deps, { directoryId: "script.js.common" });
+
+        assert.strictEqual(outcome.ok, false);
+        if (!outcome.ok) {
+            assert.strictEqual(outcome.error.code, "invalid_input");
+        }
+    });
+
+    test("create_directory rejects an existing local folder", async () => {
+        const world = createWorld();
+        world.deps.files.directoryExists = () => true;
+
+        const outcome = await createDirectory(world.deps, { directoryId: "script.js", name: "common" });
+
+        assert.strictEqual(outcome.ok, false);
+        if (!outcome.ok) {
+            assert.strictEqual(outcome.error.code, "invalid_input");
+        }
+    });
+
+    test("create_directory creates missing intermediate directories", async () => {
+        const global: IDirectory = { _id: <ScriptId><unknown>"script.js.global", common: { name: "global" }, relativeUri: fakeUri("/ws/scripts/global"), absoluteUri: fakeUri("/ws/scripts/global") };
+        const world = createWorld([], [global]);
+
+        const outcome = await createDirectory(world.deps, { directoryId: "script.js.global.07-late-dependencies.devices" });
+
+        assert.strictEqual(outcome.ok, true);
+        assert.ok(world.directories.some(d => `${d._id}` === "script.js.global.07-late-dependencies"));
+        assert.ok(world.directories.some(d => `${d._id}` === "script.js.global.07-late-dependencies.devices"));
+        assert.ok(world.localDirectories.has("/ws/scripts/global/07-late-dependencies/devices"));
+    });
+
+    test("create_directory rolls back the server directory when the local folder fails", async () => {
+        const world = createWorld();
+        world.deps.files.createDirectory = async () => { throw new Error("disk full"); };
+
+        const outcome = await createDirectory(world.deps, { directoryId: "script.js", name: "common" });
+
+        assert.strictEqual(outcome.ok, false);
+        if (!outcome.ok) {
+            assert.strictEqual(outcome.error.code, "server_error");
+        }
+
+        assert.ok(!world.directories.some(d => `${d._id}` === "script.js.common"));
+    });
+
+    test("create_directory reports an unknown parent when a name is given", async () => {
+        const world = createWorld();
+
+        const outcome = await createDirectory(world.deps, { directoryId: "script.js.missing", name: "child" });
+
+        assert.strictEqual(outcome.ok, false);
+        if (!outcome.ok) {
+            assert.strictEqual(outcome.error.code, "not_found");
+        }
+    });
+
+    test("create_directory rejects a blank name instead of ignoring it", async () => {
+        const world = createWorld();
+
+        const outcome = await createDirectory(world.deps, { directoryId: "script.js.common", name: "  " });
+
+        assert.strictEqual(outcome.ok, false);
+        if (!outcome.ok) {
+            assert.strictEqual(outcome.error.code, "invalid_input");
+        }
+
+        assert.strictEqual(world.directories.length, 0);
+    });
+
+    test("create_directory rolls back the local folders it already created", async () => {
+        const global: IDirectory = { _id: <ScriptId><unknown>"script.js.global", common: { name: "global" }, relativeUri: fakeUri("/ws/scripts/global"), absoluteUri: fakeUri("/ws/scripts/global") };
+        const world = createWorld([], [global]);
+        world.deps.files.createDirectory = async (uri: Uri) => {
+            if (uri.fsPath === "/ws/scripts/global/07-late-dependencies/devices") {
+                throw new Error("disk full");
+            }
+
+            world.localDirectories.add(uri.fsPath);
+        };
+
+        const outcome = await createDirectory(world.deps, { directoryId: "script.js.global.07-late-dependencies.devices" });
+
+        assert.strictEqual(outcome.ok, false);
+        if (!outcome.ok) {
+            assert.strictEqual(outcome.error.code, "server_error");
+        }
+
+        assert.ok(!world.localDirectories.has("/ws/scripts/global/07-late-dependencies"));
+        assert.ok(!world.directories.some(d => `${d._id}` === "script.js.global.07-late-dependencies"));
+        assert.ok(world.directories.some(d => `${d._id}` === "script.js.global"));
+    });
+
+    test("move_script accepts a directory that was created by create_directory", async () => {
+        const common: IDirectory = { _id: <ScriptId><unknown>"script.js.common", common: { name: "common" }, relativeUri: fakeUri("/ws/scripts/common"), absoluteUri: fakeUri("/ws/scripts/common") };
+        const world = createWorld([localScript("script.js.common.Licht")], [common]);
+
+        const created = await createDirectory(world.deps, { directoryId: "script.js.common", name: "New" });
+        assert.strictEqual(created.ok, true);
+
+        const outcome = await moveScript(world.deps, { scriptId: "script.js.common.Licht", targetDirectoryId: "script.js.common.New" });
+
+        assert.strictEqual(outcome.ok, true);
+        if (outcome.ok) {
+            assert.strictEqual(outcome.data.newScriptId, "script.js.common.New.Licht");
+            assert.strictEqual(outcome.data.filePath, "/ws/scripts/moved.js");
+        }
+    });
+
     test("rename_script reports the id of the renamed script", async () => {
         const world = createWorld([localScript("script.js.common.Licht")]);
 
@@ -320,6 +493,122 @@ suite("AI tools core", () => {
         if (outcome.ok) {
             assert.strictEqual(outcome.data.deletedFilePath, script.absoluteUri.fsPath);
         }
+    });
+
+    test("delete_directory removes an empty server directory and the local folder", async () => {
+        const common: IDirectory = { _id: <ScriptId><unknown>"script.js.common", common: { name: "common" }, relativeUri: fakeUri("/ws/scripts/common"), absoluteUri: fakeUri("/ws/scripts/common") };
+        const empty: IDirectory = { _id: <ScriptId><unknown>"script.js.common.Empty", common: { name: "Empty" }, relativeUri: fakeUri("/ws/scripts/common/Empty"), absoluteUri: fakeUri("/ws/scripts/common/Empty") };
+        const world = createWorld([], [common, empty]);
+        world.localDirectories.add(empty.absoluteUri.fsPath);
+
+        const outcome = await deleteDirectory(world.deps, { directoryId: "script.js.common.Empty" });
+
+        assert.strictEqual(outcome.ok, true);
+        if (outcome.ok) {
+            assert.strictEqual(outcome.data.directoryId, "script.js.common.Empty");
+            assert.strictEqual(outcome.data.deletedFolderPath, "/ws/scripts/common/Empty");
+        }
+
+        assert.ok(!world.directories.some(d => `${d._id}` === "script.js.common.Empty"));
+        assert.ok(!world.localDirectories.has(empty.absoluteUri.fsPath));
+    });
+
+    test("delete_directory refuses a directory that still contains scripts", async () => {
+        const archive: IDirectory = { _id: <ScriptId><unknown>"script.js.common.Archiv", common: { name: "Archiv" }, relativeUri: fakeUri("/ws/scripts/common/Archiv"), absoluteUri: fakeUri("/ws/scripts/common/Archiv") };
+        const world = createWorld([localScript("script.js.common.Archiv.Licht")], [archive]);
+
+        const outcome = await deleteDirectory(world.deps, { directoryId: "script.js.common.Archiv" });
+
+        assert.strictEqual(outcome.ok, false);
+        if (!outcome.ok) {
+            assert.strictEqual(outcome.error.code, "invalid_input");
+            assert.ok(outcome.error.message.includes("script.js.common.Archiv.Licht"));
+        }
+
+        assert.ok(world.directories.some(d => `${d._id}` === "script.js.common.Archiv"));
+    });
+
+    test("delete_directory refuses a directory that still contains subdirectories", async () => {
+        const archive: IDirectory = { _id: <ScriptId><unknown>"script.js.common.Archiv", common: { name: "Archiv" }, relativeUri: fakeUri("/ws/scripts/common/Archiv"), absoluteUri: fakeUri("/ws/scripts/common/Archiv") };
+        const child: IDirectory = { _id: <ScriptId><unknown>"script.js.common.Archiv.Child", common: { name: "Child" }, relativeUri: fakeUri("/ws/scripts/common/Archiv/Child"), absoluteUri: fakeUri("/ws/scripts/common/Archiv/Child") };
+        const world = createWorld([], [archive, child]);
+
+        const outcome = await deleteDirectory(world.deps, { directoryId: "script.js.common.Archiv" });
+
+        assert.strictEqual(outcome.ok, false);
+        if (!outcome.ok) {
+            assert.strictEqual(outcome.error.code, "invalid_input");
+            assert.ok(outcome.error.message.includes("script.js.common.Archiv.Child"));
+        }
+    });
+
+    test("delete_directory refuses a local folder that still contains files", async () => {
+        const archive: IDirectory = { _id: <ScriptId><unknown>"script.js.common.Archiv", common: { name: "Archiv" }, relativeUri: fakeUri("/ws/scripts/common/Archiv"), absoluteUri: fakeUri("/ws/scripts/common/Archiv") };
+        const world = createWorld([], [archive]);
+        world.localDirectories.add(archive.absoluteUri.fsPath);
+        world.localFiles.set(archive.absoluteUri.fsPath, ["stray.txt"]);
+
+        const outcome = await deleteDirectory(world.deps, { directoryId: "script.js.common.Archiv" });
+
+        assert.strictEqual(outcome.ok, false);
+        if (!outcome.ok) {
+            assert.strictEqual(outcome.error.code, "invalid_input");
+            assert.ok(outcome.error.message.includes("stray files") || outcome.error.message.includes("not empty"));
+        }
+
+        assert.ok(world.directories.some(d => `${d._id}` === "script.js.common.Archiv"));
+    });
+
+    test("delete_directory never deletes the root directory", async () => {
+        const world = createWorld();
+
+        const outcome = await deleteDirectory(world.deps, { directoryId: "script.js" });
+
+        assert.strictEqual(outcome.ok, false);
+        if (!outcome.ok) {
+            assert.strictEqual(outcome.error.code, "invalid_input");
+        }
+    });
+
+    test("delete_directory never deletes the common and global directories", async () => {
+        const common: IDirectory = { _id: <ScriptId><unknown>"script.js.common", common: { name: "common" }, relativeUri: fakeUri("/ws/scripts/common"), absoluteUri: fakeUri("/ws/scripts/common") };
+        const global: IDirectory = { _id: <ScriptId><unknown>"script.js.global", common: { name: "global" }, relativeUri: fakeUri("/ws/scripts/global"), absoluteUri: fakeUri("/ws/scripts/global") };
+        const world = createWorld([], [common, global]);
+
+        for (const directoryId of ["script.js.common", "script.js.global"]) {
+            const outcome = await deleteDirectory(world.deps, { directoryId: directoryId });
+
+            assert.strictEqual(outcome.ok, false);
+            if (!outcome.ok) {
+                assert.strictEqual(outcome.error.code, "invalid_input");
+            }
+        }
+
+        assert.strictEqual(world.directories.length, 2);
+    });
+
+    test("delete_directory reports an unknown directory", async () => {
+        const world = createWorld();
+
+        const outcome = await deleteDirectory(world.deps, { directoryId: "script.js.missing" });
+
+        assert.strictEqual(outcome.ok, false);
+        if (!outcome.ok) {
+            assert.strictEqual(outcome.error.code, "not_found");
+        }
+    });
+
+    test("create_directory followed by delete_directory leaves no trace", async () => {
+        const world = createWorld();
+
+        const created = await createDirectory(world.deps, { directoryId: "script.js", name: "temp" });
+        assert.strictEqual(created.ok, true);
+
+        const deleted = await deleteDirectory(world.deps, { directoryId: "script.js.temp" });
+
+        assert.strictEqual(deleted.ok, true);
+        assert.ok(!world.directories.some(d => `${d._id}` === "script.js.temp"));
+        assert.ok(!world.localDirectories.has("/ws/scripts/temp"));
     });
 
     test("get_state returns the value of the state", async () => {

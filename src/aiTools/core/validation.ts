@@ -37,8 +37,8 @@ export function toScriptId(raw: unknown, field = "scriptId"): ToolOutcome<Script
     }
 
     const id = raw.trim();
-    if (!id.startsWith("script.js.") || id.length <= "script.js.".length) {
-        return failure("invalid_input", `'${field}' must be a full ioBroker script id starting with 'script.js.', but was '${id}'.`, "Use iobroker_get_scripts to look up script ids.");
+    if (!ScriptId.isValid(id)) {
+        return failure("invalid_input", `'${field}' must be a full ioBroker script id starting with '${ScriptId.prefix}.', but was '${id}'.`, "Use iobroker_get_scripts to look up script ids.");
     }
 
     try {
@@ -55,8 +55,8 @@ export function toDirectoryId(raw: unknown, field = "directoryId"): ToolOutcome<
     }
 
     const id = raw.trim();
-    if (!id.startsWith("script.js")) {
-        return failure("invalid_input", `'${field}' must be a directory id starting with 'script.js', but was '${id}'.`, "Use iobroker_get_scripts to look up directory ids.");
+    if (!ScriptId.isDirectoryId(id)) {
+        return failure("invalid_input", `'${field}' must be a directory id like '${ScriptId.rootId}' or '${ScriptId.rootId}.common', but was '${id}'.`, "Use iobroker_get_scripts to look up directory ids.");
     }
 
     return success(id);
