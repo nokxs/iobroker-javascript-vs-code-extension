@@ -12,12 +12,13 @@ export async function activate(context: vscode.ExtensionContext) {
 	await container.get<IStartup>(TYPES.startup).init(context);
 }
 
-export function deactivate() {
+export function deactivate(): Thenable<void> | undefined {
 	try {
 		if (container.isBound(TYPES.services.log)) {
-			container.get<ILogService>(TYPES.services.log).dispose();
+			return container.get<ILogService>(TYPES.services.log).disposeAsync();
 		}
 	} catch {
 		/* container may not be ready */
 	}
+	return undefined;
 }

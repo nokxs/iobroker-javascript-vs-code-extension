@@ -27,16 +27,25 @@ export class LogMirrorService implements ILogMirrorService {
     private droppedWhileRotating = 0;
     private rotating = false;
     private warnedThisSession = false;
+    private generation = 0;
 
     constructor(
         @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
     ) {}
 
     async open(workspaceFolder: WorkspaceFolder): Promise<void> {
-        await this.disposeAsync();
+        const gen = ++this.generation;
+        await this.closeStream();
+        this.resetMirrorFields();
+        if (!this.isCurrent(gen)) {
+            return;
+        }
 
         try {
             const cfg = await this.configRepositoryService.read(workspaceFolder);
+            if (!this.isCurrent(gen)) {
+                return;
+            }
             if (cfg instanceof NoConfig || cfg.mirrorIoBrokerJavaScriptLog !== true) {
                 return;
             }
@@ -65,14 +74,27 @@ export class LogMirrorService implements ILogMirrorService {
                 existingSize = 0;
             }
 
+            if (!this.isCurrent(gen)) {
+                return;
+            }
+
             this.mirrorPath = target;
             this.bytesWritten = existingSize;
             this.openStream(target);
+            if (!this.isCurrent(gen)) {
+                await this.closeStream();
+                return;
+            }
+
             const header = `\n######## ${new Date().toISOString()} — ioBroker javascript log mirror started ########\n`;
             this.writeRaw(header);
         } catch (e) {
-            this.warnOnce(`ioBroker: log mirror disabled: ${formatError(e)}`);
-            await this.disposeAsync();
+            if (this.isCurrent(gen)) {
+                this.warnOnce(`ioBroker: log mirror disabled: ${formatError(e)}`);
+                await this.disposeAsync();
+            } else {
+                await this.closeStream();
+            }
         }
     }
 
@@ -87,8 +109,7 @@ export class LogMirrorService implements ILogMirrorService {
     }
 
     dispose(): void {
-        // Sync path for Extension.deactivate / onDisconnected: end() flushes the
-        // buffer; destroy() would discard it. We do not await the close event here.
+        this.generation++;
         if (this.mirrorStream) {
             const stream = this.mirrorStream;
             this.mirrorStream = undefined;
@@ -100,15 +121,20 @@ export class LogMirrorService implements ILogMirrorService {
                 /* ignore */
             }
         }
-        this.resetState();
+        this.resetMirrorFields();
     }
 
-    private async disposeAsync(): Promise<void> {
+    async disposeAsync(): Promise<void> {
+        this.generation++;
         await this.closeStream();
-        this.resetState();
+        this.resetMirrorFields();
     }
 
-    private resetState(): void {
+    private isCurrent(gen: number): boolean {
+        return gen === this.generation;
+    }
+
+    private resetMirrorFields(): void {
         this.mirrorPath = undefined;
         this.bytesWritten = 0;
         this.backpressure = false;
@@ -183,10 +209,10 @@ export class LogMirrorService implements ILogMirrorService {
             return;
         }
         this.rotating = true;
-        void this.rotateOpenStreamAsync();
+        void this.rotateOpenStreamAsync(this.generation);
     }
 
-    private async rotateOpenStreamAsync(): Promise<void> {
+    private async rotateOpenStreamAsync(gen: number): Promise<void> {
         const target = this.mirrorPath;
         if (!target) {
             this.rotating = false;
@@ -195,26 +221,47 @@ export class LogMirrorService implements ILogMirrorService {
 
         try {
             await this.closeStream();
+            if (!this.isCurrent(gen)) {
+                return;
+            }
+
             try {
                 this.renameRotated(target);
             } catch (e) {
                 this.warnOnce(`ioBroker: log mirror rotation failed: ${formatError(e)}`);
             }
 
+            if (!this.isCurrent(gen)) {
+                return;
+            }
+
             this.openStream(target);
+            if (!this.isCurrent(gen)) {
+                await this.closeStream();
+                return;
+            }
+
             this.bytesWritten = 0;
-            const header = `\n######## ${new Date().toISOString()} — ioBroker javascript log mirror rotated ########\n`;
+            // Allow writes again before emitting the rotation markers.
+            this.rotating = false;
             if (this.droppedWhileRotating > 0) {
                 const marker = `${new Date().toISOString()} warn: log mirror dropped ${this.droppedWhileRotating} line(s) during rotation\n`;
                 this.droppedWhileRotating = 0;
                 this.writeRaw(marker);
             }
+            const header = `\n######## ${new Date().toISOString()} — ioBroker javascript log mirror rotated ########\n`;
             this.writeRaw(header);
         } catch (e) {
-            this.warnOnce(`ioBroker: log mirror rotation failed: ${formatError(e)}`);
-            this.destroyStream();
+            if (this.isCurrent(gen)) {
+                this.warnOnce(`ioBroker: log mirror rotation failed: ${formatError(e)}`);
+                this.destroyStream();
+            } else {
+                await this.closeStream();
+            }
         } finally {
-            this.rotating = false;
+            if (this.isCurrent(gen)) {
+                this.rotating = false;
+            }
         }
     }
 
