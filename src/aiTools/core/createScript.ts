@@ -1,5 +1,5 @@
 import { EngineType } from "../../models/EngineType";
-import { ROOT_DIRECTORY_ID } from "../../models/ScriptIdPath";
+import { ScriptId } from "../../models/ScriptId";
 import { CreateScriptDto, CreateScriptInput, failure, success, ToolDeps, ToolOutcome } from "./types";
 import { ensureConnected } from "./connection";
 import { findDirectory, refreshScriptInCache, toFailure } from "./helpers";
@@ -30,7 +30,7 @@ export async function createScript(deps: ToolDeps, input: CreateScriptInput): Pr
         return failure("invalid_input", "'fileName' must contain more than the file extension.");
     }
 
-    let directoryId = ROOT_DIRECTORY_ID;
+    let directoryId = ScriptId.rootId;
     if (input.directoryId !== undefined) {
         const directoryIdResult = toDirectoryId(input.directoryId);
         if (!directoryIdResult.ok) {

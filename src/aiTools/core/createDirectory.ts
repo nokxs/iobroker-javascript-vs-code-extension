@@ -1,6 +1,5 @@
 import { IDirectory } from "../../models/IDirectory";
 import { ScriptId } from "../../models/ScriptId";
-import { ROOT_DIRECTORY_ID, isDirectoryId, lastSegmentOf, parentIdOf } from "../../models/ScriptIdPath";
 import { ensureConnected } from "./connection";
 import { findDirectory, refreshScriptInCache, toFailure } from "./helpers";
 import { CreateDirectoryDto, CreateDirectoryInput, failure, success, ToolDeps, ToolOutcome } from "./types";
@@ -145,12 +144,17 @@ function resolveTarget(input: CreateDirectoryInput): ToolOutcome<DirectoryTarget
     } else {
         // Without a name the id is the full id of the new directory, for example
         // 'script.js.global.07-late-dependencies.devices'.
-        if (rawId === ROOT_DIRECTORY_ID) {
+        if (rawId === ScriptId.rootId) {
             return failure("invalid_input", "'directoryId' must be a directory below 'script.js' when 'name' is omitted.", "Pass the parent directory id as 'directoryId' and the new name as 'name'.");
         }
 
-        parentId = rawId.substring(0, rawId.lastIndexOf("."));
-        name = lastSegmentOf(rawId);
+        const parentIdOfRawId = ScriptId.parentIdOf(rawId);
+        if (parentIdOfRawId === undefined) {
+            return failure("invalid_input", `'${rawId}' has no parent directory.`);
+        }
+
+        parentId = parentIdOfRawId;
+        name = ScriptId.lastSegmentOf(rawId);
 
         const nameResult = validateName(name, "name");
         if (!nameResult.ok) {
@@ -158,7 +162,7 @@ function resolveTarget(input: CreateDirectoryInput): ToolOutcome<DirectoryTarget
         }
     }
 
-    if (!isDirectoryId(parentId)) {
+    if (!ScriptId.isDirectoryId(parentId)) {
         return failure("invalid_input", `'${parentId}' is not a valid parent directory id.`, "Use 'script.js' for the root directory or a full id like 'script.js.common'.");
     }
 
@@ -167,7 +171,7 @@ function resolveTarget(input: CreateDirectoryInput): ToolOutcome<DirectoryTarget
     }
 
     const targetId = `${parentId}.${name}`;
-    if (!isDirectoryId(targetId)) {
+    if (!ScriptId.isDirectoryId(targetId)) {
         return failure("invalid_input", `'${targetId}' is not a valid directory id.`);
     }
 
@@ -181,7 +185,7 @@ function findDeepestKnownAncestor(deps: ToolDeps, directoryId: string): KnownAnc
         return { id: directoryId, directory: directory };
     }
 
-    const parentId = parentIdOf(directoryId);
+    const parentId = ScriptId.parentIdOf(directoryId);
     return parentId === undefined ? undefined : findDeepestKnownAncestor(deps, parentId);
 }
 
@@ -209,7 +213,7 @@ function mapLocalUris(deps: ToolDeps, ancestor: KnownAncestor, targetId: string)
     let currentUri = ancestor.directory.absoluteUri;
     for (const id of ids) {
         const known = findDirectory(deps, id);
-        const uri = known ? known.absoluteUri : deps.files.getDirectoryUri(currentUri, lastSegmentOf(id));
+        const uri = known ? known.absoluteUri : deps.files.getDirectoryUri(currentUri, ScriptId.lastSegmentOf(id));
 
         result.push({ id: id, uri: uri });
         currentUri = uri;

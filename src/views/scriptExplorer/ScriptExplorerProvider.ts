@@ -10,7 +10,7 @@ import { IIobrokerConnectionService } from '../../services/iobrokerConnection/II
 import { NoConfig } from '../../models/Config';
 import { IScriptRepositoryService } from '../../services/scriptRepository/IScriptRepositoryService';
 import { IDirectory } from '../../models/IDirectory';
-import { ROOT_DIRECTORY_ID } from '../../models/ScriptIdPath';
+import { ScriptId } from '../../models/ScriptId';
 import { RootDirectory } from '../../models/RootDirectory';
 import { ILocalScript } from '../../models/ILocalScript';
 import { IWorkspaceService } from '../../services/workspace/IWorkspaceService';
@@ -326,7 +326,7 @@ export class ScriptExplorerProvider implements IScriptExplorerProvider, IScriptC
         let currentChildId: string | undefined = childId;
         while (currentChildId) {
             const parentId = currentChildId.substring(0, currentChildId.lastIndexOf("."));
-            if (!parentId || parentId === ROOT_DIRECTORY_ID) {
+            if (!parentId || parentId === ScriptId.rootId) {
                 return;
             }
 

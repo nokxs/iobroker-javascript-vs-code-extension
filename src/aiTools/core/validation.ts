@@ -1,5 +1,4 @@
 import { ScriptId } from "../../models/ScriptId";
-import { ROOT_DIRECTORY_ID, SCRIPT_ID_PREFIX, isDirectoryId, isScriptId } from "../../models/ScriptIdPath";
 import { failure, success, ToolOutcome } from "./types";
 
 const INVALID_NAME_CHARACTERS = /[\\/:*?"<>|]/;
@@ -38,8 +37,8 @@ export function toScriptId(raw: unknown, field = "scriptId"): ToolOutcome<Script
     }
 
     const id = raw.trim();
-    if (!isScriptId(id)) {
-        return failure("invalid_input", `'${field}' must be a full ioBroker script id starting with '${SCRIPT_ID_PREFIX}.', but was '${id}'.`, "Use iobroker_get_scripts to look up script ids.");
+    if (!ScriptId.isValid(id)) {
+        return failure("invalid_input", `'${field}' must be a full ioBroker script id starting with '${ScriptId.prefix}.', but was '${id}'.`, "Use iobroker_get_scripts to look up script ids.");
     }
 
     try {
@@ -56,8 +55,8 @@ export function toDirectoryId(raw: unknown, field = "directoryId"): ToolOutcome<
     }
 
     const id = raw.trim();
-    if (!isDirectoryId(id)) {
-        return failure("invalid_input", `'${field}' must be a directory id like '${ROOT_DIRECTORY_ID}' or '${ROOT_DIRECTORY_ID}.common', but was '${id}'.`, "Use iobroker_get_scripts to look up directory ids.");
+    if (!ScriptId.isDirectoryId(id)) {
+        return failure("invalid_input", `'${field}' must be a directory id like '${ScriptId.rootId}' or '${ScriptId.rootId}.common', but was '${id}'.`, "Use iobroker_get_scripts to look up directory ids.");
     }
 
     return success(id);

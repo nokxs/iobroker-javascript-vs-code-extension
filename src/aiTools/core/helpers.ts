@@ -2,7 +2,6 @@ import * as path from "path";
 import { IDirectory } from "../../models/IDirectory";
 import { ILocalScript } from "../../models/ILocalScript";
 import { ScriptId } from "../../models/ScriptId";
-import { ROOT_DIRECTORY_ID, lastSegmentOf } from "../../models/ScriptIdPath";
 import { DirectoryDto, failure, ScriptSummaryDto, ToolDeps, ToolOutcome } from "./types";
 import { toMessage } from "./validation";
 
@@ -11,7 +10,7 @@ export function scriptIdOf(script: ILocalScript): string {
 }
 
 export function scriptNameOf(script: ILocalScript): string {
-    return script.ioBrokerScript.common.name ?? lastSegmentOf(scriptIdOf(script));
+    return script.ioBrokerScript.common.name ?? ScriptId.lastSegmentOf(scriptIdOf(script));
 }
 
 export function filePathOf(script: ILocalScript): string {
@@ -40,7 +39,7 @@ export function toDirectoryDto(directory: IDirectory): DirectoryDto {
 
 /** Resolves a directory id against all known directories including the root directory. */
 export function findDirectory(deps: ToolDeps, directoryId: string): IDirectory | undefined {
-    if (directoryId === ROOT_DIRECTORY_ID) {
+    if (directoryId === ScriptId.rootId) {
         return deps.scripts.getRootDirectory();
     }
 

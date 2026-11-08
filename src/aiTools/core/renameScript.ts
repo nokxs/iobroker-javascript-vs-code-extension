@@ -29,8 +29,7 @@ export async function renameScript(deps: ToolDeps, input: RenameScriptInput): Pr
     }
 
     const oldScriptId = scriptIdOf(localScript);
-    const oldIdString = `${scriptId}`;
-    const parentId = oldIdString.substring(0, oldIdString.lastIndexOf("."));
+    const parentId = ScriptId.parentIdOf(oldScriptId);
     const newScriptId = `${parentId}.${sanitizeScriptName(newName)}`;
     const fileExtension = extensionOf(localScript, deps);
 

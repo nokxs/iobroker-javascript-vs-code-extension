@@ -1,5 +1,4 @@
 import { ScriptId } from "../../models/ScriptId";
-import { lastSegmentOf } from "../../models/ScriptIdPath";
 import { failure, MoveScriptDto, MoveScriptInput, success, ToolDeps, ToolOutcome } from "./types";
 import { ensureConnected } from "./connection";
 import { findDirectory, refreshScriptInCache, scriptIdOf, toFailure } from "./helpers";
@@ -34,7 +33,7 @@ export async function moveScript(deps: ToolDeps, input: MoveScriptInput): Promis
     }
 
     const oldScriptId = scriptIdOf(localScript);
-    const newScriptId = `${targetDirectory._id}.${lastSegmentOf(oldScriptId)}`;
+    const newScriptId = `${targetDirectory._id}.${ScriptId.lastSegmentOf(oldScriptId)}`;
 
     if (newScriptId === oldScriptId) {
         return failure("invalid_input", `The script '${oldScriptId}' is already located in '${targetDirectory._id}'.`);
