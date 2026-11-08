@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { IStartup } from './IStartup';
 import TYPES from './Types';
 import container from './Inversify.config';
+import { ILogService } from './services/log/ILogService';
 
 export async function activate(context: vscode.ExtensionContext) {
 
@@ -11,4 +12,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	await container.get<IStartup>(TYPES.startup).init(context);
 }
 
-export function deactivate() {}
+export function deactivate() {
+	try {
+		if (container.isBound(TYPES.services.log)) {
+			container.get<ILogService>(TYPES.services.log).dispose();
+		}
+	} catch {
+		/* container may not be ready */
+	}
+}
