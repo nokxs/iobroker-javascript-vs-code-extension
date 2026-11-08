@@ -2,16 +2,41 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { Writable } from 'stream';
 import {
     DEFAULT_MIRROR_MAX_SIZE_MB,
     DEFAULT_MIRROR_RELATIVE_PATH,
     endWriteStream,
     formatMirrorLine,
+    isRealPathInsideWorkspace,
     normalizeMaxSizeMb,
     resolveMirrorPath,
     shouldRotate,
 } from '../../services/logMirror/LogMirror';
 import { ILogMessage } from '../../models/ILogMessage';
+
+function removeTree(dir: string): void {
+    if (!fs.existsSync(dir)) {
+        return;
+    }
+    for (const entry of fs.readdirSync(dir)) {
+        const full = path.join(dir, entry);
+        try {
+            if (fs.lstatSync(full).isDirectory()) {
+                removeTree(full);
+            } else {
+                fs.unlinkSync(full);
+            }
+        } catch {
+            /* ignore */
+        }
+    }
+    try {
+        fs.rmdirSync(dir);
+    } catch {
+        /* ignore */
+    }
+}
 
 suite('LogMirror Test Suite', () => {
     const workspaceRoot = path.resolve('/tmp/iobroker-workspace');
@@ -90,6 +115,66 @@ suite('LogMirror Test Suite', () => {
         });
     });
 
+    suite('isRealPathInsideWorkspace', () => {
+        let root: string;
+        let outside: string;
+
+        setup(() => {
+            root = fs.mkdtempSync(path.join(os.tmpdir(), 'iobroker-mirror-in-'));
+            outside = fs.mkdtempSync(path.join(os.tmpdir(), 'iobroker-mirror-out-'));
+        });
+
+        teardown(() => {
+            for (const dir of [root, outside]) {
+                try {
+                    removeTree(dir);
+                } catch {
+                    /* ignore */
+                }
+            }
+        });
+
+        test('should accept a normal nested file path', () => {
+            const nested = path.join(root, 'docs');
+            fs.mkdirSync(nested, { recursive: true });
+            const target = path.join(nested, 'live.log');
+            assert.strictEqual(isRealPathInsideWorkspace(root, target), true);
+        });
+
+        test('should reject a directory junction/symlink that escapes the workspace', function () {
+            const link = path.join(root, 'escape');
+            try {
+                fs.symlinkSync(outside, link, process.platform === 'win32' ? 'junction' : 'dir');
+            } catch (e: any) {
+                if (e && (e.code === 'EPERM' || e.code === 'EACCES')) {
+                    this.skip();
+                }
+                throw e;
+            }
+
+            const target = path.join(link, 'live.log');
+            assert.strictEqual(isRealPathInsideWorkspace(root, target), false);
+        });
+
+        test('should reject a leaf file symlink', function () {
+            const nested = path.join(root, 'docs');
+            fs.mkdirSync(nested, { recursive: true });
+            const outsideFile = path.join(outside, 'secret.log');
+            fs.writeFileSync(outsideFile, 'secret');
+            const link = path.join(nested, 'live.log');
+            try {
+                fs.symlinkSync(outsideFile, link, process.platform === 'win32' ? 'file' : undefined);
+            } catch (e: any) {
+                if (e && (e.code === 'EPERM' || e.code === 'EACCES')) {
+                    this.skip();
+                }
+                throw e;
+            }
+
+            assert.strictEqual(isRealPathInsideWorkspace(root, link), false);
+        });
+    });
+
     suite('endWriteStream', () => {
         test('should flush written data before resolving', async () => {
             const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'iobroker-mirror-'));
@@ -106,6 +191,25 @@ suite('LogMirror Test Suite', () => {
             } catch {
                 /* ignore cleanup errors */
             }
+        });
+
+        test('should keep an error listener so delayed flush errors stay handled', async () => {
+            let uncaught = 0;
+            const onUncaught = () => { uncaught += 1; };
+            process.on('uncaughtException', onUncaught);
+
+            const stream = new Writable({
+                write(_chunk, _enc, cb) { cb(); },
+                final(cb) { cb(new Error('flush failed')); },
+            });
+
+            await endWriteStream(stream);
+            stream.emit('error', new Error('late error'));
+            await new Promise(resolve => setTimeout(resolve, 20));
+
+            process.off('uncaughtException', onUncaught);
+            assert.ok(stream.listenerCount('error') > 0);
+            assert.strictEqual(uncaught, 0);
         });
     });
 });

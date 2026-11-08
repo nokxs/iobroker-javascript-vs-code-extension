@@ -10,6 +10,7 @@ import { formatError } from "../formatError";
 import {
     endWriteStream,
     formatMirrorLine,
+    isRealPathInsideWorkspace,
     normalizeMaxSizeMb,
     resolveMirrorPath,
     shouldRotate,
@@ -20,14 +21,21 @@ import { ILogMirrorService } from "./ILogMirrorService";
 export class LogMirrorService implements ILogMirrorService {
     private mirrorStream: fs.WriteStream | undefined = undefined;
     private mirrorPath: string | undefined = undefined;
+    private workspaceRoot: string | undefined = undefined;
     private bytesWritten = 0;
     private maxSizeMb = 10;
     private backpressure = false;
     private droppedWhileBackpressure = 0;
-    private droppedWhileRotating = 0;
     private rotating = false;
     private warnedThisSession = false;
     private generation = 0;
+    private rotationQueue: string[] = [];
+    private rotationQueueBytes = 0;
+    private rotationQueueOverflow = 0;
+    /** Overridable in tests. */
+    rotationQueueMaxLines = 500;
+    /** Overridable in tests. */
+    rotationQueueMaxBytes = 1024 * 1024;
 
     constructor(
         @inject(TYPES.services.configRepository) private configRepositoryService: IConfigRepositoryService,
@@ -62,6 +70,11 @@ export class LogMirrorService implements ILogMirrorService {
                 return;
             }
 
+            if (!isRealPathInsideWorkspace(workspaceFolder.uri.fsPath, target)) {
+                this.warnOnce("ioBroker: log mirror path resolves outside the workspace (symlink).");
+                return;
+            }
+
             this.maxSizeMb = normalizeMaxSizeMb(cfg.ioBrokerLogMirrorMaxSizeMb);
             this.rotateExistingFile(target);
 
@@ -78,6 +91,7 @@ export class LogMirrorService implements ILogMirrorService {
                 return;
             }
 
+            this.workspaceRoot = workspaceFolder.uri.fsPath;
             this.mirrorPath = target;
             this.bytesWritten = existingSize;
             this.openStream(target);
@@ -99,13 +113,15 @@ export class LogMirrorService implements ILogMirrorService {
     }
 
     write(message: ILogMessage): void {
-        if (!this.mirrorStream || this.rotating) {
-            if (this.rotating) {
-                this.droppedWhileRotating += 1;
-            }
+        const line = `${formatMirrorLine(message)}\n`;
+        if (this.rotating) {
+            this.enqueueRotation(line);
             return;
         }
-        this.writeRaw(`${formatMirrorLine(message)}\n`);
+        if (!this.mirrorStream) {
+            return;
+        }
+        this.writeRaw(line);
     }
 
     dispose(): void {
@@ -115,11 +131,8 @@ export class LogMirrorService implements ILogMirrorService {
             this.mirrorStream = undefined;
             stream.removeAllListeners("error");
             stream.removeAllListeners("drain");
-            try {
-                stream.end();
-            } catch {
-                /* ignore */
-            }
+            // Fire-and-forget the async-safe end path so delayed flush errors stay handled.
+            void endWriteStream(stream);
         }
         this.resetMirrorFields();
     }
@@ -136,19 +149,42 @@ export class LogMirrorService implements ILogMirrorService {
 
     private resetMirrorFields(): void {
         this.mirrorPath = undefined;
+        this.workspaceRoot = undefined;
         this.bytesWritten = 0;
         this.backpressure = false;
         this.droppedWhileBackpressure = 0;
-        this.droppedWhileRotating = 0;
         this.rotating = false;
         this.warnedThisSession = false;
+        this.rotationQueue = [];
+        this.rotationQueueBytes = 0;
+        this.rotationQueueOverflow = 0;
+    }
+
+    private enqueueRotation(chunk: string): void {
+        const size = Buffer.byteLength(chunk);
+        this.rotationQueue.push(chunk);
+        this.rotationQueueBytes += size;
+
+        while (
+            this.rotationQueue.length > this.rotationQueueMaxLines ||
+            this.rotationQueueBytes > this.rotationQueueMaxBytes
+        ) {
+            const dropped = this.rotationQueue.shift();
+            if (dropped === undefined) {
+                break;
+            }
+            this.rotationQueueBytes -= Buffer.byteLength(dropped);
+            this.rotationQueueOverflow += 1;
+        }
     }
 
     private writeRaw(chunk: string, allowRotate: boolean = true): void {
-        if (!this.mirrorStream || this.rotating) {
-            if (this.rotating) {
-                this.droppedWhileRotating += 1;
-            }
+        if (this.rotating) {
+            this.enqueueRotation(chunk);
+            return;
+        }
+
+        if (!this.mirrorStream) {
             return;
         }
 
@@ -163,7 +199,7 @@ export class LogMirrorService implements ILogMirrorService {
             this.mirrorPath
         ) {
             this.scheduleRotation();
-            this.droppedWhileRotating += 1;
+            this.enqueueRotation(chunk);
             return;
         }
 
@@ -240,6 +276,15 @@ export class LogMirrorService implements ILogMirrorService {
                 return;
             }
 
+            const root = this.workspaceRoot;
+            if (!root || !isRealPathInsideWorkspace(root, target)) {
+                this.warnOnce("ioBroker: log mirror path resolves outside the workspace (symlink).");
+                this.rotationQueue = [];
+                this.rotationQueueBytes = 0;
+                this.rotationQueueOverflow = 0;
+                return;
+            }
+
             this.openStream(target);
             if (!this.isCurrent(gen)) {
                 await this.closeStream();
@@ -247,19 +292,32 @@ export class LogMirrorService implements ILogMirrorService {
             }
 
             this.bytesWritten = 0;
-            // Allow writes again before emitting the rotation markers.
+            // Allow writes again before emitting the rotation markers / queue flush.
             this.rotating = false;
-            if (this.droppedWhileRotating > 0) {
-                const marker = `${new Date().toISOString()} warn: log mirror dropped ${this.droppedWhileRotating} line(s) during rotation\n`;
-                this.droppedWhileRotating = 0;
-                // Do not let housekeeping lines re-enter rotation immediately.
-                this.writeRaw(marker, false);
-            }
+
             const header = `\n######## ${new Date().toISOString()} — ioBroker javascript log mirror rotated ########\n`;
             this.writeRaw(header, false);
+
+            if (this.rotationQueueOverflow > 0) {
+                const marker = `${new Date().toISOString()} warn: log mirror dropped ${this.rotationQueueOverflow} line(s) during rotation (queue full)\n`;
+                this.rotationQueueOverflow = 0;
+                this.writeRaw(marker, false);
+            }
+
+            if (this.rotationQueue.length > 0) {
+                const queued = this.rotationQueue.join("");
+                this.rotationQueue = [];
+                this.rotationQueueBytes = 0;
+                this.writeRaw(queued, false);
+            }
         } catch (e) {
             if (this.isCurrent(gen)) {
-                this.warnOnce(`ioBroker: log mirror rotation failed: ${formatError(e)}`);
+                const queued = this.rotationQueue.length;
+                this.rotationQueue = [];
+                this.rotationQueueBytes = 0;
+                this.rotationQueueOverflow = 0;
+                const extra = queued > 0 ? ` (discarded ${queued} queued line(s))` : "";
+                this.warnOnce(`ioBroker: log mirror rotation failed: ${formatError(e)}${extra}`);
                 this.destroyStream();
             } else {
                 await this.closeStream();
@@ -311,12 +369,21 @@ export class LogMirrorService implements ILogMirrorService {
     }
 
     private openStream(target: string): void {
-        this.mirrorStream = fs.createWriteStream(target, { flags: "a" });
-        this.mirrorStream.on("error", e => {
+        const stream = fs.createWriteStream(target, { flags: "a" });
+        this.mirrorStream = stream;
+        stream.on("error", e => {
+            // Only act if this stream is still the active one (avoids stale handlers
+            // destroying a newer stream after rotation).
+            if (this.mirrorStream !== stream) {
+                return;
+            }
             this.warnOnce(`ioBroker: could not write log mirror file: ${e.message}`);
             this.destroyStream();
         });
-        this.mirrorStream.on("drain", () => {
+        stream.on("drain", () => {
+            if (this.mirrorStream !== stream) {
+                return;
+            }
             this.flushBackpressureMarker();
         });
     }
@@ -340,6 +407,7 @@ export class LogMirrorService implements ILogMirrorService {
         this.mirrorStream = undefined;
         try {
             stream.removeAllListeners();
+            stream.on("error", () => { /* swallow post-destroy errors */ });
             stream.destroy();
         } catch {
             /* ignore */

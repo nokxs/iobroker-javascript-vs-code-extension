@@ -2,11 +2,35 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { Writable } from 'stream';
 import { Uri, WorkspaceFolder } from 'vscode';
 import { AdminVersion, Config } from '../../models/Config';
 import { ILogMessage } from '../../models/ILogMessage';
 import { IConfigRepositoryService } from '../../services/configRepository/IConfigRepositoryService';
 import { LogMirrorService } from '../../services/logMirror/LogMirrorService';
+
+function removeTree(dir: string): void {
+    if (!fs.existsSync(dir)) {
+        return;
+    }
+    for (const entry of fs.readdirSync(dir)) {
+        const full = path.join(dir, entry);
+        try {
+            if (fs.lstatSync(full).isDirectory()) {
+                removeTree(full);
+            } else {
+                fs.unlinkSync(full);
+            }
+        } catch {
+            /* ignore */
+        }
+    }
+    try {
+        fs.rmdirSync(dir);
+    } catch {
+        /* ignore */
+    }
+}
 
 function createFolder(root: string): WorkspaceFolder {
     return {
@@ -83,19 +107,7 @@ suite('LogMirrorService Test Suite', () => {
     });
 
     teardown(async () => {
-        try {
-            const entries = fs.readdirSync(tempRoot);
-            for (const entry of entries) {
-                try {
-                    fs.unlinkSync(path.join(tempRoot, entry));
-                } catch {
-                    /* ignore */
-                }
-            }
-            fs.rmdirSync(tempRoot);
-        } catch {
-            /* ignore */
-        }
+        removeTree(tempRoot);
     });
 
     test('write then disposeAsync flushes the line to disk', async () => {
@@ -137,7 +149,7 @@ suite('LogMirrorService Test Suite', () => {
         assert.ok(content.includes('mirror started'));
     });
 
-    test('runtime rotation creates .1 and writes a rotated header', async function () {
+    test('runtime rotation queues lines and writes them after reopen', async function () {
         this.timeout(15000);
         const relative = 'logs/rotate-runtime.log';
         const target = path.join(tempRoot, relative);
@@ -155,13 +167,95 @@ suite('LogMirrorService Test Suite', () => {
 
         await waitFor(() => fs.existsSync(`${target}.1`), 10000);
         await waitFor(() => (service as any).rotating === false, 10000);
-        // Flush buffered writes before asserting file contents.
         await service.disposeAsync();
         assert.ok(fs.existsSync(`${target}.1`));
-        assert.ok(
-            fs.readFileSync(target, 'utf8').includes('log mirror rotated'),
-            'expected rotated header after runtime rotation',
-        );
+        const content = fs.readFileSync(target, 'utf8');
+        const rotated = fs.readFileSync(`${target}.1`, 'utf8');
+        assert.ok(content.includes('log mirror rotated'), 'expected rotated header after runtime rotation');
+        assert.ok(!content.includes('(queue full)'), 'default queue should hold the burst');
+        const combined = `${rotated}\n${content}`;
+        let found = 0;
+        for (let i = 0; i < 40; i++) {
+            if (combined.includes(`line-${i}-`)) {
+                found += 1;
+            }
+        }
+        assert.strictEqual(found, 40, 'all written lines should survive in .log or .1');
+    });
+
+    test('rotation queue overflow is marked when the bound is tiny', async function () {
+        this.timeout(15000);
+        const relative = 'logs/rotate-overflow.log';
+        const target = path.join(tempRoot, relative);
+        const service = new LogMirrorService(createConfigRepo(createConfig({
+            mirror: true,
+            relativePath: relative,
+            maxSizeMb: 0.0001,
+        })));
+        service.rotationQueueMaxLines = 3;
+
+        await service.open(createFolder(tempRoot));
+        for (let i = 0; i < 40; i++) {
+            service.write(sampleMessage(`overflow-${i}-${'x'.repeat(40)}`));
+        }
+
+        await waitFor(() => fs.existsSync(`${target}.1`), 10000);
+        await waitFor(() => (service as any).rotating === false, 10000);
+        await service.disposeAsync();
+
+        const content = fs.readFileSync(target, 'utf8');
+        assert.ok(content.includes('log mirror rotated'));
+        assert.ok(content.includes('(queue full)'), 'expected overflow marker');
+    });
+
+    test('open rejects a junction path that escapes the workspace', async function () {
+        this.timeout(10000);
+        const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'iobroker-mirror-escape-'));
+        const link = path.join(tempRoot, 'escape');
+        try {
+            fs.symlinkSync(outside, link, process.platform === 'win32' ? 'junction' : 'dir');
+        } catch (e: any) {
+            removeTree(outside);
+            if (e && (e.code === 'EPERM' || e.code === 'EACCES')) {
+                this.skip();
+            }
+            throw e;
+        }
+
+        const relative = 'escape/outside.log';
+        const service = new LogMirrorService(createConfigRepo(createConfig({
+            mirror: true,
+            relativePath: relative,
+        })));
+
+        await service.open(createFolder(tempRoot));
+        await service.disposeAsync();
+
+        assert.strictEqual(fs.existsSync(path.join(outside, 'outside.log')), false);
+        removeTree(outside);
+    });
+
+    test('dispose keeps an error listener while ending the stream', async () => {
+        let uncaught = 0;
+        const onUncaught = () => { uncaught += 1; };
+        process.on('uncaughtException', onUncaught);
+
+        const stream = new Writable({
+            write(_chunk, _enc, cb) { cb(); },
+            final(cb) { cb(new Error('flush failed')); },
+        });
+
+        const service = new LogMirrorService(createConfigRepo(createConfig({ mirror: true })));
+        (service as any).mirrorStream = stream;
+        service.dispose();
+
+        stream.emit('error', new Error('late'));
+        await new Promise(resolve => setTimeout(resolve, 20));
+        process.off('uncaughtException', onUncaught);
+
+        assert.ok(stream.listenerCount('error') > 0);
+        assert.strictEqual(uncaught, 0);
+        assert.strictEqual((service as any).mirrorStream, undefined);
     });
 
     test('non-string path does not create a mirror file', async () => {
