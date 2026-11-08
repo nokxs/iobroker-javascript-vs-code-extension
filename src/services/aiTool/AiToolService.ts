@@ -15,6 +15,7 @@ import { IScriptService } from "../script/IScriptService";
 import { IScriptCreationService } from "../scriptCreation/IScriptCreationService";
 import { IScriptIdService } from "../scriptId/IScriptIdService";
 import { IScriptFileService } from "../scriptFile/IScriptFileService";
+import { IDirectoryService } from "../directory/IDirectoryService";
 import { IJsInstanceService } from "../jsInstanceService/IJsInstanceService";
 import { IStateAndObjectRemoteService } from "../stateRemote/IStateAndObjectRemoteService";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
@@ -35,6 +36,7 @@ export class AiToolService implements IAiToolService {
         @inject(TYPES.services.scriptCreationService) private scriptCreationService: IScriptCreationService,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
         @inject(TYPES.services.scriptFile) private scriptFileService: IScriptFileService,
+        @inject(TYPES.services.directory) private directoryService: IDirectoryService,
         @inject(TYPES.services.jsInstance) private jsInstanceService: IJsInstanceService,
         @inject(TYPES.services.stateAndObjectRemoteService) private stateAndObjectRemoteService: IStateAndObjectRemoteService,
         @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
@@ -105,6 +107,7 @@ export class AiToolService implements IAiToolService {
             script: this.scriptService,
             scriptCreation: this.scriptCreationService,
             scriptId: this.scriptIdService,
+            directories: this.directoryService,
             files: this.scriptFileService,
             jsInstances: this.jsInstanceService,
             states: this.stateAndObjectRemoteService,

@@ -9,6 +9,7 @@ import {
     GetStateTool
 } from "./readTools";
 import {
+    CreateDirectoryTool,
     CreateScriptTool,
     DeleteScriptTool,
     DownloadScriptTool,
@@ -35,6 +36,7 @@ export function createTools(deps: ToolDeps, isEnabled: () => boolean, refreshTre
         new StartScriptTool(deps, isEnabled, refreshTree),
         new StopScriptTool(deps, isEnabled, refreshTree),
         new CreateScriptTool(deps, isEnabled, refreshTree),
+        new CreateDirectoryTool(deps, isEnabled, refreshTree),
         new RenameScriptTool(deps, isEnabled, refreshTree),
         new MoveScriptTool(deps, isEnabled, refreshTree),
         new DeleteScriptTool(deps, isEnabled, refreshTree)

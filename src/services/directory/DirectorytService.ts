@@ -63,6 +63,10 @@ export class DirectoryService implements IDirectoryService {
         }
     }
 
+    deleteDirectory(id: ScriptId): Promise<void> {
+        return this.connectionServiceProvider.getConnectionService().deleteObject(id);
+    }
+
     private fixDirectoriesName(directories: IDirectory[], id: string, newName: string){
         const commonDirectory = directories.find(dir => dir._id === id);
         this.fixDirectoryName(commonDirectory, id, newName);

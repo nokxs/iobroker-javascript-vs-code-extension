@@ -60,7 +60,10 @@ export class FileService implements IFileService {
 
     createDirectory(uri: Uri): Promise<void> {
         return new Promise((resolve, reject) => {
-            fs.mkdir(uri.fsPath, (err) => {
+            // `recursive` also creates missing parent folders, which is required when a nested
+            // directory is created before its local counterparts exist. Existing folders are not
+            // an error in that mode.
+            fs.mkdir(uri.fsPath, { recursive: true }, (err) => {
                 if(err) {
                     if (err.code === "EEXIST") {
                         // Directory already exists

@@ -1,4 +1,5 @@
 import { BaseTool, InvocationDescription } from "./BaseTool";
+import { createDirectory } from "../core/createDirectory";
 import { createScript } from "../core/createScript";
 import { deleteScript } from "../core/deleteScript";
 import { downloadScript } from "../core/downloadScript";
@@ -7,6 +8,7 @@ import { renameScript } from "../core/renameScript";
 import { startScript, stopScript } from "../core/startStopScript";
 import { uploadAllChangedScripts, uploadScript } from "../core/uploadScript";
 import {
+    CreateDirectoryInput,
     CreateScriptInput,
     DeleteScriptInput,
     DownloadScriptInput,
@@ -114,6 +116,25 @@ export class CreateScriptTool extends WriteTool<CreateScriptInput> {
         return {
             title: "Create script in ioBroker",
             message: `Create ${code(input.fileName)} (${input.language}) in ${directory}? The script is created on the ioBroker server and as a local file.`
+        };
+    }
+}
+
+export class CreateDirectoryTool extends WriteTool<CreateDirectoryInput> {
+    readonly name = "iobroker_create_directory" as const;
+
+    protected run(input: CreateDirectoryInput): Promise<ToolOutcome<unknown>> {
+        return createDirectory(this.deps, input);
+    }
+
+    protected describe(input: CreateDirectoryInput): InvocationDescription {
+        const trimmedName = typeof input.name === "string" ? input.name.trim() : "";
+        const targetId = trimmedName.length > 0 ? `${input.directoryId}.${trimmedName}` : input.directoryId;
+        const nestedHint = trimmedName.length > 0 ? "" : " Missing parent directories are created as well.";
+
+        return {
+            title: "Create directory in ioBroker",
+            message: `Create the directory ${code(targetId)} on the ioBroker server and on disk?${nestedHint}`
         };
     }
 }

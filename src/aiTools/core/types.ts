@@ -8,6 +8,7 @@ import type { IScriptRemoteService } from "../../services/scriptRemote/IScriptRe
 import type { IScriptRepositoryService } from "../../services/scriptRepository/IScriptRepositoryService";
 import type { IScriptService } from "../../services/script/IScriptService";
 import type { IStateAndObjectRemoteService } from "../../services/stateRemote/IStateAndObjectRemoteService";
+import type { IDirectoryService } from "../../services/directory/IDirectoryService";
 
 export const MAX_SCRIPT_CONTENT_LENGTH = 50000;
 export const DEFAULT_SCRIPT_LIMIT = 200;
@@ -81,7 +82,8 @@ export interface ToolDeps {
     script: Pick<IScriptService, "getFileContentOnDisk" | "getDefaultScript" | "getFileExtension">
     scriptCreation: Pick<IScriptCreationService, "createFileWithName">
     scriptId: Pick<IScriptIdService, "sanatizeId">
-    files: Pick<IScriptFileService, "exists" | "write" | "writeContent" | "rename" | "move" | "delete" | "getFileUri">
+    directories: Pick<IDirectoryService, "downloadDirectory" | "createDirectory" | "createDirectoriesRecursively" | "deleteDirectory">
+    files: Pick<IScriptFileService, "exists" | "write" | "writeContent" | "rename" | "move" | "delete" | "getFileUri" | "getDirectoryUri" | "directoryExists" | "createDirectory">
     jsInstances: Pick<IJsInstanceService, "getAvailableInstances">
     states: Pick<IStateAndObjectRemoteService, "getState">
     logs: {
@@ -167,6 +169,11 @@ export interface MoveScriptInput {
 
 export interface DeleteScriptInput {
     scriptId: string
+}
+
+export interface CreateDirectoryInput {
+    directoryId: string
+    name?: string
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -283,4 +290,10 @@ export interface MoveScriptDto {
 export interface DeleteScriptDto {
     scriptId: string
     deletedFilePath: string | null
+}
+
+export interface CreateDirectoryDto {
+    directoryId: string
+    name: string
+    path: string
 }
