@@ -29,13 +29,14 @@ Goals:
 - Silent re-authentication: the user never has to type the password again while the
   server runs.
 - A read-only switch that hides every write tool.
+- One release produces both artifacts with the same version number (section 12).
 
 Non-goals:
 
 - Replacing the existing VS Code language model tools. They keep their hybrid behaviour.
 - Local script sync (diff, upload, download) in the MCP server.
 - HTTP/SSE transport, multi-instance support, per-user authorisation.
-- Renaming the extension command in this change (see section 12).
+- Renaming the extension command in this change (see section 13).
 
 ## 3. Why remote-only
 
@@ -327,19 +328,137 @@ Note the absence of `files`, `documents`, `scriptCreation` and the four sync met
   - the bundle contains no `require("vscode")`,
   - the bundle contains no `console.log(` (protocol safety),
   - `TOOL_NAMES` equals the tool list returned by `tools/list`.
-- Distribution options:
+- The npm package is self contained: webpack bundles `ws`, `axios`, `socket.io-client` and
+  everything else into `dist/mcp-server.js`, so `mcp/package.json` has **no `dependencies`**
+  and no second lockfile. `files: ["dist/mcp-server.js"]`, `bin: { "iobroker-mcp":
+  "dist/mcp-server.js" }`, `engines.node: ">=20"`.
+- The entry file starts with `#!/usr/bin/env node`; npm sets the executable bit on install.
+- `.vscodeignore` gets `mcp/**` and `dist/mcp-server.js*`, so the marketplace package does
+  not carry the server or its package metadata.
+- `tsconfig.json` uses `rootDir: "src"`, so `mcp/` must contain no `.ts` files (only
+  `package.json`), otherwise `npm run test-compile` breaks. If TypeScript is ever needed
+  there, `mcp` has to be added to `exclude` and a second lint target added.
 
-| Option | Pros | Cons |
-|---|---|---|
-| `bin` entry in the repository root `package.json` | one repo, one build | the package is named `iobroker-javascript` and is meant for the marketplace |
-| separate package `@nokxs/iobroker-mcp` in `mcp/`, published from the same repo | clean npm name, own versioning | second `package.json`, the build has to copy `dist/mcp-server.js` |
-| no npm publication, `npx github:nokxs/...` | no registry | slow install, needs git in the client |
+## 12. Release and versioning
 
-Recommended: the separate `@nokxs/iobroker-mcp` package, built from the same sources. The
-version is kept in sync with the extension so a user can tell which extension version a
-server corresponds to.
+### 12.1 How a release works today
 
-## 12. Work items
+1. Pull requests are merged into `main` with labels.
+2. `release-drafter.yml` keeps a draft release and derives the next version from the labels
+   (`breaking` -> major, `feature`/`enhancement` -> minor, otherwise patch).
+3. The maintainer publishes that draft, which creates the tag `vX.Y.Z`.
+4. `publish.yml` runs on `release: published`, derives the version from the tag with
+   `npm version $VERSION --no-git-tag-version`, compiles, lints and publishes the vsix to
+   the VS Code Marketplace (`VSCE_PAT`) and Open VSX (`OPEN_VSX_PAT`).
+
+Two observations that matter for the MCP server:
+
+- **The tag is the version source, `package.json` is not.** `package.json` says `1.9.1`
+  while the newest tag is `v1.14.0`. The release job overwrites the version in the working
+  copy before publishing. A new artifact therefore must not read its version from
+  `package.json` either.
+- Tests are commented out in `publish.yml`. `build.yml` runs them on every pull request and
+  on `main`, so the gap is a release of a commit that was never tested in that state, not a
+  missing test in general.
+
+### 12.2 Decision: the extension and the MCP server are released together
+
+**Yes, always, with the same version number.** `iobroker-mcp@X.Y.Z` belongs to
+`ioBroker.javascript vX.Y.Z`.
+
+Reasons:
+
+- They share the code that matters for correctness: socket transport, login,
+  re-authentication, script id rules, engine type mapping, error formatting. A login fix
+  must reach both, and a lockstep release guarantees it did.
+- Support becomes checkable. "Extension 1.15.0, server 1.15.0" is one number pair a user can
+  report; two independent version streams would require a compatibility matrix nobody
+  maintains.
+- One changelog, one tag, one release note. `release-drafter` already produces the notes.
+
+Accepted cost: a release that only touches extension UI also bumps the npm package. That is
+harmless, because the bundle is small and the npm package carries the same code anyway.
+
+### 12.3 Pipeline
+
+A separate workflow `publish-mcp.yml` with the same `release: published` trigger, not a
+second job in `publish.yml`. Separate workflows report independently: a failing npm publish
+does not mark the marketplace publish as failed and vice versa, and a re-run only repeats
+one artifact.
+
+```
+release published (tag vX.Y.Z)
+├── publish.yml      -> vsce publish + ovsx publish
+└── publish-mcp.yml  -> npm publish @nokxs/iobroker-mcp@X.Y.Z
+```
+
+Steps of `publish-mcp.yml`:
+
+1. `actions/checkout` and `actions/setup-node` on Node 20 (pin the current major, unlike
+   `publish.yml`, which still uses `@v2`).
+2. Read `VERSION=${GITHUB_REF#refs/tags/v}` and validate it against
+   `^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$`. Fail on anything else, so a malformed tag
+   never reaches the registry.
+3. `npm ci`, `npm run compile:mcp` (webpack production, `dist/mcp-server.js`).
+4. Run the bundle assertions and the stdio smoke test (section 11) against the built file.
+   This is the only test a release needs that `build.yml` does not already cover.
+5. `npm version "$VERSION" --no-git-tag-version --prefix mcp` so `mcp/package.json` matches
+   the tag, then copy `dist/mcp-server.js` to `mcp/dist/mcp-server.js`.
+6. `npm publish ./mcp --access public --provenance` with `id-token: write` for npm trusted
+   publishing, so no long lived `NPM_TOKEN` secret is needed. If OIDC is not set up, fall
+   back to a granular automation token in `NPM_TOKEN`.
+7. For a prerelease tag (`-beta.1`), publish with `--tag next` instead of `latest`.
+
+`mcp/dist/` is generated and git ignored.
+
+### 12.4 Why not independent versions
+
+Independent versions are the tempting alternative and the wrong default here. The concrete
+failure mode is silent: a user runs `npx @nokxs/iobroker-mcp` (always the newest version)
+next to extension 1.14.0, hits a login bug that was fixed in the server only, and neither
+the README nor the release notes can say which pairing works. The reverse case is just as
+bad: a user reports an MCP bug that was already fixed, because npx cached an older version.
+
+Splitting the version becomes reasonable only if one of these happens:
+
+- the MCP server grows a surface the extension does not have (HTTP transport, multi-account),
+- a second consumer with its own cadence appears (a hosted variant, an integration in
+  another product),
+- the server needs urgent fixes that must not wait for an extension review.
+  Note that the marketplace publish has no review latency, so this is unlikely.
+
+If that happens, the split has to be accompanied by a published compatibility table
+(server version -> minimum extension version) and by pinning in the docs.
+
+### 12.5 Users pin, the docs recommend it
+
+`npx -y @nokxs/iobroker-mcp` resolves `latest` once and then caches it by version. For
+reproducibility the docs recommend an explicit version in the client configuration:
+
+```
+npx
+-y
+@nokxs/iobroker-mcp@1.15.0
+```
+
+This makes the pairing visible and prevents a silently changing tool surface for an agent
+that has learned a workflow. The trade-off (no automatic fixes) is documented next to it.
+
+### 12.6 Compatibility statement
+
+The README gets one sentence instead of a matrix: "The MCP server has the same version as
+the extension, supports the same ioBroker admin versions (Admin 5, 6 and 7; Admin 4 only
+degraded, as in the extension) and does not need the extension to be installed."
+
+### 12.7 Open point to fix separately
+
+The mismatch between `package.json` (`1.9.1`) and the tags is pre-existing and not caused by
+this change. It is worth a separate pull request: bump the version in the release pull
+request and stop rewriting it in CI, so the repository state, the vsix metadata and the
+release tag agree. Until then, both publish workflows keep deriving the version from the tag,
+which is at least consistent between the two artifacts.
+
+## 13. Work items
 
 1. `RemoteScriptRepository` plus `EnvConfigRepositoryService` and `NoWorkspaceService`.
 2. `src/aiTools/core/remote/` with the 14 tools, sharing validation and helpers.
@@ -349,30 +468,41 @@ server corresponds to.
    retries.
 5. Read-only mode and annotations.
 6. Build config, bundle assertions, stdio smoke test.
-7. Package publication and README section with the OpenChamber example.
-8. Rename the misleading extension command from `Enable/disable MCP server (AI tools)` to
+7. `mcp/package.json` plus `publish-mcp.yml` (same trigger as `publish.yml`, version from
+   the tag, trusted publishing) and the `.vscodeignore` exclusions.
+8. README section with the OpenChamber example and the compatibility statement from 12.6.
+9. Rename the misleading extension command from `Enable/disable MCP server (AI tools)` to
    something like `Enable/disable AI tools`, because after this change a real MCP server
    exists and the old name would describe the wrong thing.
 
 Each step is verified by `npm run test-compile`, `npm run lint` and the aiTools tests.
+Steps 1-6 ship nothing until step 7 exists, so a release can be cut from any commit before
+that, and the MCP server first appears with the release that contains step 7.
 
-## 13. Open questions
+## 14. Open questions
 
-- Package name and scope: `@nokxs/iobroker-mcp` or an unscoped name.
 - Should `iobroker_update_script_source` also allow changing `engineType` (converting a
   script between javascript and typescript)? Currently out of scope.
 - Should read-only mode also hide `start`/`stop`? They are writes, but not destructive.
   Proposal: yes, read-only means `get_*` only.
 - Should the server expose `iobroker_get_object` (read any object, not just scripts)? Useful
   for agents, but it widens the surface. Not part of this change.
+- Package name: `@nokxs/iobroker-mcp` (scoped, needs `--access public`) or a short unscoped
+  name. Scoped keeps the namespace clean.
+- Should the extension later start the server itself with
+  `vscode.lm.registerMcpServerDefinitionProvider` instead of shipping its own language model
+  tools? If yes, the extension has to pin a version range, which turns the lockstep release
+  into a declared compatibility instead of an implicit one.
+- npm trusted publishing or a granular `NPM_TOKEN`? OIDC is preferred, but it has to be set
+  up once in the npm account settings.
 
-## 14. OpenChamber setup (target state)
+## 15. OpenChamber setup (target state)
 
 ```
 Command:
 npx
 -y
-@nokxs/iobroker-mcp
+@nokxs/iobroker-mcp@1.15.0
 
 Environment variables:
 IOBROKER_MCP_URL       = http://192.168.1.10:8081
@@ -385,4 +515,6 @@ IOBROKER_MCP_READ_ONLY = true
 
 No workspace, no `--workspace` argument, no files in the project. The password is managed
 by OpenChamber and is used for silent re-auth; changing it in ioBroker requires updating
-the environment variable and restarting the server.
+the environment variable and restarting the server. The pinned version (`@1.15.0`, without
+`@latest`) is intentional: it documents which extension version the agent workflow was
+built for (section 12.5) and prevents the tool surface from changing between sessions.
