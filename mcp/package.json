@@ -1,0 +1,31 @@
+{
+    "name": "@nokxs/iobroker-mcp",
+    "version": "0.0.0",
+    "description": "MCP server for ioBroker: manage and debug javascript scripts through an AI agent",
+    "bin": {
+        "iobroker-mcp": "dist/mcp-server.js"
+    },
+    "files": [
+        "dist/mcp-server.js"
+    ],
+    "engines": {
+        "node": ">=22"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/nokxs/iobroker-javascript-vs-code-extension",
+        "directory": "mcp"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "keywords": [
+        "iobroker",
+        "mcp",
+        "model-context-protocol",
+        "ai"
+    ],
+    "dependencies": {},
+    "private": false
+}

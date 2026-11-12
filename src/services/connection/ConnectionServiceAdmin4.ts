@@ -1,6 +1,6 @@
 import * as socketio from 'socket.io-client';
 
-import { Uri, window } from "vscode";
+import { Uri } from "vscode";
 
 import { IConnectionEventListener } from "./IConnectionEventListener";
 import { IConnectionService } from "./IConnectionService";
@@ -8,12 +8,18 @@ import { ILogMessage } from '../../models/ILogMessage';
 import { IObjectList } from '../../models/IObjectList';
 import { IState } from '../../models/IState';
 import { ScriptId } from "../../models/ScriptId";
-import { injectable } from "inversify";
+import { inject, injectable } from "inversify";
+import TYPES from "../../Types";
+import { IStatusBarService } from "../statusBar/IStatusBarService";
 import { HOST_COMMAND_TIMEOUT_MS, readLogLinesAnswer } from "./hostCommandAnswer";
 
 @injectable()
 export class ConnectionServiceAdmin4 implements IConnectionService {
     public isConnected: boolean = false;
+
+    constructor(
+        @inject(TYPES.services.statusBarService) private statusBarService: IStatusBarService
+    ) { }
 
     private connectionTimeout = 10 * 1000;
     private reconnectionTimeout = 2000;
@@ -30,7 +36,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
     }
     
     async connect(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean): Promise<void> {
-        const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
+        const message = this.statusBarService.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
 
         if (this.client && this.client.connected) {
             this.client.disconnect();

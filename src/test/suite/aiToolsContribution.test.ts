@@ -1,7 +1,7 @@
 import * as assert from "assert";
 import * as fs from "fs";
 import * as path from "path";
-import { TOOL_NAMES, TOOL_SCHEMAS } from "../../aiTools/schemas";
+import { TOOL_NAMES, TOOL_DESCRIPTIONS, TOOL_SCHEMAS, TOOL_TITLES } from "../../aiTools/schemas";
 
 interface ContributedTool {
     name: string
@@ -30,6 +30,14 @@ suite("AI tools contribution", () => {
     test("mirrors the input schemas of src/aiTools/schemas.ts", () => {
         for (const tool of contributed) {
             assert.deepStrictEqual(tool.inputSchema, TOOL_SCHEMAS[<keyof typeof TOOL_SCHEMAS>tool.name], tool.name);
+        }
+    });
+
+    test("mirrors the title and description of every tool", () => {
+        for (const tool of contributed) {
+            const name = <keyof typeof TOOL_SCHEMAS>tool.name;
+            assert.strictEqual(TOOL_TITLES[name], tool.displayName, tool.name);
+            assert.strictEqual(TOOL_DESCRIPTIONS[name], tool.modelDescription, tool.name);
         }
     });
 

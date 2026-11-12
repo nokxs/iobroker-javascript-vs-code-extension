@@ -9,6 +9,15 @@ export class ScriptId extends String {
     /** Prefix of every script id. The prefix itself is the root directory, not a script. */
     static readonly prefix = "script.js";
 
+    /**
+     * Mirrors the sanitization of the ioBroker admin rename dialog: characters that would break
+     * an ioBroker id are replaced by an underscore. Lives here so that the remote core does not
+     * have to construct the VS Code bound `ScriptIdService`.
+     */
+    static sanitizeId(id: ScriptId): ScriptId {
+        return new ScriptId(`${id}`.replace(/[\\/\][*,;'"`<>?&#\s]/g, "_"));
+    }
+
     /** Id of the root directory that contains all scripts and script directories. */
     static readonly rootId = ScriptId.prefix;
 

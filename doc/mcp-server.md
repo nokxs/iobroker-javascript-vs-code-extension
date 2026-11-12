@@ -1,6 +1,6 @@
 # Standalone MCP server (remote-only) — design
 
-Status: draft, third review round addressed, no code yet
+Status: implemented (see `src/mcp` and `test/mcp`)
 Scope: a real Model Context Protocol server that talks to ioBroker only, configured
 exclusively through environment variables.
 
@@ -1305,3 +1305,35 @@ Two follow-ups for this dialog, given that the entry is global by default (see s
   scoped to the project that needs it,
 - after creating the entry, verify the permissions of OpenChamber's configuration file; a
   world-readable file would expose the password to every local user.
+
+## 20. Implementation notes
+
+Deviations and decisions taken while implementing the design, so the next reader does not have to
+rediscover them:
+
+- **Toolchain.** The SDK 1.32.2 type declarations import `zod/v4`, which TypeScript 4.9 cannot
+  parse. The repository therefore uses TypeScript 5.9 and `zod` 3.25 (the SDK peer range) as
+  devDependencies. Both are build time only; the bundle inlines them.
+- **Socket reconnect backoff.** The socket still reconnects on the fixed 3 s retry of
+  `SocketIoClient`. The `Failed` state adds the 30 s cooldown before the next `Connecting`
+  attempt, so a wrong URL costs one attempt per 30 s. Repairing `SocketIoClient` would change the
+  extension and is still a separate change (section 10.4).
+- **Interactive password fallback.** `LoginService.getAccessToken` keeps its
+  `updatePasswordFromUser()` branch, because the extension still needs the password prompt.
+  `EnvLoginCredentialsService.updatePasswordFromUser()` returns `undefined` without a prompt or a
+  second login request, so the server still makes at most one login attempt per tool call and the
+  three-attempt limit holds.
+- **`--check`.** It validates the URL, the port, the booleans, the log level and the
+  username/password pair. Whether credentials are required at all depends on the login type,
+  which can only be detected by talking to ioBroker; a missing password therefore surfaces as
+  `not_connected` on the first tool call, not in `--check`.
+- **Call budget.** A call that triggers the first connect can spend 10 s on the connection and
+  then up to 30 s on the tool, so 40 s in total. That stays below the 45 s client recommendation
+  from section 11.1.
+- **Shared metadata.** `TOOL_TITLES` and `TOOL_DESCRIPTIONS` are shared with the extension, so
+  the descriptions of the kept tools still mention local files even though the server returns no
+  file fields. The contribution test enforces the equality with `package.json`; changing the text
+  for the server only would need a separate description map.
+- **Remote repository.** `RemoteScriptRepository` also refreshes a single directory through
+  `IDirectoryService.downloadDirectory`; the design only mentioned script invalidation, but the
+  socket pattern `script.js.*` covers channels too.

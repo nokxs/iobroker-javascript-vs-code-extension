@@ -37,21 +37,8 @@ export class ScriptIdService implements IScriptIdService {
     }
 
     sanatizeId(scriptId: ScriptId): ScriptId {
-        scriptId = this.replaceAll(<string>scriptId, " ", "_");
-        scriptId = this.replaceAll(<string>scriptId, "*", "_");
-        scriptId = this.replaceAll(<string>scriptId, ",", "_");
-        scriptId = this.replaceAll(<string>scriptId, ";", "_");
-        scriptId = this.replaceAll(<string>scriptId, "'", "_");
-        scriptId = this.replaceAll(<string>scriptId, "\"", "_");
-        scriptId = this.replaceAll(<string>scriptId, "\\", "_");
-        scriptId = this.replaceAll(<string>scriptId, "&", "_");
-        scriptId = this.replaceAll(<string>scriptId, "#", "_");
-        scriptId = this.replaceAll(<string>scriptId, "<", "_");
-        scriptId = this.replaceAll(<string>scriptId, ">", "_");
-        scriptId = this.replaceAll(<string>scriptId, "?", "_");
-
-        return scriptId;
-    }  
+        return ScriptId.sanitizeId(scriptId);
+    }
 
     private replaceAll(s: string, searchValue: string, replaceValue: string): string {
         return s.split(searchValue).join(replaceValue);

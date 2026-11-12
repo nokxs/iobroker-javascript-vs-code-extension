@@ -9,7 +9,6 @@ import { Uri } from 'vscode';
 import { IAccessToken } from '../loginCredentialsService/IAccessToken';
 import { ILoginCredentialsService } from '../loginCredentialsService/ILoginCredentialsService';
 import { IDebugLogService } from '../debugLogService/IDebugLogService';
-import { IConfigRepositoryService } from '../configRepository/IConfigRepositoryService';
 import { LoginType } from './LoginType';
 
 interface ILoginError {
@@ -22,8 +21,7 @@ export class LoginService implements ILoginService {
 
     constructor(
         @inject(TYPES.services.loginCredentials) private loginCredentialService: ILoginCredentialsService,
-        @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService,
-        @inject(TYPES.services.configRepository) private configRepository: IConfigRepositoryService
+        @inject(TYPES.services.debugLogService) private debugLogService: IDebugLogService
     ) { }
 
     async getLoginType(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<LoginType> {
@@ -61,9 +59,6 @@ export class LoginService implements ILoginService {
     }
 
     async getAccessToken(baseUri: Uri, allowSelfSignedCertificate: boolean, username: string, loginType: LoginType): Promise<string | undefined> {
-        const config = this.configRepository.config;
-        console.log(config.ioBrokerUrl);
-        
         const accessToken = await this.loginCredentialService.getAccessToken();
         const serverTime = await this.getServerTime(baseUri, allowSelfSignedCertificate);
 

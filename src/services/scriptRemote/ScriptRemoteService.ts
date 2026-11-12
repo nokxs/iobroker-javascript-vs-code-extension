@@ -7,7 +7,7 @@ import { IScriptChangedEventListener as IScriptChangedEventListener } from './IS
 import { IScriptIdService } from '../scriptId/IScriptIdService';
 import { IScriptRemoteService } from './IScriptRemoteService';
 import { IConnectionEventListener } from "../connection/IConnectionEventListener";
-import { IDirectory } from "../../models/IDirectory";
+import { DirectoryReference } from "../../models/IDirectory";
 import { IDirectoryService } from "../directory/IDirectoryService";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { getEngineTypeInfo } from "../../models/EngineType";
@@ -93,7 +93,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         await this.uploadScript(script);
     }
 
-    async move(scriptId: ScriptId, targetDirectory: IDirectory): Promise<void> {
+    async move(scriptId: ScriptId, targetDirectory: DirectoryReference): Promise<void> {
         const script = await this.downloadScriptWithId(scriptId);
         const scriptIdName = scriptId.substring(scriptId.lastIndexOf(".") + 1);
 

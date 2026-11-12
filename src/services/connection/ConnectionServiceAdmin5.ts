@@ -1,4 +1,4 @@
-import { Uri, window } from "vscode";
+import { Uri } from "vscode";
 
 import { IConnectionEventListener } from "./IConnectionEventListener";
 import { IConnectionService } from "./IConnectionService";
@@ -10,6 +10,7 @@ import { ISocketIoClient } from "../socketIoClient/ISocketIoClient";
 import { IState } from "../../models/IState";
 import { IObjectList } from "../../models/IObjectList";
 import { HOST_COMMAND_TIMEOUT_MS, readLogLinesAnswer } from "./hostCommandAnswer";
+import { IStatusBarService } from "../statusBar/IStatusBarService";
 
 @injectable()
 export class ConnectionServiceAdmin5 implements IConnectionService {
@@ -21,7 +22,8 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     private client: ISocketIoClient | undefined = undefined;
 
     constructor(
-        @inject(TYPES.services.socketIoClient) private socketIoClient: ISocketIoClient
+        @inject(TYPES.services.socketIoClient) private socketIoClient: ISocketIoClient,
+        @inject(TYPES.services.statusBarService) private statusBarService: IStatusBarService
     ) { }
 
     registerConnectionEventListener(listener: IConnectionEventListener): void {
@@ -307,7 +309,7 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     }
 
     private async connectInternal(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean, options: any): Promise<void> {
-        const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
+        const message = this.statusBarService.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
 
         if (this.client && this.client.connected) {
             await this.client.close();
