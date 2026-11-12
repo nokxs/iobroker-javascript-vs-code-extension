@@ -1,6 +1,6 @@
 # Standalone MCP server (remote-only) — design
 
-Status: draft, second review round addressed, no code yet
+Status: draft, third review round addressed, no code yet
 Scope: a real Model Context Protocol server that talks to ioBroker only, configured
 exclusively through environment variables.
 
@@ -51,7 +51,7 @@ Non-goals:
 - HTTP/SSE transport, multi-instance support, per-user authorisation.
 - An own credential store (keychain, encrypted file). The server reads `process.env` and
   writes nothing; secret management is the client's job (section 8.1).
-- Renaming the extension command in this change (see section 17).
+- Renaming the extension command in this change (see section 18).
 
 ## 3. Why remote-only
 
@@ -80,7 +80,7 @@ Comparison of both modes:
 | Filesystem access | required | none |
 | Configuration | `.iobroker-config.json` + SecretStorage | environment variables |
 | Secrets at rest | OS keychain via VS Code | client config (see section 8) |
-| Tools | 17 | 13 kept, 1 new, 4 dropped |
+| Tools | 17 | 14 (13 kept, 1 new, 4 dropped) |
 | Re-auth | password from SecretStorage | password from env, held in memory |
 
 ## 4. Threat model and attack surface
@@ -242,24 +242,51 @@ MCP API level: use the low level `Server` from `@modelcontextprotocol/sdk` with
 instead of the high level `McpServer`. Reason: the high level API expects zod schemas,
 while [schemas.ts](../src/aiTools/schemas.ts) already holds plain JSON Schema objects
 that `package.json` mirrors. Reusing them verbatim avoids a second schema dialect and
-avoids a zod dependency.
+avoids *authoring* zod schemas. It does not remove zod from the tree: the SDK declares
+`zod` as both a dependency and a peer dependency (`^3.25 || ^4.0`), so it is bundled
+either way. The design targets the SDK 1.x line (verified against 1.32.2) and MCP spec
+2025-06-18.
+
+Tool surface:
+
+| Source | Content |
+|---|---|
+| `REMOTE_TOOL_NAMES` (new, `src/mcp/tools/remoteToolSet.ts`) | exactly the 14 tools the server implements: the 13 kept names from section 5 plus `iobroker_update_script_source` |
+| `TOOL_SCHEMAS` | the 13 input schemas, imported unchanged |
+| `REMOTE_TOOL_SCHEMAS` (new, same file) | the input schema of `iobroker_update_script_source` only |
+| `TOOL_TITLES` / `TOOL_DESCRIPTIONS` (new, in `schemas.ts`) | title and description for all 17 contributed tools; the server uses the 13 shared ones. The new tool's metadata lives in `remoteToolSet.ts` |
 
 ```
-tools/list -> TOOL_NAMES (filtered by the read-only flag)
-              map name -> { name, description, inputSchema: TOOL_SCHEMAS[name] }
+tools/list -> REMOTE_TOOL_NAMES (filtered by the read-only flag)
+              map name -> { name, title, description, inputSchema, annotations }
 tools/call -> remote tool set -> ToolOutcome -> CallToolResult
 ```
 
-Tools are registered from the schema module, so `listTools` can never drift from the
-schemas that the extension advertises.
+`TOOL_NAMES` is **not** the source for `tools/list`: it has 17 entries, contains the four
+dropped sync tools and lacks `iobroker_update_script_source`. Using it would advertise
+four tools without a handler and hide the one tool that replaces them.
+`iobroker_update_script_source` must not be added to `src/aiTools/schemas.ts` or
+`package.json`: the extension has no adapter for it and
+[aiToolsContribution.test.ts](../src/test/suite/aiToolsContribution.test.ts) would fail
+(section 16.1).
+
+The types follow from that: `ToolName` is `keyof typeof TOOL_SCHEMAS`
+([schemas.ts](../src/aiTools/schemas.ts)), so it cannot represent the new tool and
+`isToolName()` returns `false` for it. `remoteToolSet.ts` declares
+`type RemoteToolName = ToolName | "iobroker_update_script_source"` and a lookup that reads
+`TOOL_SCHEMAS[name]` and falls back to `REMOTE_TOOL_SCHEMAS[name]`. The `tools/call` guard
+checks the remote map, never `isToolName`. The read-only filter uses the same
+`readOnlyHint` values as the annotations table below, so the exposed list and the hints
+cannot disagree.
 
 Additions per tool:
 
-- `description` and `title`: today the descriptions live in `package.json`
-  (`contributes.languageModelTools`) and in the schema property descriptions. The MCP
-  server needs a short description and a human-readable `title` per tool, so both are
-  added next to `TOOL_SCHEMAS` and the existing contribution test is extended to cover
-  them.
+- `description` and `title`: today they live in `package.json`
+  (`contributes.languageModelTools`, fields `modelDescription` and `displayName`) and in
+  the schema property descriptions. The MCP server needs both per tool, so they are copied
+  into `TOOL_TITLES`/`TOOL_DESCRIPTIONS` next to `TOOL_SCHEMAS` for all 17 entries, and the
+  contribution test is extended to assert equality with the `package.json` entries, so the
+  duplication cannot drift. The new tool carries its own pair in `remoteToolSet.ts`.
 - `annotations`: the defaults are not "off": `readOnlyHint` defaults to `false`,
   `destructiveHint` to **`true`**, `idempotentHint` to `false` and `openWorldHint` to
   `true`. The server therefore sets every value explicitly:
@@ -293,8 +320,8 @@ no config file and no `--workspace` argument.
 | `IOBROKER_MCP_URL` | yes | – | `http://host:8081` or `https://host:8081` |
 | `IOBROKER_MCP_USERNAME` | yes when login is enabled | – | ioBroker user |
 | `IOBROKER_MCP_PASSWORD` | yes when login is enabled | – | ioBroker password |
-| `IOBROKER_MCP_ALLOW_SELF_SIGNED` | no | `false` | accept self signed certificates, TLS only |
-| `IOBROKER_MCP_READ_ONLY` | no | `false` | expose `get_*` tools only, `start`/`stop` included |
+| `IOBROKER_MCP_ALLOW_SELF_SIGNED` | no | `false` | accept self signed certificates for `https://` URLs; ignored with a warning for `http://` |
+| `IOBROKER_MCP_READ_ONLY` | no | `false` | expose `get_*` tools only; `start_script` and `stop_script` are hidden as well |
 | `IOBROKER_MCP_SCRIPT_AUTO_RUN` | no | `false` | maps to `scriptAutoRun` |
 | `IOBROKER_MCP_LOG_LEVEL` | no | `info` | stderr diagnostics only |
 
@@ -471,17 +498,28 @@ immediately, an unreachable ioBroker must not block the handshake, and a client 
 registers the server but never uses it should not open a socket. The first call waits up to
 `CONNECT_BUDGET` (10 s) and then fails with `not_connected`.
 
+The first connect has one extra step that the extension hides in its config wizard:
+`ConnectionServiceProvider.getConnectionService()` throws unless
+`configRepositoryService.config.adminVersion` is set
+([ConnectionServiceProvider.ts](../src/services/connectionServiceProvider/ConnectionServiceProvider.ts)),
+and in the extension only `ConfigCreationService` writes that value. The server therefore
+runs `AdminVersionDetector.getVersion()` at the start of `RemoteConnectionService.connect()`
+and stores the result in the `IConfigRepositoryService` before the first
+`getConnectionService()` call. Detection is part of the 10 s connect budget; a timeout is
+`not_connected`, not a crash. On re-auth the cached value is reused, exactly like
+`detectedLoginType` (section 9).
+
 ### 10.2 Request contract
 
 | Request | Behaviour |
 |---|---|
-| `initialize` | `serverInfo: { name: "iobroker-mcp", version: BUILD_VERSION }`, capabilities only for `tools`, without `listChanged` (the list is static per process) |
-| `tools/list` | pure function over `TOOL_SCHEMAS`, no IO, filtered by read-only; cannot fail |
+| `initialize` | `serverInfo: { name: "iobroker-mcp", version: BUILD_VERSION }`, capabilities only for `tools`, without `listChanged` (the list is static per process). `protocolVersion` is filled by the SDK from its supported list; the server does not override it, so a client that asks for 2025-06-18 gets that version echoed |
+| `tools/list` | pure function over `REMOTE_TOOL_NAMES` and the schema map, no IO, filtered by read-only; cannot fail |
 | `tools/call` | never throws across the JSON-RPC boundary, every outcome is mapped (below) |
 | notifications | ignored in v1; a cancelled call keeps running until its budget ends |
 | `ping` | answered by the SDK's `Protocol` base class (it registers `PingRequestSchema`), no handler in the server |
 | unknown method | SDK answers with method-not-found |
-| unknown tool name | JSON-RPC error `-32602` (invalid params) |
+| unknown tool name | `McpError(ErrorCode.InvalidParams, ...)` raised by the handler, which the SDK serialises as `-32602` |
 
 `BUILD_VERSION` is injected by webpack `DefinePlugin` from the release tag, so
 `initialize` and `--version` always agree and no runtime `package.json` read is needed.
@@ -516,8 +554,9 @@ stateDiagram-v2
     Reauthenticating --> NeedsAttention: 3 failed logins
     Ready --> Reconnecting: socket disconnect
     Reconnecting --> Ready: reconnect
-    Reconnecting --> Failed: socket closed by server
+    Reconnecting --> Failed: reconnect budget exhausted
     NeedsAttention --> [*]: restart required
+    Failed --> Connecting: next tool call after 30 s cooldown
     Failed --> [*]: stdin closed
     Ready --> [*]: stdin closed / SIGTERM
 ```
@@ -535,19 +574,34 @@ stateDiagram-v2
 `NeedsAttention` exists to stop silent retry loops after a password change. Recovering
 requires a restart, which the client configuration makes cheap.
 
+`Failed` is recoverable, not terminal: the next tool call after a 30 s cooldown moves back
+to `Connecting`, so a wrong URL costs one 10 s attempt per 30 s instead of one per call.
+Only `NeedsAttention` requires a restart.
+
 ### 10.4 Timeouts, concurrency and backoff
 
 | Budget | Value | Result on expiry |
 |---|---|---|
-| First connect | 10 s | `not_connected` |
+| First connect (including admin version detection) | 10 s | `not_connected` |
 | Login | 10 s | `not_connected`, counts towards the 3-attempt limit (counted by `RemoteConnectionService`, section 9) |
-| Socket acknowledgement | existing client timeouts (10 s for socket acks and for the `getLogs` host command) | `server_error` |
+| Socket acknowledgement | 10 s, enforced by the server | `server_error` |
 | Whole tool call | 30 s | `server_error` with a hint to narrow the request |
 | Concurrent calls | 8, then reject | `server_error`, "too many concurrent calls" |
 
+The socket row is not a reuse: `SocketIoClient` has no working acknowledgement timeout.
+It hardcodes `DEBUG = true`, which stores `ts: 0` for every callback and makes
+`_garbageCollect` return before it looks at the array; the comparison it would use is
+inverted as well (`ts > now` fires callbacks that have not expired). A lost callback
+therefore never rejects, and the extension only survives because its calls are short. The
+server wraps each socket operation in its own `Promise.race` with 10 s; the whole-call
+budget is the backstop. Repairing `SocketIoClient` changes behaviour for the extension and
+is a separate change.
+
 30 s is chosen because it stays below the common client default while leaving room for a
-log fetch on a slow host. Operations are bounded instead of streaming: `get_scripts`
-paginates, `get_script_content` truncates, `get_logs` caps lines and characters.
+log fetch on a slow host. Clients must not cut a call off earlier: section 11.1 asks for
+45 s. Operations are bounded instead of streamed: `get_scripts` truncates at `limit` and
+reports `truncated: true` (there is no cursor to continue), `get_script_content` truncates,
+`get_logs` caps lines and characters.
 
 Reconnect backoff for the socket: 1 s, 2 s, 4 s, 8 s, 15 s, then 30 s with jitter. Login
 attempts are **not** retried beyond three, because a wrong password repeated at speed can
@@ -555,8 +609,13 @@ lock the ioBroker user.
 
 ### 10.5 Invalid or malformed input
 
-- A frame that is not JSON is rejected by the SDK with `-32700`, a bad envelope with
-  `-32602`. Both are protocol errors and never reach our handlers.
+- A line that is not JSON does not produce a `-32700` response. The SDK's
+  `StdioServerTransport` catches the `JSON.parse` error inside `ReadBuffer.readMessage`,
+  calls `onerror` and drops the line; nothing is written back and the connection stays
+  open. A syntactically valid frame with a bad envelope fails schema validation in
+  `Protocol` and is answered with `-32602`. Neither path reaches our handlers, so the
+  server implements no parser of its own. The visible consequence: a malformed request
+  looks like a timeout. Only a broken client produces one, so that is acceptable.
 - `params.arguments` is treated as `unknown`. The existing helpers (`toScriptId`,
   `toDirectoryId`, `toBoundedInteger`, `validateName`) validate it, and the handler uses the
   same `input ?? {}` default as `BaseTool`.
@@ -618,7 +677,9 @@ No other codes, so the client configuration can rely on them.
 
 1. **stdio transport**: spawn a process and speak JSON-RPC over stdin/stdout.
 2. **Per-server environment variables.** Without this the client cannot pass the password.
-3. A tool-call timeout of at least 30 s, or a configurable one.
+3. A tool-call timeout of at least 45 s, or a configurable one. The server answers at
+   30 s (section 10.4), so a client that cuts off at 30 s would race the server's own
+   error and report a transport failure instead of the mapped `server_error`.
 4. No mandatory shell. If the client uses a shell, the command has to be quoted correctly
    (relevant on Windows).
 5. Optional but useful: tool annotations (`destructiveHint`), so the client can ask before
@@ -684,43 +745,60 @@ list, and is the recommended fallback when a host has no `env` field.
 ## 12. Services that can be reused
 
 The transport layer is mostly usable outside VS Code: VS Code is imported for types in
-most places, and TypeScript elides type-only imports. Two runtime uses of `vscode` are the
-exceptions and have to be removed first, otherwise the bundle assertion in section 14.1
-fails:
+most places, and TypeScript elides type-only imports. Several runtime uses of `vscode`
+remain in the reused classes and have to be removed or avoided first, otherwise the bundle
+assertion in section 14.1 fails:
 
 | Service | Reusable as is | Note |
 |---|---|---|
-| `SocketIoClient` | yes | `ws` only |
-| `ConnectionServiceAdmin5` / `Admin4` | partial | `window.setStatusBarMessage` is a runtime `vscode` import; it becomes an injected status bar callback (extension: real, server: no-op) |
+| `SocketIoClient` | yes | `ws` only; but its acknowledgement timeout is dead code (section 10.4) |
+| `ConnectionServiceAdmin5` / `Admin4` | partial | `window.setStatusBarMessage` is a runtime `vscode` import; replace the call with the existing `IStatusBarService` injection (extension: `StatusBarService`, server: a no-op implementation) |
 | `LoginService` | partial | `Uri` only in type positions; needs `EnvLoginCredentialsService` and the interactive retry branch in `getAccessToken` removed (section 9); the `console.log(config.ioBrokerUrl)` must be removed, see 10.6 |
 | `LoginCredentialsService` | no | `ExtensionContext.secrets` and an input box when no password is stored |
 | `IobrokerConnectionService` | no | reads and creates `.iobroker-config.json`, status bar, window messages, auto upload, object repository; replaced by `RemoteConnectionService` |
-| `ScriptRemoteService` | yes | `Uri` only in a signature; `.env` secret replacement no-ops without a workspace |
+| `ScriptRemoteService` | yes | `Uri` only in a signature; `.env` secret replacement no-ops without a workspace; needs an `IScriptIdService` binding (see `RemoteScriptIdService`) |
 | `DirectoryService` | yes | no VS Code imports |
 | `StateAndObjectRemoteService` | yes | no VS Code imports |
 | `JsInstanceService` | yes | no VS Code imports |
-| `ScriptIdService` | partial | `sanatizeId` moves to `ScriptId` as a static member (the repository rule for id logic), so the remote core never imports this class; `getIoBrokerId` stays extension-only |
+| `ScriptIdService` | partial | `sanatizeId` moves to `ScriptId` as a static member (the repository rule for id logic); `getIoBrokerId` stays extension-only and is the only runtime `vscode` use, so the server never constructs this class |
 | `ScriptRepositoryService` | **no** | watchers, text documents, git extension, dirty state |
-| `ScriptService` | partial | `getDefaultScript`/`getFileExtension` portable, file access not |
+| `ScriptService` | **no** | the class itself needs `IFileService` (VS Code `workspace.fs`), but the two members the remote core needs are pure: `getDefaultScript` (object literal + `sanatizeId`) and `getFileExtension` (`getEngineTypeInfo`). Both move into `src/aiTools/core/remote/helpers.ts`, so the server needs neither the class nor an `IFileService` binding |
 | `ScriptFileService` | no | `workspace.fs` |
 | `ConfigRepositoryService` | no | reads `.iobroker-config.json` |
 | `WorkspaceService` | no | VS Code workspaces |
 | `DebugLogService` | **no** | `IWorkspaceService` for `debug.log`, and it only writes while collecting; `SocketIoClient` injects it, so the server needs a stderr implementation |
 
-Six Node side implementations are therefore added:
+The following Node side implementations are therefore added:
 
 - `EnvConfigRepositoryService` implementing `IConfigRepositoryService` from the
-  environment. It also lets `ScriptRemoteService` keep its `scriptAutoRun` check.
+  environment. It also lets `ScriptRemoteService` keep its `scriptAutoRun` check, and it
+  holds the `adminVersion` that `RemoteConnectionService` detects (section 10.1).
 - `EnvLoginCredentialsService` implementing `ILoginCredentialsService` from
   `IOBROKER_MCP_PASSWORD`: `getPassword()` returns the environment value,
   `getAccessToken()`/`updateAccessToken()` keep the token in memory,
   `updatePasswordFromUser()` is never reached, `deleteCredentials()` is a no-op.
-- `NoWorkspaceService` implementing `IWorkspaceService` with no workspace. It keeps
-  `SecretPlaceholderService` inactive, so `<workspace>/.env` is never read.
+- `NoWorkspaceService` implementing `IWorkspaceService` with no workspace. `workspaceToUse`
+  returns the same sentinel the extension uses, `{ uri: { fsPath: "" }, name: "INVALID",
+  index: 0 }`, typed as `WorkspaceFolder`. The empty `fsPath` is falsy, so
+  `SecretPlaceholderService` returns the source unchanged and `<workspace>/.env` is never
+  read. The existing `NoWorkspaceFolder` model is not reused because it calls `Uri.parse`
+  at runtime and would pull `require("vscode")` into the bundle; a structural literal needs
+  none of it.
+- `RemoteScriptIdService` implementing `IScriptIdService`: `sanatizeId` delegates to the
+  new `ScriptId` static, `getIoBrokerId` throws. Without this binding the DI container
+  cannot construct `ScriptRemoteService`, and reusing `ScriptIdService` would pull
+  `require("vscode")` into the bundle.
+- `NoStatusBarService` implementing `IStatusBarService` with a no-op, used by the two
+  connection services.
 - `StderrDebugLogService` implementing `IDebugLogService`, writing through the `Logger` so
   the socket client's diagnostics land on stderr and pass through `redact`.
 - `RemoteConnectionService`, described below.
 - `RemoteScriptRepository`, described below.
+
+The `logs` dependency of the core is built the same way `AiToolService.createDeps` builds
+it: `getHosts()` reads `getSystemObjectView("host", "system.host", "system.host.")` and
+`getLogs()` delegates to `ConnectionService.getLogs`. It lives in a small
+`RemoteLogService` class instead of an inline closure, so the runner stays free of logic.
 
 URI values (`http://host:8081`) are built with the standalone `vscode-uri` package, which
 is the implementation VS Code uses internally. The members the reused code touches
@@ -730,8 +808,8 @@ module is needed.
 A `vscode` module shim is explicitly rejected: webpack would resolve `require("vscode")`
 to no-op objects, which silently hides broken behaviour instead of failing the build.
 
-`RemoteScriptRepository` (new, in `src/services/remote/`) implements the repository
-subset that the core functions need:
+`RemoteScriptRepository` (new, in `src/services/remote/`) provides the repository subset
+that the core functions need:
 
 - initial load: `downloadAllScripts()` and `directoryService.downloadAllDirectories()`
 - invalidation: `registerForObjectChange("script.js.*", ...)`, the same mechanism
@@ -739,6 +817,14 @@ subset that the core functions need:
 - no dirty state, no watchers, no git, no `absoluteUri`
 - `evaluateDirtyState*`/`evaluateScriptOnRemote*` do not exist, the four sync tools are
   dropped instead of stubbed
+
+It deliberately does **not** implement `IScriptRepositoryService`. That interface returns
+`ILocalScript[]`, whose `absoluteUri`/`relativeUri`/`isDirty`/`isRemoteOnly` fields have no
+remote counterpart; implementing it would force fake `Uri` objects into the cache. Its own
+signatures are `getAllScripts(): IScript[]`, `getAllDirectories(): RemoteDirectory[]` and
+`getRootDirectory(): RemoteDirectory`, where
+`type RemoteDirectory = Pick<IDirectory, "_id" | "common">`. The core's directory helpers
+accept that structural subset.
 
 Estimated size: around 150 lines, compared to 531 lines for the existing service.
 
@@ -767,6 +853,14 @@ more code than the orchestration it replaces.
 unchanged. The existing `src/aiTools/core/*` files stay untouched, so the extension keeps
 working exactly as before and its tests keep covering it.
 
+The shared helpers cannot be reused wholesale: `helpers.ts` is built around
+`ILocalScript` and `absoluteUri` (`filePathOf`, `extensionOf`, `toScriptSummary`,
+`refreshScriptInCache`). The remote `helpers.ts` keeps the parts that only touch ids and
+`common` (`scriptIdOf`, `scriptNameOf`, `findDirectory`, `allDirectories`) and adds
+remote variants that take `IScript`/`RemoteDirectory` and omit `filePath`, `isDirty` and
+`isRemoteOnly`. `extensionOf` uses `getEngineTypeInfo(engineType)?.fileExtension ?? "txt"`
+instead of `path.extname(absoluteUri.fsPath)`.
+
 The remote `ToolDeps` picks become:
 
 ```ts
@@ -776,15 +870,15 @@ interface RemoteToolDeps {
     scriptRemote: Pick<IScriptRemoteService,
         "downloadScriptWithId" | "uploadScript" | "update" | "startScript" | "stopScript"
         | "rename" | "move" | "delete">
-    script: Pick<IScriptService, "getDefaultScript" | "getFileExtension">
     directories: Pick<IDirectoryService, "createDirectory" | "createDirectoriesRecursively" | "deleteDirectory">
     jsInstances: Pick<IJsInstanceService, "getAvailableInstances">
     states: Pick<IStateAndObjectRemoteService, "getState">
-    logs: { getHosts(): Promise<LogHost[]>; getLogs(hostId: string, lines: number): Promise<string[]> }
+    logs: Pick<RemoteLogService, "getHosts" | "getLogs">
 }
 ```
 
-Note the absence of `files`, `documents`, `scriptCreation` and the four sync methods.
+Note the absence of `files`, `documents`, `scriptCreation`, `script` and the four sync
+methods.
 `sanatizeId` is not a dependency either: it becomes a static on `ScriptId` (section 12)
 and the remote functions call it directly, which keeps `ScriptIdService` and its `vscode`
 import out of the bundle.
@@ -809,6 +903,10 @@ code documents an intent the design abandoned.
 - Everything is bundled: `ws`, `axios`, `socket.io-client`, `@modelcontextprotocol/sdk`,
   `vscode-uri`. `mcp/package.json` therefore has **no `dependencies`** and no second
   lockfile.
+- The root `package.json` gains two scripts, `compile:mcp` (webpack production) and
+  `test:mcp` (compile + mocha), and `@modelcontextprotocol/sdk` as a **devDependency**:
+  the bundle inlines it, and the extension package ships no `node_modules`. Its peer
+  `zod` is installed by npm 7+ automatically and is bundled as well.
 - Assertions on the built file: no `require("vscode")`, no `console.log(`, the shebang is
   the first line, no `.map` is published.
 
@@ -816,7 +914,7 @@ code documents an intent the design abandoned.
 
 | Topic | Decision |
 |---|---|
-| Node | `engines.node: ">=20"`. Node 20 is the oldest LTS that the SDK and `ws` support without polyfills, and it matches the Node that ships with VS Code 1.95 (Electron 32). |
+| Node | `engines.node: ">=22"`. The SDK only requires `>=18`, so this is a support decision, not a constraint: Node 20 reached end of life in April 2026 and Node 22 is the oldest still-supported LTS. `build.yml` and `publish-mcp.yml` move to Node 22 in the same change. |
 | Module format | CommonJS bundle. The codebase is CJS and the SDK ships both formats; ESM would force `"type": "module"` in the package and a dynamic import in the app for no gain. |
 | Shebang | `#!/usr/bin/env node` as a webpack `banner`, first line of `dist/mcp-server.js`. |
 | Executable bit | Set by npm on install. When the client spawns `node dist/mcp-server.js` directly, the bit does not matter. |
@@ -835,7 +933,7 @@ code documents an intent the design abandoned.
 | `description` | "MCP server for ioBroker: manage and debug javascript scripts through an AI agent" |
 | `bin` | `{ "iobroker-mcp": "dist/mcp-server.js" }` |
 | `files` | `["dist/mcp-server.js"]` |
-| `engines` | `{ "node": ">=20" }` |
+| `engines` | `{ "node": ">=22" }` |
 | `license` | `MIT`, matching the repository [LICENSE](../LICENSE) (the root `package.json` currently has no `license` field; the new package should not repeat that) |
 | `repository` | `{ "type": "git", "url": "...", "directory": "mcp" }` |
 | `publishConfig` | `{ "access": "public" }` |
@@ -847,11 +945,14 @@ and an install hook would be both unnecessary and a supply-chain smell.
 
 ### 14.4 Extension package
 
-`.vscodeignore` gets `mcp/**` and `dist/mcp-server.js*`, so the marketplace package does not
-carry the server or its metadata. `tsconfig.json` uses `rootDir: "src"`, so `mcp/` must
-contain no `.ts` files (only `package.json`); otherwise `npm run test-compile` breaks. If
-TypeScript is ever needed there, `mcp` has to be excluded from the root tsconfig and get its
-own lint target.
+`.vscodeignore` gets `mcp/**`, `test/**` and `dist/mcp-server.js*`, so the marketplace
+package does not carry the server or its metadata. `tsconfig.json` uses `rootDir: "src"`
+and has no `include`, so every `.ts` outside `src` breaks `npm run test-compile`. Both
+`mcp` and `test` are therefore added to its `exclude`, and `test/mcp` gets its own
+`tsconfig.mcp-test.json` (outDir `out-mcp-test`, run by `npm run test:mcp`). The same
+applies to `mcp/`: it may contain only `package.json`, no `.ts`. If TypeScript is ever
+needed there, `mcp` has to stay excluded from the root tsconfig and get its own lint
+target.
 
 ### 14.5 Supply chain
 
@@ -919,7 +1020,7 @@ release published (tag vX.Y.Z)
 
 Steps of `publish-mcp.yml`:
 
-1. `actions/checkout` and `actions/setup-node` on Node 20 (pin the current major, unlike
+1. `actions/checkout` and `actions/setup-node` on Node 22 (pin the current major, unlike
    `publish.yml`, which still uses `@v2`).
 2. Read `VERSION=${GITHUB_REF#refs/tags/v}` and validate it against
    `^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$`. Fail on anything else, so a malformed tag
@@ -1062,15 +1163,17 @@ unpublishing.
 | Layer | Scope | Location | Runner |
 |---|---|---|---|
 | Unit | the 14 remote core functions against fakes, mirroring `aiToolsCore.test.ts` | `src/test/suite/aiToolsRemoteCore.test.ts` | existing `npm test` (extension host) |
-| Protocol | spawn the built `dist/mcp-server.js`, speak MCP over stdio with the SDK client | `src/test/mcp/mcpServer.test.ts` | new `npm run test:mcp` (plain mocha, no extension host) |
-| Contract | `TOOL_NAMES` == `TOOL_SCHEMAS` == `package.json` contributions == listed tools | extend `aiToolsContribution.test.ts` | `npm test` |
-| Bundle | static assertions on `dist/mcp-server.js` | `src/test/mcp/bundle.test.ts` | `npm run test:mcp` |
+| Protocol | spawn the built `dist/mcp-server.js`, speak MCP over stdio with the SDK client | `test/mcp/mcpServer.test.ts` | new `npm run test:mcp` (plain mocha, no extension host) |
+| Contract | extension side: `TOOL_NAMES` == `TOOL_SCHEMAS` == `package.json` contributions. Server side: `REMOTE_TOOL_NAMES` == registered handlers == `tools/list`, and every entry is either in `TOOL_NAMES` or the new tool | extend `aiToolsContribution.test.ts` and `test/mcp/toolSurface.test.ts` | `npm test` / `npm run test:mcp` |
+| Bundle | static assertions on `dist/mcp-server.js` | `test/mcp/bundle.test.ts` | `npm run test:mcp` |
 | Manual | real clients and a real ioBroker | checklist 16.3 | – |
 
 The protocol tests run outside the extension host on purpose: the server must not depend on
-VS Code, and running it there would hide exactly the failure that matters. `build.yml` runs
-`npm run compile:mcp` and then `npm run test:mcp` after the existing steps, so a broken
-bundle cannot reach `main`.
+VS Code, and running it there would hide exactly the failure that matters. They also live
+outside `src/`: `src/test/suite/index.ts` globs `**/**.test.js` under `out/test`, so a test
+under `src/test/mcp` would be picked up by the extension-host runner as well and would need
+the SDK client inside the host. `build.yml` runs `npm run compile:mcp` and then
+`npm run test:mcp` after the existing steps, so a broken bundle cannot reach `main`.
 
 ### 16.2 Scenario matrix
 
@@ -1091,7 +1194,7 @@ bundle cannot reach `main`.
 | 13 | `SIGINT` | same as 12 | manual |
 | 14 | Secret redaction | `redact()` masks the password in a URL, a header and a stack trace | unit |
 | 15 | Environment validation | each missing variable -> exit 2, message names the variable and never a value | protocol |
-| 16 | Tool surface consistency | schema module, contribution and `tools/list` agree | contract |
+| 16 | Tool surface consistency | `REMOTE_TOOL_NAMES` == registered handlers == `tools/list`; the extension side still satisfies `TOOL_NAMES` == `TOOL_SCHEMAS` == contributions | contract |
 | 17 | Bundle hygiene | no `require("vscode")`, no `console.log(`, shebang on line 1 | bundle |
 | 18 | Concurrency cap | the 9th parallel call is rejected immediately, the first 8 finish | unit |
 
@@ -1120,32 +1223,39 @@ Per client, once per release that touches the transport:
 
 ## 17. Work items
 
-1. `RemoteScriptRepository`, `RemoteConnectionService`, `EnvConfigRepositoryService`,
-   `NoWorkspaceService` and `EnvLoginCredentialsService`, plus the two runtime-`vscode`
-   seams from section 12 (status bar callback, `sanatizeId` as a `ScriptId` static).
+1. `RemoteScriptRepository`, `RemoteConnectionService`, `RemoteLogService`,
+   `EnvConfigRepositoryService`, `NoWorkspaceService`, `RemoteScriptIdService`,
+   `NoStatusBarService` and `EnvLoginCredentialsService`, plus the two runtime-`vscode`
+   seams from section 12 (`IStatusBarService` in the connection services, `sanatizeId` as a
+   `ScriptId` static).
 2. `src/aiTools/core/remote/` with the 14 tools, sharing validation and helpers.
 3. `src/mcp` entry point, env validation, `--version`/`--check`, `tools/list` from
-   `TOOL_SCHEMAS`, `ToolOutcome` -> `CallToolResult` mapping.
-4. Login and re-auth in `RemoteConnectionService`: cached login type, single flight,
-   proactive refresh, bounded retries, interactive fallback removed.
+   `REMOTE_TOOL_NAMES` plus the schema map, `ToolOutcome` -> `CallToolResult` mapping.
+4. Login and re-auth in `RemoteConnectionService`: admin version detection on first
+   connect, cached login type, single flight, proactive refresh, bounded retries,
+   interactive fallback removed.
 5. Lifecycle from section 10: lazy connect, state machine, budgets, in-flight cap, shutdown,
    `EPIPE` and stdin-close handling.
 6. `Logger` with `redact()` and the `no-console` lint rule (section 8).
 7. Read-only mode and tool annotations.
-8. Build config, bundle assertions, `npm run test:mcp` with the protocol and bundle tests
-   from section 16.
-9. `mcp/package.json` plus `publish-mcp.yml` (same trigger as `publish.yml`, version from
-   the tag, trusted publishing) and the `.vscodeignore` exclusions.
+8. Build config, `compile:mcp`/`test:mcp` scripts and the SDK devDependency, bundle
+   assertions, `test/mcp` tsconfig, `build.yml` on Node 22, protocol and bundle tests from
+   section 16.
+9. `mcp/package.json` plus `publish-mcp.yml` (same trigger as `publish.yml`, Node 22,
+   version from the tag, trusted publishing) and the `.vscodeignore` exclusions.
 10. README section with the client matrix, the OpenChamber example and the compatibility
     statement from 15.6.
-11. Rename the misleading extension command from `Enable/disable MCP server (AI tools)` to
-    something like `Enable/disable AI tools`, because after this change a real MCP server
-    exists and the old name would describe the wrong thing.
 
 Each step is verified by `npm run test-compile`, `npm run lint`, `npm test` and, from step 8,
 `npm run test:mcp`. Steps 1-8 ship nothing until step 9 exists, so a release can be cut from
 any commit before that, and the MCP server first appears with the release that contains
 step 9.
+
+The command rename that an earlier draft listed as step 11 is deliberately not part of this
+change: section 2 lists it as a non-goal, and
+[aiToolsContribution.test.ts](../src/test/suite/aiToolsContribution.test.ts) asserts that
+the command title contains "mcp server". Renaming it requires changing that assertion in the
+same commit, which is a separate user-facing change; section 18 keeps it as an open point.
 
 ## 18. Open questions
 
@@ -1159,6 +1269,10 @@ step 9.
   `vscode.lm.registerMcpServerDefinitionProvider` instead of shipping its own language model
   tools? If yes, the extension has to pin a version range, which turns the lockstep release
   into a declared compatibility instead of an implicit one.
+- Rename the extension command from `Enable/disable MCP server (AI tools)` to
+  `Enable/disable AI tools`? After this change a real MCP server exists, so the old title
+  describes the wrong thing. It needs `aiToolsContribution.test.ts` changed in the same
+  commit, which is why it is not part of this design.
 - npm trusted publishing or a granular `NPM_TOKEN`? OIDC is preferred, but it has to be set
   up once in the npm account settings.
 
