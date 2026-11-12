@@ -1,6 +1,6 @@
 # Standalone MCP server (remote-only) — design
 
-Status: draft, first review round addressed, no code yet
+Status: draft, second review round addressed, no code yet
 Scope: a real Model Context Protocol server that talks to ioBroker only, configured
 exclusively through environment variables.
 
@@ -130,7 +130,7 @@ server that is already compromised.
 | T7 | Agent performs destructive operations (delete all scripts, stop production scripts) | same risk | reduced | read-only mode, `destructiveHint`, client confirmation |
 | T8 | Indirect prompt injection: a log line or script source says "delete all scripts" | same risk | **not solvable at protocol level** | read-only mode for exploration, no auto-approve, confirmations for write tools |
 | T9 | Exfiltration of read data into a place a third party can see (script name, state value) | same risk | **accepted**, the model can only write to ioBroker | confirmations, read-only mode |
-| T10 | Man-in-the-middle between server and ioBroker | same risk | unchanged | TLS by default, `ALLOW_SELF_SIGNED` off by default, warning for `http://` on a non-loopback host |
+| T10 | Man-in-the-middle between server and ioBroker | same risk | unchanged | TLS by default, `ALLOW_SELF_SIGNED` off by default, warning for `http://` on a non-loopback host; self-signed acceptance via a per-connection agent, not `NODE_TLS_REJECT_UNAUTHORIZED` |
 | T11 | Denial of service against ioBroker through retry storms or log spam | possible | reduced | bounded retries with backoff, response size caps (section 10.4) |
 | T12 | Another local process impersonates the server | – | **not applicable** | stdio has no listener; the client owns the child process |
 
@@ -212,8 +212,10 @@ the extension never needed it because the editor saved to disk and the user uplo
 `IScriptRemoteService.update(scriptId, script)` already exists and does an
 `extendObject`, so no new transport code is required.
 
-Result DTOs that lose fields (`filePath`, `isDirty`, `isRemoteOnly`, `fromDisk`) must be
-changed in `src/aiTools/core/types.ts` only for the remote variants, see section 13.
+Result DTOs that lose fields (`filePath`, `isDirty`, `isRemoteOnly`, `fromDisk`) live in
+`src/aiTools/core/remote/types.ts`, next to the remote implementations. The shared
+`src/aiTools/core/types.ts` stays untouched, because the extension still returns those
+fields (section 13).
 
 ## 6. Architecture
 
@@ -253,13 +255,32 @@ schemas that the extension advertises.
 
 Additions per tool:
 
-- `description`: today the descriptions live in `package.json`
+- `description` and `title`: today the descriptions live in `package.json`
   (`contributes.languageModelTools`) and in the schema property descriptions. The MCP
-  server needs a short description per tool, so it is added next to `TOOL_SCHEMAS` and
-  the existing contribution test is extended to cover both.
-- `annotations`: `readOnlyHint` for the `get_*`/`start`/`stop` tools,
-  `destructiveHint` for `delete_*`, `move` and `update_script_source`. The client decides
-  whether to ask the user, so the hints are the only way to communicate risk.
+  server needs a short description and a human-readable `title` per tool, so both are
+  added next to `TOOL_SCHEMAS` and the existing contribution test is extended to cover
+  them.
+- `annotations`: the defaults are not "off": `readOnlyHint` defaults to `false`,
+  `destructiveHint` to **`true`**, `idempotentHint` to `false` and `openWorldHint` to
+  `true`. The server therefore sets every value explicitly:
+
+  | Tool group | `readOnlyHint` | `destructiveHint` | `idempotentHint` | `openWorldHint` |
+  |---|---|---|---|---|
+  | `get_*` | `true` | – (meaningless when read-only) | `true` | `false` |
+  | `start_script`, `stop_script` | `false` | `false` | `true` | `false` |
+  | `create_script`, `create_directory` | `false` | `false` | `false` | `false` |
+  | `update_script_source` | `false` | `true` | `false` | `false` |
+  | `delete_script`, `delete_directory` | `false` | `true` | `false` | `false` |
+  | `rename_script`, `move_script` | `false` | `true` | `false` | `false` |
+
+  `start`/`stop` are **not** read-only: they write `common.enabled` through
+  `extendObject` (section 4.4), so `readOnlyHint: true` would make clients skip exactly the
+  confirmation that T7 relies on. They are idempotent instead. `rename` and `move` are
+  destructive because both delete the old object and upload a new one
+  (`ScriptRemoteService.rename`/`move`), just like `delete_*`; listing only `move` was an
+  inconsistency. `openWorldHint` is `false` everywhere: the server only touches one closed
+  ioBroker installation. The client decides whether to ask the user, so the hints are the
+  only way to communicate risk.
 
 ## 7. Configuration
 
@@ -273,7 +294,7 @@ no config file and no `--workspace` argument.
 | `IOBROKER_MCP_USERNAME` | yes when login is enabled | – | ioBroker user |
 | `IOBROKER_MCP_PASSWORD` | yes when login is enabled | – | ioBroker password |
 | `IOBROKER_MCP_ALLOW_SELF_SIGNED` | no | `false` | accept self signed certificates, TLS only |
-| `IOBROKER_MCP_READ_ONLY` | no | `false` | expose read tools only |
+| `IOBROKER_MCP_READ_ONLY` | no | `false` | expose `get_*` tools only, `start`/`stop` included |
 | `IOBROKER_MCP_SCRIPT_AUTO_RUN` | no | `false` | maps to `scriptAutoRun` |
 | `IOBROKER_MCP_LOG_LEVEL` | no | `info` | stderr diagnostics only |
 
@@ -284,6 +305,14 @@ Derived instead of configured:
   which already probes Admin 4 and the newer socket API.
 - `scriptRoot` does not exist, there is no local root.
 - The login type is detected once and cached, see section 9.
+- `autoReconnect` is always on, with the backoff from section 10.4. There is no variable
+  for it: switching it off would only make the state machine fail in a less clear way.
+
+`IOBROKER_MCP_ALLOW_SELF_SIGNED` is implemented with a per-connection `httpsAgent`. The
+extension currently sets `process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'`
+([IobrokerConnectionService.ts](../src/services/iobrokerConnection/IobrokerConnectionService.ts)),
+which disables certificate verification for the whole process; the server must not inherit
+that pattern (T10).
 
 Startup validation happens before the transport starts. A missing required variable is
 reported on stderr with exit code 2, not as a protocol error, because the client cannot
@@ -372,27 +401,44 @@ startup.
 
 ## 9. Authentication and re-authentication
 
-The mechanics stay the same as in the extension
+The flow is the same as in the extension
 ([LoginService.ts](../src/services/loginHttpClient/LoginService.ts)):
 
 1. detect the login type (OAuth2 `/oauth/token`, legacy `/login`, or no login),
 2. POST username and password, receive a session cookie plus `Expires`,
 3. pass the cookie to the socket handshake as `{ cookie: token, name: username }`
    ([ConnectionServiceAdmin5.ts](../src/services/connection/ConnectionServiceAdmin5.ts)),
-4. reuse the token until 60 s before `expires`.
+4. reuse a token while it is valid and re-check it before use. The extension does that on
+   every `connect()` (`isValidAccessToken`); the server adds the proactive refresh below.
 
-The only difference: the password is read from the environment once at start and kept in
-memory. That makes silent re-auth identical to the extension, the user is never prompted.
+What is new is not the flow but the failure handling, so "identical to the extension"
+would be wrong in three points:
+
+- **Credentials come from a new service.** `LoginService` reads password and token through
+  `ILoginCredentialsService`, whose extension implementation uses `ExtensionContext.secrets`
+  and opens an input box when no password is stored. The server swaps that implementation
+  for `EnvLoginCredentialsService` (section 12): password from `IOBROKER_MCP_PASSWORD`,
+  token in memory, no prompt, no storage.
+- **The interactive fallback is removed.** `LoginService.getAccessToken` calls
+  `updatePasswordFromUser()` after a failed login and retries once (lines 90-100), so one
+  call can produce two login attempts and a UI prompt. In the server this branch is
+  replaced by the bounded-retry path below; otherwise the three-attempt limit from 10.4
+  would not be the real limit.
+- **The user is never prompted.** That follows from the two changes above, it is not a
+  property of the reused code.
 
 Four rules make it stable:
 
 - **Single flight.** The socket emits `reauthenticate` and the server may see it while
   tool calls are in flight. A `Promise<void>` in-flight handle serialises the reconnect;
   every caller awaits the same promise. Without it, concurrent calls create several
-  logins and invalidate each other's session.
+  logins and invalidate each other's session. The extension only has a boolean guard
+  (`isReAuthenticationRunning`), which makes concurrent callers *skip* the re-auth instead
+  of waiting for it.
 - **Never re-detect the login type on re-auth.** An expired token makes detection
   unreliable; this is the reason `IobrokerConnectionService` caches `detectedLoginType`
-  (`connect(true)` skips detection on purpose).
+  (`connect(true)` skips detection on purpose). `RemoteConnectionService` keeps the same
+  cache.
 - **Proactive refresh.** A timer renews the token shortly before `expires` so tool calls
   do not run into an expired session. The `reauthenticate` event stays as a safety net.
 - **Bounded retries.** A wrong password must not loop against ioBroker (account lockout).
@@ -415,8 +461,9 @@ specified, not discovered during implementation.
    no ioBroker connection.
 2. Read and validate the environment. On failure: one redacted line on stderr that names
    the variable, then exit code 2. Clients that capture stderr show it in their MCP log.
-3. Construct the services. No IO in constructors; a known exception in the current code is
-   `StatusBarService.init()`, which is replaced by a no-op in the server wiring.
+3. Construct the services. No IO in constructors. The server wires
+   `RemoteConnectionService` instead of `IobrokerConnectionService`, so no status bar,
+   window message, config file or auto upload service is constructed at all.
 4. Connect the stdio transport and start serving.
 
 Connecting to ioBroker is **lazy**, on the first tool call. `initialize` must answer
@@ -428,10 +475,11 @@ registers the server but never uses it should not open a socket. The first call 
 
 | Request | Behaviour |
 |---|---|
-| `initialize` | `serverInfo: { name: "iobroker-mcp", version: BUILD_VERSION }`, capabilities only for `tools` |
+| `initialize` | `serverInfo: { name: "iobroker-mcp", version: BUILD_VERSION }`, capabilities only for `tools`, without `listChanged` (the list is static per process) |
 | `tools/list` | pure function over `TOOL_SCHEMAS`, no IO, filtered by read-only; cannot fail |
 | `tools/call` | never throws across the JSON-RPC boundary, every outcome is mapped (below) |
 | notifications | ignored in v1; a cancelled call keeps running until its budget ends |
+| `ping` | answered by the SDK's `Protocol` base class (it registers `PingRequestSchema`), no handler in the server |
 | unknown method | SDK answers with method-not-found |
 | unknown tool name | JSON-RPC error `-32602` (invalid params) |
 
@@ -492,7 +540,7 @@ requires a restart, which the client configuration makes cheap.
 | Budget | Value | Result on expiry |
 |---|---|---|
 | First connect | 10 s | `not_connected` |
-| Login | 10 s | `not_connected`, counts towards the 3-attempt limit |
+| Login | 10 s | `not_connected`, counts towards the 3-attempt limit (counted by `RemoteConnectionService`, section 9) |
 | Socket acknowledgement | existing client timeouts (10 s for socket acks and for the `getLogs` host command) | `server_error` |
 | Whole tool call | 30 s | `server_error` with a hint to narrow the request |
 | Concurrent calls | 8, then reject | `server_error`, "too many concurrent calls" |
@@ -635,19 +683,23 @@ list, and is the recommended fallback when a host has no `env` field.
 
 ## 12. Services that can be reused
 
-The transport layer is already usable outside VS Code, because VS Code is only imported
-for types in most places and TypeScript elides type-only imports:
+The transport layer is mostly usable outside VS Code: VS Code is imported for types in
+most places, and TypeScript elides type-only imports. Two runtime uses of `vscode` are the
+exceptions and have to be removed first, otherwise the bundle assertion in section 14.1
+fails:
 
 | Service | Reusable as is | Note |
 |---|---|---|
 | `SocketIoClient` | yes | `ws` only |
-| `ConnectionServiceAdmin5` / `Admin4` | yes | `window.setStatusBarMessage` needs a no-op |
-| `LoginService` | yes, after one fix | `Uri` only in type positions; it currently contains a `console.log(config.ioBrokerUrl)` that must be removed, see 10.6 |
+| `ConnectionServiceAdmin5` / `Admin4` | partial | `window.setStatusBarMessage` is a runtime `vscode` import; it becomes an injected status bar callback (extension: real, server: no-op) |
+| `LoginService` | partial | `Uri` only in type positions; needs `EnvLoginCredentialsService` and the interactive retry branch in `getAccessToken` removed (section 9); the `console.log(config.ioBrokerUrl)` must be removed, see 10.6 |
+| `LoginCredentialsService` | no | `ExtensionContext.secrets` and an input box when no password is stored |
+| `IobrokerConnectionService` | no | reads and creates `.iobroker-config.json`, status bar, window messages, auto upload, object repository; replaced by `RemoteConnectionService` |
 | `ScriptRemoteService` | yes | `Uri` only in a signature; `.env` secret replacement no-ops without a workspace |
 | `DirectoryService` | yes | no VS Code imports |
 | `StateAndObjectRemoteService` | yes | no VS Code imports |
 | `JsInstanceService` | yes | no VS Code imports |
-| `ScriptIdService` | partial | `sanatizeId` is portable, `getIoBrokerId` needs a workspace |
+| `ScriptIdService` | partial | `sanatizeId` moves to `ScriptId` as a static member (the repository rule for id logic), so the remote core never imports this class; `getIoBrokerId` stays extension-only |
 | `ScriptRepositoryService` | **no** | watchers, text documents, git extension, dirty state |
 | `ScriptService` | partial | `getDefaultScript`/`getFileExtension` portable, file access not |
 | `ScriptFileService` | no | `workspace.fs` |
@@ -655,14 +707,19 @@ for types in most places and TypeScript elides type-only imports:
 | `WorkspaceService` | no | VS Code workspaces |
 | `DebugLogService` | **no** | `IWorkspaceService` for `debug.log`, and it only writes while collecting; `SocketIoClient` injects it, so the server needs a stderr implementation |
 
-Four Node side implementations are therefore added:
+Six Node side implementations are therefore added:
 
 - `EnvConfigRepositoryService` implementing `IConfigRepositoryService` from the
   environment. It also lets `ScriptRemoteService` keep its `scriptAutoRun` check.
+- `EnvLoginCredentialsService` implementing `ILoginCredentialsService` from
+  `IOBROKER_MCP_PASSWORD`: `getPassword()` returns the environment value,
+  `getAccessToken()`/`updateAccessToken()` keep the token in memory,
+  `updatePasswordFromUser()` is never reached, `deleteCredentials()` is a no-op.
 - `NoWorkspaceService` implementing `IWorkspaceService` with no workspace. It keeps
   `SecretPlaceholderService` inactive, so `<workspace>/.env` is never read.
 - `StderrDebugLogService` implementing `IDebugLogService`, writing through the `Logger` so
   the socket client's diagnostics land on stderr and pass through `redact`.
+- `RemoteConnectionService`, described below.
 - `RemoteScriptRepository`, described below.
 
 URI values (`http://host:8081`) are built with the standalone `vscode-uri` package, which
@@ -684,6 +741,15 @@ subset that the core functions need:
   dropped instead of stubbed
 
 Estimated size: around 150 lines, compared to 531 lines for the existing service.
+
+`RemoteConnectionService` (new, in `src/services/remote/`) replaces
+`IobrokerConnectionService` for the server. It owns connect, reconnect and re-auth, keeps
+the `detectedLoginType` cache and implements the state machine from section 10.3. It uses
+`ConnectionServiceProvider`, `AdminVersionDetector`, `LoginService` and
+`EnvLoginCredentialsService`, and exposes the subset the tools need (`isConnected`).
+`IobrokerConnectionService` is not reused because it also manages the workspace config
+file, the status bar, window messages and the auto upload; shimming all of that would be
+more code than the orchestration it replaces.
 
 ## 13. Dependency seam for the core
 
@@ -711,7 +777,6 @@ interface RemoteToolDeps {
         "downloadScriptWithId" | "uploadScript" | "update" | "startScript" | "stopScript"
         | "rename" | "move" | "delete">
     script: Pick<IScriptService, "getDefaultScript" | "getFileExtension">
-    scriptId: Pick<IScriptIdService, "sanatizeId">
     directories: Pick<IDirectoryService, "createDirectory" | "createDirectoriesRecursively" | "deleteDirectory">
     jsInstances: Pick<IJsInstanceService, "getAvailableInstances">
     states: Pick<IStateAndObjectRemoteService, "getState">
@@ -720,6 +785,16 @@ interface RemoteToolDeps {
 ```
 
 Note the absence of `files`, `documents`, `scriptCreation` and the four sync methods.
+`sanatizeId` is not a dependency either: it becomes a static on `ScriptId` (section 12)
+and the remote functions call it directly, which keeps `ScriptIdService` and its `vscode`
+import out of the bundle.
+
+`RemoteConnectionService` provides the `connection` pick (`isConnected`), so the core
+functions do not see the extension orchestrator. The comment in
+`src/aiTools/core/types.ts` promises that the deps exist "so that a later MCP adapter can
+provide the same shape"; option B deliberately drops that promise for the
+sync-dependent tools. The comment has to be adjusted in the same change, otherwise the
+code documents an intent the design abandoned.
 
 ## 14. Build, packaging and runtime
 
@@ -1001,10 +1076,10 @@ bundle cannot reach `main`.
 
 | # | Scenario | Expected result | Layer |
 |---|---|---|---|
-| 1 | Wrong password | exactly 3 login attempts with backoff, then `not_connected`; no password in message or stderr | unit + protocol |
+| 1 | Wrong password | exactly 3 login attempts with backoff and no interactive prompt (the retry inside `LoginService.getAccessToken` is removed, section 9), then `not_connected`; no password in message or stderr | unit + protocol |
 | 2 | Token expires while a call is in flight | one login, the call completes after re-auth instead of failing | unit (fake clock) |
 | 3 | Two calls hit `reauthenticate` at once | single flight: the fake login counts exactly one request | unit |
-| 4 | Read-only mode | `tools/list` has no write tool; a direct `tools/call` with a write name -> `-32602` | protocol |
+| 4 | Read-only mode | `tools/list` has no write tool, `start_script`/`stop_script` included; a direct `tools/call` with a write name -> `-32602` | protocol |
 | 5 | Socket disconnect and reconnect | backoff sequence observed, calls during the outage fail with `not_connected` after the budget | unit |
 | 6 | ioBroker restarted (cookie rejected) | reconnect, then re-login, then `Ready` | manual |
 | 7 | Malformed input: missing `scriptId`, wrong type, 1 MB `source`, `null` arguments | `isError` with `invalid_input`, process survives, next call works | protocol |
@@ -1045,11 +1120,14 @@ Per client, once per release that touches the transport:
 
 ## 17. Work items
 
-1. `RemoteScriptRepository` plus `EnvConfigRepositoryService` and `NoWorkspaceService`.
+1. `RemoteScriptRepository`, `RemoteConnectionService`, `EnvConfigRepositoryService`,
+   `NoWorkspaceService` and `EnvLoginCredentialsService`, plus the two runtime-`vscode`
+   seams from section 12 (status bar callback, `sanatizeId` as a `ScriptId` static).
 2. `src/aiTools/core/remote/` with the 14 tools, sharing validation and helpers.
 3. `src/mcp` entry point, env validation, `--version`/`--check`, `tools/list` from
    `TOOL_SCHEMAS`, `ToolOutcome` -> `CallToolResult` mapping.
-4. Login and re-auth: cached login type, single flight, proactive refresh, bounded retries.
+4. Login and re-auth in `RemoteConnectionService`: cached login type, single flight,
+   proactive refresh, bounded retries, interactive fallback removed.
 5. Lifecycle from section 10: lazy connect, state machine, budgets, in-flight cap, shutdown,
    `EPIPE` and stdin-close handling.
 6. `Logger` with `redact()` and the `no-console` lint rule (section 8).
@@ -1073,8 +1151,6 @@ step 9.
 
 - Should `iobroker_update_script_source` also allow changing `engineType` (converting a
   script between javascript and typescript)? Currently out of scope.
-- Should read-only mode also hide `start`/`stop`? They are writes, but not destructive.
-  Proposal: yes, read-only means `get_*` only.
 - Should the server expose `iobroker_get_object` (read any object, not just scripts)? Useful
   for agents, but it widens the surface. Not part of this change.
 - Package name: `@nokxs/iobroker-mcp` (scoped, needs `--access public`) or a short unscoped
