@@ -754,7 +754,7 @@ and `exec`s the server:
 set -a
 . "$HOME/.config/iobroker-mcp/env"
 set +a
-exec npx -y @nokxs/iobroker-mcp@1.15.0
+exec npx -y @liofly/iobroker-mcp@1.15.0
 ```
 
 The trade-off is the same secret at rest that the client would otherwise hold, but it works
@@ -763,10 +763,10 @@ list, and is the recommended fallback when a host has no `env` field.
 
 ### 11.5 Self-diagnostics
 
-- `npx @nokxs/iobroker-mcp --check` validates the environment, prints a redacted summary to
+- `npx @liofly/iobroker-mcp --check` validates the environment, prints a redacted summary to
   stderr and exits 0 or 2. It does not connect, so it is safe to run in a shell.
 - `--version` prints the same `BUILD_VERSION` that `initialize` reports.
-- `npx @modelcontextprotocol/inspector npx -y @nokxs/iobroker-mcp` exercises
+- `npx @modelcontextprotocol/inspector npx -y @liofly/iobroker-mcp` exercises
   `initialize`, `tools/list` and `tools/call` without a full client.
 - The `initialize` result may carry a short `instructions` string explaining that script
   ids look like `script.js.common.Name` and that `get_scripts` lists them. Cheap, and it
@@ -950,7 +950,7 @@ code documents an intent the design abandoned.
 | Executable bit | Set by npm on install. When the client spawns `node dist/mcp-server.js` directly, the bit does not matter. |
 | OS | Linux, macOS and Windows. Nothing in the server is platform specific: no `fs`, no command execution, no signals except in the shutdown path (10.7). |
 | Windows specifics | npm creates a `.cmd` shim, so `npx` works without a shell. Paths never appear in the configuration. `SIGTERM` is not delivered, so stdin close is the shutdown trigger. Self-signed certificates are read through Node's TLS stack, not the Windows store; `NODE_EXTRA_CA_CERTS` is the documented workaround for a private CA. |
-| Invocation | `npx -y @nokxs/iobroker-mcp@<version>`. The shebang is only relevant when the client spawns the file directly, which is why the docs always show `npx`. |
+| Invocation | `npx -y @liofly/iobroker-mcp@<version>`. The shebang is only relevant when the client spawns the file directly, which is why the docs always show `npx`. |
 
 ### 14.3 Package metadata
 
@@ -958,7 +958,7 @@ code documents an intent the design abandoned.
 
 | Field | Value |
 |---|---|
-| `name` | `@nokxs/iobroker-mcp` |
+| `name` | `@liofly/iobroker-mcp` |
 | `version` | set from the release tag, never edited by hand |
 | `description` | "MCP server for ioBroker: manage and debug javascript scripts through an AI agent" |
 | `bin` | `{ "iobroker-mcp": "dist/mcp-server.js" }` |
@@ -1045,7 +1045,7 @@ one artifact.
 ```
 release published (tag vX.Y.Z)
 ├── publish.yml      -> vsce publish + ovsx publish
-└── publish-mcp.yml  -> npm publish @nokxs/iobroker-mcp@X.Y.Z
+└── publish-mcp.yml  -> npm publish @liofly/iobroker-mcp@X.Y.Z
 ```
 
 Steps of `publish-mcp.yml`:
@@ -1069,10 +1069,10 @@ Steps of `publish-mcp.yml`:
 #### First npm publication
 
 npm trusted publishing requires the package to exist before its GitHub Actions publisher can
-be configured. For the initial publication only, create an npm token with publish access and
-save it as the repository Actions secret `NPM_TOKEN`. Run the `Bootstrap MCP npm package`
-workflow with the release tag (for example `v1.15.0`). This token-only workflow intentionally
-does not request OIDC or publish provenance.
+be configured. For the initial publication only, create an npm token with publish access to
+the `@liofly` scope and save it as the repository Actions secret `NPM_TOKEN`. Run the
+`Bootstrap MCP npm package` workflow with the release tag (for example `v1.15.0`). This
+token-only workflow intentionally does not request OIDC or publish provenance.
 
 After the package appears on npm, configure its Trusted Publisher in the package settings:
 GitHub Actions, repository `nokxs/iobroker-javascript-vs-code-extension`, workflow file
@@ -1083,7 +1083,7 @@ rerun the bootstrap workflow for a version already published.
 ### 15.4 Why not independent versions
 
 Independent versions are the tempting alternative and the wrong default here. The concrete
-failure mode is silent: a user runs `npx @nokxs/iobroker-mcp` (always the newest version)
+failure mode is silent: a user runs `npx @liofly/iobroker-mcp` (always the newest version)
 next to extension 1.14.0, hits a login bug that was fixed in the server only, and neither
 the README nor the release notes can say which pairing works. The reverse case is just as
 bad: a user reports an MCP bug that was already fixed, because npx cached an older version.
@@ -1101,13 +1101,13 @@ If that happens, the split has to be accompanied by a published compatibility ta
 
 ### 15.5 Users pin, the docs recommend it
 
-`npx -y @nokxs/iobroker-mcp` resolves `latest` once and then caches it by version. For
+`npx -y @liofly/iobroker-mcp` resolves `latest` once and then caches it by version. For
 reproducibility the docs recommend an explicit version in the client configuration:
 
 ```
 npx
 -y
-@nokxs/iobroker-mcp@1.15.0
+@liofly/iobroker-mcp@1.15.0
 ```
 
 This makes the pairing visible and prevents a silently changing tool surface for an agent
@@ -1178,7 +1178,7 @@ anything at runtime. Consequences to document:
 npm does not allow overwriting a published version, and unpublishing breaks pinned users as
 well as `npx` caches. The procedure is therefore:
 
-1. `npm deprecate @nokxs/iobroker-mcp@X.Y.Z "Broken: tool calls fail on Admin 4. Use X.Y.Z+1."`
+1. `npm deprecate @liofly/iobroker-mcp@X.Y.Z "Broken: tool calls fail on Admin 4. Use X.Y.Z+1."`
 2. Publish a patch release with the fix, in both artifacts.
 3. Never delete the git tag of a published release; the provenance link depends on it.
 
@@ -1192,9 +1192,9 @@ unpublishing.
 2. Release draft reviewed; every breaking change is in the "Breaking" category and has a
    migration line.
 3. Publish the release; both `publish.yml` and `publish-mcp.yml` green.
-4. `npx -y @nokxs/iobroker-mcp@<version> --version` prints the tag, `--check` exits 0 with a
+4. `npx -y @liofly/iobroker-mcp@<version> --version` prints the tag, `--check` exits 0 with a
    valid environment and 2 with a missing one.
-5. `npx @modelcontextprotocol/inspector npx -y @nokxs/iobroker-mcp@<version>` lists the
+5. `npx @modelcontextprotocol/inspector npx -y @liofly/iobroker-mcp@<version>` lists the
    expected tools.
 6. The packaged vsix contains no `dist/mcp-server.js` and no `mcp/` directory.
 7. README: tool table, compatibility sentence (15.6) and the pinned example are current.
@@ -1306,7 +1306,7 @@ same commit, which is a separate user-facing change; section 18 keeps it as an o
   script between javascript and typescript)? Currently out of scope.
 - Should the server expose `iobroker_get_object` (read any object, not just scripts)? Useful
   for agents, but it widens the surface. Not part of this change.
-- Package name: `@nokxs/iobroker-mcp` (scoped, needs `--access public`) or a short unscoped
+- Package name: `@liofly/iobroker-mcp` (scoped, needs `--access public`) or a short unscoped
   name. Scoped keeps the namespace clean.
 - Should the extension later start the server itself with
   `vscode.lm.registerMcpServerDefinitionProvider` instead of shipping its own language model
@@ -1325,7 +1325,7 @@ same commit, which is a separate user-facing change; section 18 keeps it as an o
 Command:
 npx
 -y
-@nokxs/iobroker-mcp@1.15.0
+@liofly/iobroker-mcp@1.15.0
 
 Environment variables:
 IOBROKER_MCP_URL       = http://192.168.1.10:8081

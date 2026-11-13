@@ -1,4 +1,4 @@
-# @nokxs/iobroker-mcp
+# @liofly/iobroker-mcp
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server for ioBroker. It lets an AI
 agent read and edit the scripts of the ioBroker javascript adapter and inspect states and logs —
@@ -11,7 +11,7 @@ The server speaks MCP over stdio and is started by the MCP client:
   "mcpServers": {
     "iobroker": {
       "command": "npx",
-      "args": ["-y", "@nokxs/iobroker-mcp"],
+      "args": ["-y", "@liofly/iobroker-mcp"],
       "env": {
         "IOBROKER_MCP_URL": "http://iobroker.local:8081",
         "IOBROKER_MCP_USERNAME": "admin",
@@ -37,7 +37,7 @@ line flag that carries a value.
 | `IOBROKER_MCP_SCRIPT_AUTO_RUN` | no | `false` | enable a script right after it was created |
 | `IOBROKER_MCP_LOG_LEVEL` | no | `info` | stderr diagnostics: `error`, `warn`, `info`, `debug`, `silly` |
 
-`npx @nokxs/iobroker-mcp --check` validates the environment and prints a redacted summary to stderr
+`npx @liofly/iobroker-mcp --check` validates the environment and prints a redacted summary to stderr
 without connecting. `--version` and `--help` do not touch the network either.
 
 ## Tools

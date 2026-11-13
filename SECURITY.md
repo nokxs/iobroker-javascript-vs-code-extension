@@ -1,6 +1,6 @@
 # Security policy
 
-Only the latest minor version of the extension and of the MCP server (`@nokxs/iobroker-mcp`) is
+Only the latest minor version of the extension and of the MCP server (`@liofly/iobroker-mcp`) is
 supported with security fixes.
 
 Please report vulnerabilities privately through

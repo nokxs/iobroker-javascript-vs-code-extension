@@ -1,5 +1,5 @@
 {
-    "name": "@nokxs/iobroker-mcp",
+    "name": "@liofly/iobroker-mcp",
     "version": "0.0.0",
     "description": "MCP server for ioBroker: manage and debug javascript scripts through an AI agent",
     "bin": {
