@@ -7,6 +7,11 @@ on:
         description: Release tag to publish, for example v1.15.0
         required: true
         type: string
+      package_name:
+        description: npm package name and scope to publish under
+        required: true
+        default: "@liofly/iobroker-mcp"
+        type: string
 
 permissions:
   contents: read
@@ -23,16 +28,22 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
-      - name: Read and validate the release tag
+      - name: Read and validate the inputs
         env:
           RELEASE_TAG: ${{ inputs.release_tag }}
+          PACKAGE_NAME: ${{ inputs.package_name }}
         run: |
           VERSION=${RELEASE_TAG#v}
           if ! printf '%s' "$RELEASE_TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
             echo "The input is not a valid release tag: $RELEASE_TAG" >&2
             exit 1
           fi
+          if ! printf '%s' "$PACKAGE_NAME" | grep -Eq '^@[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*$'; then
+            echo "The input is not a valid scoped package name: $PACKAGE_NAME" >&2
+            exit 1
+          fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "PACKAGE_NAME=$PACKAGE_NAME" >> "$GITHUB_ENV"
       - name: Install
         run: npm ci
       - name: Compile MCP server
@@ -43,8 +54,11 @@ jobs:
         env:
           BUILD_VERSION: ${{ env.VERSION }}
         run: npm run test:mcp
-      - name: Set the package version and copy the bundle
+      # The release tag keeps the package name it was created with, so bootstrap applies the
+      # current scope here instead of trusting the tag.
+      - name: Set the package name and version and copy the bundle
         run: |
+          npm pkg set name="$PACKAGE_NAME" --prefix mcp
           npm version "$VERSION" --no-git-tag-version --prefix mcp
           mkdir -p mcp/dist
           cp dist/mcp-server.js mcp/dist/mcp-server.js
@@ -57,8 +71,11 @@ jobs:
             echo "Add an npm publish token as the repository secret NPM_TOKEN before running this workflow." >&2
             exit 1
           fi
+          echo "Publishing $PACKAGE_NAME@$VERSION"
           if printf '%s' "$VERSION" | grep -q '-'; then
             npm publish ./mcp --access public --tag next
           else
             npm publish ./mcp --access public
           fi
+      - name: Verify the published version
+        run: npm view "$PACKAGE_NAME@$VERSION" version
