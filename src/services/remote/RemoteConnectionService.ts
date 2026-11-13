@@ -164,6 +164,9 @@ export class RemoteConnectionService implements IConnectionEventListener {
             this.refreshTimer = undefined;
         }
 
+        // The close fires the disconnect event; a shutdown is not an outage that has to be reported.
+        this.state = "idle";
+
         if (this.connectionServiceProvider.isConnectionServiceAvailable()) {
             try {
                 // A connection that never came up has no socket to wait for, so the close is bounded.
@@ -173,7 +176,6 @@ export class RemoteConnectionService implements IConnectionEventListener {
             }
         }
 
-        this.state = "idle";
         // A call that waits for a reconnect must not keep the shutdown hanging.
         this.notifyReconnectWaiter();
     }
