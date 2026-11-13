@@ -610,6 +610,23 @@ therefore never rejects, and the extension only survives because its calls are s
 protection; a mutation that is called while the client is disconnected now rejects instead
 of hanging. Reparing `SocketIoClient` itself stays a separate change.
 
+The socket liveness and teardown rules the server relies on:
+
+- The admin websocket server drops a socket that has not **sent** anything for 15 s. The
+  client therefore pings every 5 s when it had nothing to send, instead of pinging only when
+  nothing arrived. Answering the server's own pings is not enough, because they stop being
+  answered while a large response is being processed.
+- No inbound frame for 15 s means the connection is dead and is rebuilt.
+- A registered handler survives a reconnect. Clearing the handler list on close made the
+  reconnect invisible to `ConnectionServiceAdmin5`, which then reported `not_connected` for
+  the whole 30 s cooldown even though the socket was back.
+- `connect()` closes the socket it replaces. The admin version detection uses the same
+  client, so its leftover socket would otherwise close the live connection when the server
+  dropped it.
+- `close()` fails the callbacks that still wait for an answer, clears the pending reconnect
+  timer and resolves even without a socket, so shutdown cannot hang for 2 s and cannot spawn
+  a new connection afterwards.
+
 30 s is chosen because it stays below the common client default while leaving room for a
 log fetch on a slow host. Clients must not cut a call off earlier: section 11.1 asks for
 45 s. Operations are bounded instead of streamed: `get_scripts` truncates at `limit` and

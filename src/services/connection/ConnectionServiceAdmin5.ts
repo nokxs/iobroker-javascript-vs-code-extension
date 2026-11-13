@@ -21,6 +21,8 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
 
     private connectionEventListeners: Array<IConnectionEventListener> = new Array();
     private client: ISocketIoClient | undefined = undefined;
+    /** The socket client keeps its listeners across a reconnect, so they are registered once. */
+    private eventsRegisteredFor: ISocketIoClient | undefined = undefined;
 
     constructor(
         @inject(TYPES.services.socketIoClient) private socketIoClient: ISocketIoClient,
@@ -46,14 +48,10 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     }
 
     async disconnect(): Promise<void> {
+        this.isConnected = false;
+        // `close` fires the disconnect event before it resolves, so a listener registered after the
+        // call would never run and the returned promise would hang.
         await this.client?.close();
-        return new Promise<void>((resolve) => {
-            this.isConnected = false;
-
-            this.client?.on("disconnect", () => {
-                resolve();
-            });
-        });
     }
 
     registerForLogs(logAction: (logMessage: ILogMessage) => void): Promise<void> {
@@ -288,7 +286,9 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     }
 
     private registerSocketEvents(): void {
-        if (this.client) {
+        if (this.client && this.eventsRegisteredFor !== this.client) {
+            this.eventsRegisteredFor = this.client;
+
             this.client.on("connect", () => {
                 this.isConnected = true;
                 this.connectionEventListeners.forEach(listener => listener.onConnected());
@@ -321,34 +321,47 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
 
         this.socketIoClient.autoReconnect = autoReconnect;
         this.client = await this.socketIoClient.connect(uri.toString(), options, allowSelfSignedCertificate);
+        const client = this.client;
 
         const connectionPromise = new Promise<void>((resolve, reject) => {
             this.registerSocketEvents();
 
+            // The socket client keeps its listeners across reconnects, so the ones of this single
+            // attempt are removed again; otherwise every reconnect would leave a timer and three
+            // closures behind.
+            const settle = (action: () => void) => {
+                clearTimeout(timeout);
+                client.off("connect", onConnect);
+                client.off("reconnect", onReconnect);
+                client.off("error", onError);
+                action();
+            };
+
+            const onConnect = () => settle(() => {
+                this.isConnected = true;
+                message.dispose();
+                resolve();
+            });
+
+            const onReconnect = onConnect;
+
+            const onError = (err: any) => settle(() => {
+                message.dispose();
+                reject(new Error(`The connection to ioBroker was not possible. Reason: ${err}`));
+            });
+
             const timeout = setTimeout(() => {
                 if (!this.isConnected) {
-                    message.dispose();
-                    reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
+                    settle(() => {
+                        message.dispose();
+                        reject(new Error(`Could not connect to '${uri}' after ${this.connectionTimeout / 1000} seconds.`));
+                    });
                 }
             }, this.connectionTimeout);
 
-            this.client!.on("connect", () => {
-                this.isConnected = true;
-                message.dispose();
-                resolve();
-            });
-
-            this.client!.on("reconnect", () => {
-                this.isConnected = true;
-                message.dispose();
-                resolve();
-            });
-
-            this.client!.on("error", (err: any) => {
-                message.dispose();
-                clearTimeout(timeout);
-                 reject(new Error(`The connection to ioBroker was not possible. Reason: ${err}`));
-            });
+            client.on("connect", onConnect);
+            client.on("reconnect", onReconnect);
+            client.on("error", onError);
         });
 
         return connectionPromise;

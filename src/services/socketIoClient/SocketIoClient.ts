@@ -34,6 +34,11 @@ import { IDebugLogService } from "../debugLogService/IDebugLogService";
 // };
 
 const RECONNECT_TIMEOUT = 3000;
+/** The admin websocket server drops a socket that has not sent anything for 15 seconds. */
+const CLIENT_PING_INTERVAL = 5000;
+const INBOUND_TIMEOUT = 15000;
+/** Upper bound for closing a socket, so a dead peer cannot block a reconnect or the shutdown. */
+const SOCKET_CLOSE_TIMEOUT = 2000;
 
 const WS_READY_STATE = {
     connecting: 0,
@@ -55,7 +60,8 @@ const DEBUG = true;
 export class SocketIoClient implements ISocketIoClient {
 
     private handlers: any = {};
-    private lastPong: any;
+    private lastReceived: any;
+    private lastSent: any;
     private socket: WebSocket | null = null;
     private wasConnected = false;
     private connectTimer: any = null;
@@ -92,6 +98,12 @@ export class SocketIoClient implements ISocketIoClient {
         this.options = _options || this.options;
         this.allowSelfSignedCertificate = _allowSelfSignedCertificate || this.allowSelfSignedCertificate;
         this.sessionID = Date.now();
+
+        // The admin version detection uses this client as well. Its socket has to be closed before
+        // the new one is created, otherwise its late close event tears down the new connection.
+        await this.closeSocket(this.detachSocket());
+
+        let socket: WebSocket;
         try {
             let u = this.url.replace(/^http/, 'ws').split('?')[0] + '?sid=' + this.sessionID;
             if (_options && _options.name) {
@@ -99,7 +111,7 @@ export class SocketIoClient implements ISocketIoClient {
             }
             if (_options.cookie) {
                 this.debugLogService.log(`Created websocket with authorization. AllowSelfSignedCertificate: ${this.allowSelfSignedCertificate}. Cooke set: ${_options.cookie ? "yes": "no"}`, "SocketIoClient");
-                this.socket = new WebSocket(u, {
+                socket = new WebSocket(u, {
                     rejectUnauthorized: !_allowSelfSignedCertificate,
                     headers: { "cookie": _options.cookie}
                 });                
@@ -107,7 +119,7 @@ export class SocketIoClient implements ISocketIoClient {
             else {
                 this.debugLogService.log(`Created websocket without authorization. AllowSelfSignedCertificate: ${this.allowSelfSignedCertificate}. Cooke set: ${_options.cookie ? "yes": "no"}`, "SocketIoClient");
                 // "ws://www.example.com/socketserver"
-                this.socket = new WebSocket(u, {
+                socket = new WebSocket(u, {
                     rejectUnauthorized: !_allowSelfSignedCertificate
                 });
             }
@@ -117,34 +129,34 @@ export class SocketIoClient implements ISocketIoClient {
             return await this.closeAndReconnect();
         }
 
+        this.socket = socket;
+        // Events of a socket that was replaced in the meantime must not touch the current one.
+        const isCurrent = (): boolean => socket === this.socket;
+
         this.connectingTimer = setTimeout(async () => {
             this.connectingTimer = null;
+            if (!isCurrent()) {
+                return;
+            }
             this.log.warn('No READY flag received in 3 seconds. Re-init');
             await this.closeAndReconnect(); // re-init connection, because no ___ready___ received in 3000 ms
         }, 3000);
 
-        this.socket.onopen = () => {
-            this.lastPong = Date.now();
+        socket.onopen = () => {
+            if (!isCurrent()) {
+                return;
+            }
+            this.lastReceived = Date.now();
+            this.lastSent = Date.now();
 
-            this.pingInterval = setInterval(async () => {
-                if (Date.now() - this.lastPong > 5000) {
-                    try {
-                        this.socket?.send(JSON.stringify([MESSAGE_TYPES.ping]));
-                    } catch (e) {
-                        this.log.warn('Cannot send ping. Close connection: ' + e);
-                        await this.closeAndReconnect();
-                        return this._garbageCollect();
-                    }
-                }
-
-                if (Date.now() - this.lastPong > 15000) {
-                    await this.closeAndReconnect();
-                }
-                this._garbageCollect();
-            }, 5000);
+            this.pingInterval = setInterval(() => this.checkHeartbeat(), CLIENT_PING_INTERVAL);
         };
 
-        this.socket.onclose = async (event: {code: Number}) => {
+        socket.onclose = async (event: {code: Number}) => {
+            if (!isCurrent()) {
+                return;
+            }
+
             if (event.code === 3001) {
                 this.log.warn('ws closed');
             } else {
@@ -160,9 +172,13 @@ export class SocketIoClient implements ISocketIoClient {
             }
         };
 
-        this.socket.onerror = async (error: any) => {
+        socket.onerror = async (error: any) => {
+            if (!isCurrent()) {
+                return;
+            }
+
             if (this.connected) {
-                if (this.socket?.readyState === WS_READY_STATE.open) {
+                if (socket.readyState === WS_READY_STATE.open) {
                     this.log.error('ws normal error: ' + error.message);
                 }
             }
@@ -177,9 +193,12 @@ export class SocketIoClient implements ISocketIoClient {
             }
         };
 
-        this.socket.onmessage = (message: any) => {
+        socket.onmessage = (message: any) => {
+            if (!isCurrent()) {
+                return;
+            }
             this.log.debug(`type: ${message?.type}, data: ${message?.data}`);
-            this.lastPong = Date.now();
+            this.lastReceived = Date.now();
             if (!message || !message.data || typeof message.data !== 'string') {
                 return this.log.error('Received invalid message: ' + JSON.stringify(message));
             }
@@ -228,15 +247,54 @@ export class SocketIoClient implements ISocketIoClient {
                     this.handlers[name] && this.handlers[name].forEach((cb: any) => cb.call(this));
                 }
             } else if (type === MESSAGE_TYPES.ping) {
-                this.socket?.send(JSON.stringify([MESSAGE_TYPES.pong]));
+                if (this.socket) {
+                    this.send([MESSAGE_TYPES.pong]);
+                }
             } else if (type === MESSAGE_TYPES.pong) {
-                // lastPong saved
+                // lastReceived is updated for every message, a pong needs no extra handling.
             } else {
                 this.log.warn('Received unknown message type: ' + type);
             }
         };
 
         return this;
+    }
+
+    /**
+     * The admin websocket server closes a socket that has not sent anything for 15 seconds, so the
+     * client has to ping on its own. Using the last received message as the trigger - like the
+     * original implementation did - never sent a ping against a chatty server, which then dropped
+     * the socket with close code 1005.
+     */
+    private checkHeartbeat(): void {
+        const now = Date.now();
+
+        if (now - this.lastReceived > INBOUND_TIMEOUT) {
+            this.log.warn(`No message from ioBroker for ${INBOUND_TIMEOUT / 1000} seconds. Re-init`);
+            this.closeAndReconnect();
+            return;
+        }
+
+        if (now - this.lastSent >= CLIENT_PING_INTERVAL) {
+            try {
+                this.send([MESSAGE_TYPES.ping]);
+            } catch (e) {
+                this.log.warn('Cannot send ping. Close connection: ' + e);
+                this.closeAndReconnect();
+                return;
+            }
+        }
+
+        this._garbageCollect();
+    }
+
+    private send(payload: any[]): void {
+        if (!this.socket) {
+            throw new Error('There is no open websocket.');
+        }
+
+        this.socket.send(JSON.stringify(payload));
+        this.lastSent = Date.now();
     }
 
     _garbageCollect(): void {
@@ -279,7 +337,9 @@ export class SocketIoClient implements ISocketIoClient {
             }, 2000);
         }
         this.callbacks.push({id, cb, ts: DEBUG ? 0 : Date.now() + 30000});
-        this.socket?.send(JSON.stringify([MESSAGE_TYPES.callback, id, name, args]));
+        if (this.socket) {
+            this.send([MESSAGE_TYPES.callback, id, name, args]);
+        }
     }
 
     findAnswer(id: any, args: any): void {
@@ -324,17 +384,17 @@ export class SocketIoClient implements ISocketIoClient {
                 this.withCallback(name, this.id, [], arg1);
             } else
             if (arg1 === undefined && arg2 === undefined && arg3 === undefined && arg4 === undefined && arg5 === undefined) {
-                this.socket.send(JSON.stringify([MESSAGE_TYPES.message, this.id, name]));
+                this.send([MESSAGE_TYPES.message, this.id, name]);
             } else if (arg2 === undefined && arg3 === undefined && arg4 === undefined && arg5 === undefined) {
-                this.socket.send(JSON.stringify([MESSAGE_TYPES.message, this.id, name, [arg1]]));
+                this.send([MESSAGE_TYPES.message, this.id, name, [arg1]]);
             } else if (arg3 === undefined && arg4 === undefined && arg5 === undefined) {
-                this.socket.send(JSON.stringify([MESSAGE_TYPES.message, this.id, name, [arg1, arg2]]));
+                this.send([MESSAGE_TYPES.message, this.id, name, [arg1, arg2]]);
             } else if (arg4 === undefined && arg5 === undefined) {
-                this.socket.send(JSON.stringify([MESSAGE_TYPES.message, this.id, name, [arg1, arg2, arg3]]));
+                this.send([MESSAGE_TYPES.message, this.id, name, [arg1, arg2, arg3]]);
             } else if (arg5 === undefined) {
-                this.socket.send(JSON.stringify([MESSAGE_TYPES.message, this.id, name, [arg1, arg2, arg3, arg4]]));
+                this.send([MESSAGE_TYPES.message, this.id, name, [arg1, arg2, arg3, arg4]]);
             } else {
-                this.socket.send(JSON.stringify([MESSAGE_TYPES.message, this.id, name, [arg1, arg2, arg3, arg4, arg5]]));
+                this.send([MESSAGE_TYPES.message, this.id, name, [arg1, arg2, arg3, arg4, arg5]]);
             }
         } catch (e) {
             this.log.error('Cannot send: ' + e);
@@ -367,6 +427,24 @@ export class SocketIoClient implements ISocketIoClient {
     }
 
     close(): Promise<ISocketIoClient> {
+        const wasConnected = this.connected;
+        const socket = this.detachSocket();
+
+        // The handlers deliberately survive: they belong to the caller and have to stay registered
+        // across a reconnect. Clearing them made every internal reconnect invisible, so the
+        // connection service kept reporting a dead connection after the socket was back.
+        if (wasConnected) {
+            this.handlers.disconnect && this.handlers.disconnect.forEach((cb: any) => cb.call(this));
+        }
+
+        return this.closeSocket(socket);
+    }
+
+    /**
+     * Stops the timers, forgets the socket and fails the pending requests. The registered handlers
+     * stay, so a reconnect or a later connect still reaches them.
+     */
+    private detachSocket(): WebSocket | null {
         this.pingInterval && clearTimeout(this.pingInterval);
         this.pingInterval = null;
 
@@ -376,33 +454,60 @@ export class SocketIoClient implements ISocketIoClient {
         this.connectingTimer && clearTimeout(this.connectingTimer);
         this.connectingTimer = null;
 
-        if (this.socket) {
+        // A scheduled reconnect would bring the socket back after an intentional close.
+        this.connectTimer && clearTimeout(this.connectTimer);
+        this.connectTimer = null;
+
+        const socket = this.socket;
+        this.socket = null;
+        this.connected = false;
+
+        // Requests that wait for an answer would otherwise hang until the caller gives up.
+        this.failPendingRequests("The connection to ioBroker was closed.");
+
+        return socket;
+    }
+
+    /** Closes a socket that is no longer tracked, without running its reconnect handler. */
+    private closeSocket(socket: WebSocket | null): Promise<ISocketIoClient> {
+        if (!socket || socket.readyState === WS_READY_STATE.closed) {
+            return Promise.resolve(this);
+        }
+
+        return new Promise<ISocketIoClient>((resolve) => {
+            const settled = () => {
+                clearTimeout(closeTimeout);
+                resolve(this);
+            };
+            const closeTimeout = setTimeout(() => {
+                try {
+                    socket.terminate();
+                } catch (e) {
+                    this.log.debug("Terminating the websocket threw a exception: " + e);
+                }
+                settled();
+            }, SOCKET_CLOSE_TIMEOUT);
+
+            socket.onmessage = () => undefined;
+            socket.onerror = () => undefined;
+            socket.onclose = settled;
+
             try {
-                this.socket.close();
+                socket.close();
             } catch (e) {
                 this.log.debug("Closing the websocket threw a exception: " + e);
+                settled();
             }
-        }
-
-        if (this.connected) {
-            this.handlers.disconnect && this.handlers.disconnect.forEach((cb: any) => cb.call(this));
-            this.connected = false;
-        }
-
-        this.callbacks = [];
-        this.handlers = [];
-        const client = this;
-        return new Promise<ISocketIoClient>((resolve) => {
-            if (this.socket?.readyState === WS_READY_STATE.closed) {
-                resolve(client);
-                return;
-            } 
-
-            this.socket!.onclose = () => {  
-                this.socket = null;            
-                resolve(client);
-            };
         });
+    }
+
+    /** Rejects every request that still waits for an answer, so a dropped socket fails fast. */
+    private failPendingRequests(reason: string): void {
+        const callbacks = this.callbacks;
+        this.callbacks = [];
+        for (const callback of callbacks) {
+            callback?.cb?.(reason);
+        }
     }
 
     _reconnect(): void {
