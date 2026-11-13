@@ -8,3 +8,6 @@ export interface IDirectory {
     relativeUri: Uri,
     absoluteUri: Uri
 }
+
+/** The part of a directory that only describes the ioBroker object, without a local folder. */
+export type DirectoryReference = Pick<IDirectory, "_id" | "common">;

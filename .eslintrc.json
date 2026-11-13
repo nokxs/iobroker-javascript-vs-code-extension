@@ -23,6 +23,12 @@
             "rules": {
                 "no-undef": "off"
             }
+        },
+        {
+            "files": ["src/mcp/**/*.ts", "src/aiTools/core/remote/**/*.ts"],
+            "rules": {
+                "no-console": "error"
+            }
         }
     ]
 }

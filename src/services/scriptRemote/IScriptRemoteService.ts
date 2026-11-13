@@ -1,4 +1,4 @@
-import { IDirectory } from "../../models/IDirectory";
+import { DirectoryReference } from "../../models/IDirectory";
 import { IScript } from "../../models/IScript";
 import { IScriptChangedEventListener } from "./IScriptChangedListener";
 import { ScriptId } from "../../models/ScriptId";
@@ -18,6 +18,6 @@ export interface IScriptRemoteService {
 
     update(scriptId: ScriptId, script: IScript): Promise<void>    
     rename(scriptId: ScriptId, name: string): Promise<void>
-    move(scriptId: ScriptId, targetDirectory: IDirectory): Promise<void>
+    move(scriptId: ScriptId, targetDirectory: DirectoryReference): Promise<void>
     delete(scriptId: ScriptId): Promise<void>
 }

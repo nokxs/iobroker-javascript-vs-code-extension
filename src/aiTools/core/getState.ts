@@ -16,6 +16,10 @@ export async function getState(deps: ToolDeps, input: GetStateInput): Promise<To
 
     try {
         const state = await deps.states.getState(stateId);
+        if (!state) {
+            // ioBroker answers `null` for an id that does not exist; reading `val` would throw.
+            return failure("not_found", `The ioBroker state '${stateId}' does not exist.`, "Use an existing state id such as '0_userdata.0.temperature'.");
+        }
 
         return success({
             id: stateId,

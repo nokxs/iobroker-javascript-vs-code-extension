@@ -19,6 +19,7 @@ import { IDirectoryService } from "../directory/IDirectoryService";
 import { IJsInstanceService } from "../jsInstanceService/IJsInstanceService";
 import { IStateAndObjectRemoteService } from "../stateRemote/IStateAndObjectRemoteService";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
+import { HostLogService } from "../log/HostLogService";
 import { ScriptExplorerProvider } from "../../views/scriptExplorer/ScriptExplorerProvider";
 import { IAiToolService } from "./IAiToolService";
 
@@ -111,18 +112,7 @@ export class AiToolService implements IAiToolService {
             files: this.scriptFileService,
             jsInstances: this.jsInstanceService,
             states: this.stateAndObjectRemoteService,
-            logs: {
-                getHosts: async () => {
-                    const hosts = await this.connectionServiceProvider.getConnectionService()
-                        .getSystemObjectView<{ _id: string, common?: { name?: string } }>("host", "system.host", "system.host.");
-                    return hosts.map(host => ({
-                        id: host._id,
-                        name: host.common?.name ?? host._id.replace(/^system\.host\./, "")
-                    }));
-                },
-                getLogs: (hostId: string, lines: number) =>
-                    this.connectionServiceProvider.getConnectionService().getLogs(hostId, lines)
-            },
+            logs: new HostLogService(this.connectionServiceProvider),
             documents: {
                 isDirty: (filePath: string) => workspace.textDocuments.some(document => document.isDirty && document.uri.fsPath === filePath)
             }

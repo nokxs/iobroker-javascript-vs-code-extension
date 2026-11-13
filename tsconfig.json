@@ -22,6 +22,9 @@
 	},
 	"exclude": [
 		"node_modules",
-		".vscode-test"
+		".vscode-test",
+		"test",
+		"mcp",
+		"out-mcp-test"
 	]
 }

@@ -1,7 +1,7 @@
 import { ScriptId } from "../../models/ScriptId";
 import { failure, RenameScriptDto, RenameScriptInput, success, ToolDeps, ToolOutcome } from "./types";
 import { ensureConnected } from "./connection";
-import { extensionOf, refreshScriptInCache, sanitizeScriptName, scriptIdOf, toFailure } from "./helpers";
+import { extensionOf, refreshScriptInCache, scriptIdOf, toFailure } from "./helpers";
 import { toScriptId, validateName } from "./validation";
 
 /** Renames a script on the ioBroker server and the local file. The directory stays the same. */
@@ -30,7 +30,7 @@ export async function renameScript(deps: ToolDeps, input: RenameScriptInput): Pr
 
     const oldScriptId = scriptIdOf(localScript);
     const parentId = ScriptId.parentIdOf(oldScriptId);
-    const newScriptId = `${parentId}.${sanitizeScriptName(newName)}`;
+    const newScriptId = `${parentId}.${ScriptId.sanitizeName(newName)}`;
     const fileExtension = extensionOf(localScript, deps);
 
     if (newScriptId === oldScriptId) {

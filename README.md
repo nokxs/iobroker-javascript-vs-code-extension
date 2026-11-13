@@ -238,6 +238,78 @@ Keep in mind:
   their entry, and the response is capped at 30,000 characters. If multiple hosts are configured,
   pass `hostId`. Logs may contain sensitive information.
 
+### Standalone MCP server (remote only)
+
+The extension also ships a real MCP server as a separate npm package,
+[`@nokxs/iobroker-mcp`](https://www.npmjs.com/package/@nokxs/iobroker-mcp). It speaks the Model
+Context Protocol over stdio, talks to ioBroker directly and needs no local workspace, no script
+files and no extension installation. Any MCP client can start it with `npx`.
+
+The server has the same version as the extension, supports the same ioBroker Admin versions
+(Admin 5, 6 and 7; Admin 4 only degraded, as in the extension) and does not need the extension to
+be installed.
+
+Configuration is environment only; there is no config file and no command line flag that carries
+a value:
+
+| Variable | Required | Default | Meaning |
+|---|---|---|---|
+| `IOBROKER_MCP_URL` | yes | – | `http://host:8081` or `https://host:8081` (including the admin port) |
+| `IOBROKER_MCP_USERNAME` | when login is enabled | – | ioBroker user |
+| `IOBROKER_MCP_PASSWORD` | when login is enabled | – | ioBroker password |
+| `IOBROKER_MCP_ALLOW_SELF_SIGNED` | no | `false` | accept self signed certificates for `https://` |
+| `IOBROKER_MCP_READ_ONLY` | no | `false` | expose the `get_*` tools only |
+| `IOBROKER_MCP_SCRIPT_AUTO_RUN` | no | `false` | enable a script right after it was created |
+| `IOBROKER_MCP_LOG_LEVEL` | no | `info` | stderr diagnostics: `error`, `warn`, `info`, `debug`, `silly` |
+
+The server exposes 14 tools: the `get_*` read tools of the extension plus `start_script`,
+`stop_script`, `create_script`, `create_directory`, `rename_script`, `move_script`,
+`delete_script`, `delete_directory` and `iobroker_update_script_source`. The four sync tools
+(`upload_*`, `download_script`, `get_changed_scripts`) do not exist, because there is nothing
+local to upload, download or compare. `iobroker_update_script_source` replaces the upload flow:
+read with `iobroker_get_script_content`, send the complete new source.
+
+`--version`, `--check` and `--help` are the only command line flags. `--check` validates the
+environment, prints a redacted summary to stderr and exits `0` or `2` without connecting.
+
+#### Client setup
+
+| Client | Configuration | Notes |
+|---|---|---|
+| OpenChamber | UI form: command plus environment variables | plain text in its configuration; scope the entry to one project |
+| VS Code (Copilot agent mode) | `.vscode/mcp.json`, `servers.<name>`, `type: "stdio"` | `inputs` with `promptString` and `password: true` keeps the secret in VS Code |
+| Claude Desktop | `claude_desktop_config.json`, `mcpServers.<name>` | plain text file |
+| Claude Code (CLI) | `claude mcp add <name> -- npx ... -e KEY=VALUE` | plain text user configuration |
+| Cursor | `~/.cursor/mcp.json` or `.cursor/mcp.json` | plain text file |
+| Any MCP SDK host | `StdioClientTransport({ command, args, env })` | about ten lines of code |
+
+The process contract: stdio transport, per-server environment variables, and a tool call timeout
+of at least 45 seconds (the server answers at 30 seconds). The password is never accepted as a
+command line argument; clients without an `env` field need a wrapper script.
+
+Example for OpenChamber:
+
+```
+Command:
+npx
+-y
+@nokxs/iobroker-mcp@1.15.0
+
+Environment variables:
+IOBROKER_MCP_URL       = http://192.168.1.10:8081
+IOBROKER_MCP_USERNAME  = admin
+IOBROKER_MCP_PASSWORD  = <password>
+
+Optional:
+IOBROKER_MCP_READ_ONLY = true
+```
+
+Pin the version (`@1.15.0` instead of `@latest`) so the tool surface does not change between
+sessions. Changing the ioBroker password requires updating the variable and restarting the server;
+the server re-authenticates silently otherwise. Treat every tool result as untrusted input and
+keep confirmations enabled for write tools: instructions embedded in a script or a log line
+cannot be filtered reliably on the server side.
+
 ## Debug Log
 
 To help diagnose connection or runtime issues, the extension can write a debug log file.

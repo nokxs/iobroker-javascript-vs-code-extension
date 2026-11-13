@@ -1,6 +1,6 @@
 import { StatusBarAlignment, window } from "vscode";
 
-import { IStatusBarService } from "./IStatusBarService";
+import { IStatusBarMessage, IStatusBarService } from "./IStatusBarService";
 import { inject, injectable } from "inversify";
 import TYPES from "../../Types";
 import { IDebugLogService } from "../debugLogService/IDebugLogService";
@@ -25,8 +25,8 @@ export class StatusBarService implements IStatusBarService {
         this.debugLogService.log(text, "StatusBar");
     }
 
-    setStatusBarMessage(text: string): void {
-        window.setStatusBarMessage(text, CONSTANTS.statusBarMessageTime);
+    setStatusBarMessage(text: string): IStatusBarMessage {
         this.debugLogService.log(text, "StatusBarMessage");
+        return window.setStatusBarMessage(text, CONSTANTS.statusBarMessageTime);
     }
 }

@@ -22,7 +22,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
       - name: Install
         run: npm ci
       - name: Compile
@@ -31,5 +31,9 @@ jobs:
         run: npm run lint
       - name: Test
         run: xvfb-run -a npm test
+      - name: Compile MCP server
+        run: npm run compile:mcp
+      - name: Test MCP server
+        run: npm run test:mcp
       - name: Package vsix
         run: npx vsce package

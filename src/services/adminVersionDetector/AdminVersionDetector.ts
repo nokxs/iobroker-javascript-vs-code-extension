@@ -55,36 +55,35 @@ export class AdminVersionDetector implements IAdminVersionDetector {
 
     private determineAdminVersion(iobrokerUrl: string, allowSelfSignedCertificate: boolean, accessToken?: string): Promise<AdminVersion> {
         return new Promise<AdminVersion>((resolve) => {
-            const timeout = setTimeout(() => {
-                cleanUp();
-                resolve(AdminVersion.unknown);
-            }, 5000);
-
-            const cleanUp = () => {
+            const cleanUp = (version: AdminVersion) => {
                 clearTimeout(timeout);
-                this.socketIoClient.close;
+                // The socket client keeps its listeners across a reconnect, so this probe has to
+                // remove them again; otherwise every later connect runs another getObject.
+                this.socketIoClient.off("connect", onConnect);
+                this.socketIoClient.off("error", onError);
+                resolve(version);
             };
 
-            this.socketIoClient.on("connect", () => {
+            const onConnect = () => {
                 this.socketIoClient.emit("getObject", "system.adapter.admin", (err: any, state: { common?: { version?: string}}) => {
                     if (state?.common?.version?.startsWith("6")) {
-                        resolve(AdminVersion.admin6);
+                        cleanUp(AdminVersion.admin6);
                     }
                     else if (state?.common?.version?.startsWith("7")) {
-                        resolve(AdminVersion.admin7);
+                        cleanUp(AdminVersion.admin7);
                     }
                     else {
-                        resolve(AdminVersion.admin5);
+                        cleanUp(AdminVersion.admin5);
                     }
-
-                    cleanUp();
                 });
-            });
+            };
 
-            this.socketIoClient.on("error", () => {
-                cleanUp();
-                resolve(AdminVersion.unknown);
-            });
+            const onError = () => cleanUp(AdminVersion.unknown);
+
+            const timeout = setTimeout(() => cleanUp(AdminVersion.unknown), 5000);
+
+            this.socketIoClient.on("connect", onConnect);
+            this.socketIoClient.on("error", onError);
 
             if(accessToken) {
                 this.socketIoClient.connect(iobrokerUrl, {cookie: accessToken}, allowSelfSignedCertificate);

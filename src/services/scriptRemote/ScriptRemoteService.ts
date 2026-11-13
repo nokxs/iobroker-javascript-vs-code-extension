@@ -7,7 +7,7 @@ import { IScriptChangedEventListener as IScriptChangedEventListener } from './IS
 import { IScriptIdService } from '../scriptId/IScriptIdService';
 import { IScriptRemoteService } from './IScriptRemoteService';
 import { IConnectionEventListener } from "../connection/IConnectionEventListener";
-import { IDirectory } from "../../models/IDirectory";
+import { DirectoryReference } from "../../models/IDirectory";
 import { IDirectoryService } from "../directory/IDirectoryService";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { getEngineTypeInfo } from "../../models/EngineType";
@@ -79,10 +79,11 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
 
     async rename(scriptId: ScriptId, name: string): Promise<void> {
         const splittedId = scriptId.split(".");
-        const sanatizedName = (name || '').replace(/[\\/\][*,;'"`<>?\s]/g, '_'); // Taken from https://github.com/ioBroker/ioBroker.javascript/blob/be43a91e002cb13f7c24aac4eebd482159bc4390/src/src/Dialogs/Rename.js#L47
+        // The rule lives on `ScriptId`, so create, rename and the remote core agree on the id.
+        const sanitizedName = ScriptId.sanitizeName(name);
 
         splittedId.splice(-1, 1);
-        splittedId.push(sanatizedName);
+        splittedId.push(sanitizedName);
         const newId = splittedId.join(".");
 
         const script = await this.downloadScriptWithId(scriptId);
@@ -93,7 +94,7 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
         await this.uploadScript(script);
     }
 
-    async move(scriptId: ScriptId, targetDirectory: IDirectory): Promise<void> {
+    async move(scriptId: ScriptId, targetDirectory: DirectoryReference): Promise<void> {
         const script = await this.downloadScriptWithId(scriptId);
         const scriptIdName = scriptId.substring(scriptId.lastIndexOf(".") + 1);
 
@@ -145,7 +146,9 @@ export class ScriptRemoteService implements IScriptRemoteService, IConnectionEve
             }
         };
 
-        this.update(scriptId, script);
+        // Without the await the caller reports the new state before the write happened, and a
+        // failed write becomes an unhandled rejection instead of a tool error.
+        return await this.update(scriptId, script);
     }
 
     private getFixedEngineTypeCasing(engineType: string | undefined): string {

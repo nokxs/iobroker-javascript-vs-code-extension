@@ -1,6 +1,6 @@
 import * as socketio from 'socket.io-client';
 
-import { Uri, window } from "vscode";
+import { Uri } from "vscode";
 
 import { IConnectionEventListener } from "./IConnectionEventListener";
 import { IConnectionService } from "./IConnectionService";
@@ -8,12 +8,19 @@ import { ILogMessage } from '../../models/ILogMessage';
 import { IObjectList } from '../../models/IObjectList';
 import { IState } from '../../models/IState';
 import { ScriptId } from "../../models/ScriptId";
-import { injectable } from "inversify";
+import { inject, injectable } from "inversify";
+import TYPES from "../../Types";
+import { IStatusBarService } from "../statusBar/IStatusBarService";
 import { HOST_COMMAND_TIMEOUT_MS, readLogLinesAnswer } from "./hostCommandAnswer";
+import { withAckTimeout } from "./withAckTimeout";
 
 @injectable()
 export class ConnectionServiceAdmin4 implements IConnectionService {
     public isConnected: boolean = false;
+
+    constructor(
+        @inject(TYPES.services.statusBarService) private statusBarService: IStatusBarService
+    ) { }
 
     private connectionTimeout = 10 * 1000;
     private reconnectionTimeout = 2000;
@@ -30,7 +37,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
     }
     
     async connect(uri: Uri, autoReconnect: boolean, allowSelfSignedCertificate: boolean): Promise<void> {
-        const message = window.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
+        const message = this.statusBarService.setStatusBarMessage(`$(sync~spin) Connecting to ioBroker on '${uri}'`);
 
         if (this.client && this.client.connected) {
             this.client.disconnect();
@@ -169,7 +176,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
     }
 
     getObject<TObject>(objectId: string | ScriptId): Promise<TObject> {
-        return new Promise<TObject>((resolve, reject) => {
+        return withAckTimeout(new Promise<TObject>((resolve, reject) => {
             if (this.client && this.isConnected) {
                 this.client.emit("getObject", objectId, (err: any, script: TObject) => {
                     if (err) {
@@ -181,11 +188,11 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
             } else {
                 reject(new Error(`Could not get object with id '${objectId}': Client is not connect`));
             }
-        });
+        }), `getObject '${objectId}'`);
     }
 
     setObject(objectId: string | ScriptId, obj: any): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
+        return withAckTimeout(new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
                 this.client.emit("setObject", objectId, obj, (err: any) => {
                     if (err) {
@@ -197,11 +204,11 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
             } else {
                 reject(new Error(`Cannot get object with id '${objectId}': Client is not connect`));
             }
-        });
+        }), `setObject '${objectId}'`);
     }
 
     deleteObject(objectId: string | ScriptId): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
+        return withAckTimeout(new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
                 this.client.emit("delObject", objectId, (err: any) => {
                     if (err) {
@@ -211,13 +218,13 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
                     }
                 });
             } else {
-                reject(`Could not delete object '${objectId}': Client is not connected`);
+                reject(new Error(`Could not delete object '${objectId}': Client is not connected`));
             }
-        });
+        }), `delObject '${objectId}'`);
     }
 
     extendObject(objectId: string | ScriptId, obj: any): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
+        return withAckTimeout(new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
                 this.client.emit("extendObject", objectId, obj, (err: any) => {
                     if (err) {
@@ -226,12 +233,14 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
                         resolve();
                     }
                 });
+            } else {
+                reject(new Error(`Could not extend object '${objectId}': Client is not connected`));
             }
-        });
+        }), `extendObject '${objectId}'`);
     }
 
     getSystemObjectView<TResult>(type: string, startKey: string, endKey: string): Promise<TResult[]> {
-        return new Promise<TResult[]>((resolve, reject) => {
+        return withAckTimeout(new Promise<TResult[]>((resolve, reject) => {
             if (this.client && this.isConnected) {
                 this.client.emit("getObjectView", "system", type,{"startkey": startKey,"endkey": `${endKey}\u9999`}, (err: any, doc: { rows: {id: string, value: TResult}[] }) => {
                     if (err) {
@@ -240,9 +249,9 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
                     resolve(doc.rows.map(row => row.value));
                 });
             } else {
-                reject(`Error while retreiving object view: Type: ${type} | startKey: ${startKey} | endKey: ${endKey}`);
+                reject(new Error(`Error while retreiving object view: Type: ${type} | startKey: ${startKey} | endKey: ${endKey}`));
             }
-        });
+        }), `getObjectView '${type}'`);
     }
 
     getState(): Promise<IState> {

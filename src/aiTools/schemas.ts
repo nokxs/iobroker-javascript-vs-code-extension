@@ -245,3 +245,49 @@ export const TOOL_NAMES = Object.keys(TOOL_SCHEMAS) as ToolName[];
 export function isToolName(name: string): name is ToolName {
     return Object.prototype.hasOwnProperty.call(TOOL_SCHEMAS, name);
 }
+
+/* eslint-disable @typescript-eslint/naming-convention */
+/**
+ * Title and description per contributed tool. The MCP server advertises both in `tools/list`;
+ * the contribution test asserts that they match `contributes.languageModelTools` in package.json,
+ * so the duplication cannot drift.
+ */
+export const TOOL_TITLES: Record<ToolName, string> = {
+    iobroker_get_scripts: "Get ioBroker scripts",
+    iobroker_get_script_content: "Get ioBroker script content",
+    iobroker_get_changed_scripts: "Get changed ioBroker scripts",
+    iobroker_get_js_instances: "Get ioBroker javascript instances",
+    iobroker_get_state: "Get ioBroker state",
+    iobroker_get_logs: "Get ioBroker logs",
+    iobroker_upload_script: "Upload ioBroker script",
+    iobroker_upload_all_changed_scripts: "Upload all changed ioBroker scripts",
+    iobroker_download_script: "Download ioBroker script",
+    iobroker_start_script: "Start ioBroker script",
+    iobroker_stop_script: "Stop ioBroker script",
+    iobroker_create_script: "Create ioBroker script",
+    iobroker_create_directory: "Create ioBroker directory",
+    iobroker_rename_script: "Rename ioBroker script",
+    iobroker_move_script: "Move ioBroker script",
+    iobroker_delete_script: "Delete ioBroker script",
+    iobroker_delete_directory: "Delete ioBroker directory",
+};
+
+export const TOOL_DESCRIPTIONS: Record<ToolName, string> = {
+    iobroker_get_scripts: "Lists the ioBroker.javascript directories and scripts that the extension knows about. Returns directory ids (use them as directoryId for creating or moving scripts) and script ids (use them as scriptId for all other tools) together with the local file path, engine type, enabled state and whether the script is dirty or remote only. Use it before any tool that needs a script or directory id. Does not read the script source code, use iobroker_get_script_content for that.",
+    iobroker_get_script_content: "Returns the source code of one ioBroker script. The local file is preferred; when the file does not exist the source stored on the ioBroker server is returned and 'fromDisk' is false. The result is marked as truncated when it exceeds maxLength. Only works for script ids, not for directories.",
+    iobroker_get_changed_scripts: "Lists the ioBroker scripts whose local file differs from the version on the ioBroker server. Set 'refresh' to true to re-evaluate every script against the server first; that requires an active connection and is slower. Use iobroker_upload_all_changed_scripts to push the changes to the server.",
+    iobroker_get_js_instances: "Lists the installed javascript adapter instances of ioBroker. When a scriptId is given, the result also contains the instance the script currently runs on. Read-only and requires an active ioBroker connection.",
+    iobroker_get_state: "Reads the current value of an ioBroker state, including the acknowledge flag and the timestamps. Use it to inspect what an ioBroker script produced or to debug state based logic. Requires an active ioBroker connection.",
+    iobroker_get_logs: "Reads the tail of an ioBroker host log. Requests up to 500 recent log lines (100 by default) and then filters whole entries by minimum severity, source substring and text substring, keeping continuation lines such as stack traces with their entry. Specify hostId when more than one host is configured. The response is capped at 30,000 characters. Requires an active ioBroker connection; log contents may contain sensitive information.",
+    iobroker_upload_script: "Uploads the local content of one script to the ioBroker server and overwrites the server version. Unsaved editor content is not included, the file has to be saved first. Use iobroker_upload_all_changed_scripts to upload every changed script at once.",
+    iobroker_upload_all_changed_scripts: "Uploads every script whose local file differs from the ioBroker server. Returns the uploaded ids and the ids that failed with a reason. Use it after editing several scripts. Unsaved editor content is not included.",
+    iobroker_download_script: "Downloads one script from the ioBroker server and overwrites the local file. Fails with the code 'unsaved_changes' when the file has unsaved editor changes; the user has to save or revert it first. Use it before reading a script that might have been changed on the server.",
+    iobroker_start_script: "Enables a script on the ioBroker server so the javascript adapter starts it. This does not upload anything, the server version is used. Requires an active ioBroker connection.",
+    iobroker_stop_script: "Disables a script on the ioBroker server so the javascript adapter stops running it. The script itself stays on the server. Requires an active ioBroker connection.",
+    iobroker_create_script: "Creates a new script on the ioBroker server and the matching local file. The same source is written to both places. Fails when a script or file with that name already exists in the directory. Pass a directoryId to place the script in a subdirectory; omit it to use the root directory.",
+    iobroker_create_directory: "Creates a directory on the ioBroker server and the matching local folder. Pass the full directory id to create missing intermediate directories in one step, or an existing parent id together with a name. Fails when the directory or folder already exists.",
+    iobroker_rename_script: "Renames a script on the ioBroker server and renames the local file. The directory does not change; use iobroker_move_script for that. Returns the old and the new script id.",
+    iobroker_move_script: "Moves a script into another directory on the ioBroker server and moves the local file into the matching folder. The directory has to exist already. Returns the old and the new script id.",
+    iobroker_delete_script: "Deletes a script on the ioBroker server and deletes the local file. This cannot be undone. Confirm the exact script id with the user before using this tool.",
+    iobroker_delete_directory: "Deletes an empty directory on the ioBroker server and the matching local folder. The directory has to be empty: move or delete its scripts and subdirectories first. This cannot be undone; the root directory, 'script.js.common' and 'script.js.global' cannot be deleted. Confirm the exact directory id with the user before using this tool.",
+};

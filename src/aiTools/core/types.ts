@@ -9,6 +9,7 @@ import type { IScriptRepositoryService } from "../../services/scriptRepository/I
 import type { IScriptService } from "../../services/script/IScriptService";
 import type { IStateAndObjectRemoteService } from "../../services/stateRemote/IStateAndObjectRemoteService";
 import type { IDirectoryService } from "../../services/directory/IDirectoryService";
+import type { LogSource } from "./logs";
 
 export const MAX_SCRIPT_CONTENT_LENGTH = 50000;
 export const DEFAULT_SCRIPT_LIMIT = 200;
@@ -86,10 +87,7 @@ export interface ToolDeps {
     files: Pick<IScriptFileService, "exists" | "write" | "writeContent" | "rename" | "move" | "delete" | "getFileUri" | "getDirectoryUri" | "directoryExists" | "isEmptyDirectory" | "createDirectory" | "deleteDirectory">
     jsInstances: Pick<IJsInstanceService, "getAvailableInstances">
     states: Pick<IStateAndObjectRemoteService, "getState">
-    logs: {
-        getHosts(): Promise<LogHost[]>
-        getLogs(hostId: string, lines: number): Promise<string[]>
-    }
+    logs: LogSource
     documents: IDocumentState
 }
 

@@ -1,0 +1,11 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "rootDir": "../..",
+        "outDir": "../../out-mcp-test",
+        "types": ["node", "mocha"],
+        "lib": ["es6", "dom", "dom.iterable"]
+    },
+    "include": ["./**/*.ts"],
+    "exclude": []
+}
