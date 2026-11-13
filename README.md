@@ -293,7 +293,7 @@ Example for OpenChamber:
 Command:
 npx
 -y
-@liofly/iobroker-mcp@1.15.0
+@liofly/iobroker-mcp@1.15.1
 
 Environment variables:
 IOBROKER_MCP_URL       = http://192.168.1.10:8081

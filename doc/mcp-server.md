@@ -754,7 +754,7 @@ and `exec`s the server:
 set -a
 . "$HOME/.config/iobroker-mcp/env"
 set +a
-exec npx -y @liofly/iobroker-mcp@1.15.0
+exec npx -y @liofly/iobroker-mcp@1.15.1
 ```
 
 The trade-off is the same secret at rest that the client would otherwise hold, but it works
@@ -1113,7 +1113,7 @@ reproducibility the docs recommend an explicit version in the client configurati
 ```
 npx
 -y
-@liofly/iobroker-mcp@1.15.0
+@liofly/iobroker-mcp@1.15.1
 ```
 
 This makes the pairing visible and prevents a silently changing tool surface for an agent
@@ -1331,7 +1331,7 @@ same commit, which is a separate user-facing change; section 18 keeps it as an o
 Command:
 npx
 -y
-@liofly/iobroker-mcp@1.15.0
+@liofly/iobroker-mcp@1.15.1
 
 Environment variables:
 IOBROKER_MCP_URL       = http://192.168.1.10:8081
