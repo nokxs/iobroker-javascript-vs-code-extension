@@ -54,9 +54,13 @@ export class IobrokerConnectionService implements IIobrokerConnectionService, IC
 
     onConnected(): void {
         this.statusBarService.setText("$(check) ioBroker connected");
+        // Auto-reconnect fires onConnected without a full connect(); reopen the
+        // workspace log mirror that onDisconnected closed.
+        void this.logService.reopenMirror();
     }
 
     onDisconnected(): void {
+        this.logService.dispose();
         this.statusBarService.setText("$(warning) ioBroker disconnected");
     }
 
