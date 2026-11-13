@@ -1071,8 +1071,14 @@ Steps of `publish-mcp.yml`:
 npm trusted publishing requires the package to exist before its GitHub Actions publisher can
 be configured. For the initial publication only, create an npm token with publish access to
 the `@liofly` scope and save it as the repository Actions secret `NPM_TOKEN`. Run the
-`Bootstrap MCP npm package` workflow with the release tag (for example `v1.15.0`). This
-token-only workflow intentionally does not request OIDC or publish provenance.
+`Bootstrap MCP npm package` workflow with the release tag (for example `v1.15.0`) and the
+package name `@liofly/iobroker-mcp`. This token-only workflow intentionally does not request
+OIDC or publish provenance.
+
+The bootstrap workflow checks out the release tag, because that is the code of the released
+version. A tag is immutable and keeps the package name it was created with, so the workflow
+sets the `package_name` input on `mcp/package.json` before publishing. A tag created before
+the scope was corrected (`@nokxs` to `@liofly`) would otherwise publish to the wrong scope.
 
 After the package appears on npm, configure its Trusted Publisher in the package settings:
 GitHub Actions, repository `nokxs/iobroker-javascript-vs-code-extension`, workflow file
