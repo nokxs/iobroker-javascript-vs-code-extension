@@ -1,0 +1,64 @@
+name: Bootstrap MCP npm package
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag to publish, for example v1.15.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release_tag }}
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Read and validate the release tag
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          VERSION=${RELEASE_TAG#v}
+          if ! printf '%s' "$RELEASE_TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "The input is not a valid release tag: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+      - name: Install
+        run: npm ci
+      - name: Compile MCP server
+        env:
+          BUILD_VERSION: ${{ env.VERSION }}
+        run: npm run compile:mcp
+      - name: Test MCP server
+        env:
+          BUILD_VERSION: ${{ env.VERSION }}
+        run: npm run test:mcp
+      - name: Set the package version and copy the bundle
+        run: |
+          npm version "$VERSION" --no-git-tag-version --prefix mcp
+          mkdir -p mcp/dist
+          cp dist/mcp-server.js mcp/dist/mcp-server.js
+          cp LICENSE mcp/LICENSE
+      - name: Publish initial package with npm token
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "Add an npm publish token as the repository secret NPM_TOKEN before running this workflow." >&2
+            exit 1
+          fi
+          if printf '%s' "$VERSION" | grep -q '-'; then
+            npm publish ./mcp --access public --tag next
+          else
+            npm publish ./mcp --access public
+          fi

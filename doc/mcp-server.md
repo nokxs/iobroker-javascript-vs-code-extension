@@ -1060,12 +1060,25 @@ Steps of `publish-mcp.yml`:
    This is the only test a release needs that `build.yml` does not already cover.
 5. `npm version "$VERSION" --no-git-tag-version --prefix mcp` so `mcp/package.json` matches
    the tag, then copy `dist/mcp-server.js` to `mcp/dist/mcp-server.js`.
-6. `npm publish ./mcp --access public --provenance` with `id-token: write` for npm trusted
-   publishing, so no long lived `NPM_TOKEN` secret is needed. If OIDC is not set up, fall
-   back to a granular automation token in `NPM_TOKEN`.
+6. Publish with npm trusted publishing (`id-token: write`) and provenance. This workflow
+   uses OIDC only; it does not fall back to `NPM_TOKEN`.
 7. For a prerelease tag (`-beta.1`), publish with `--tag next` instead of `latest`.
 
 `mcp/dist/` is generated and git ignored.
+
+#### First npm publication
+
+npm trusted publishing requires the package to exist before its GitHub Actions publisher can
+be configured. For the initial publication only, create an npm token with publish access and
+save it as the repository Actions secret `NPM_TOKEN`. Run the `Bootstrap MCP npm package`
+workflow with the release tag (for example `v1.15.0`). This token-only workflow intentionally
+does not request OIDC or publish provenance.
+
+After the package appears on npm, configure its Trusted Publisher in the package settings:
+GitHub Actions, repository `nokxs/iobroker-javascript-vs-code-extension`, workflow file
+`publish-mcp.yml`, and no environment. Allow direct `npm publish`. Future releases then use
+OIDC and provenance through `publish-mcp.yml`; the `NPM_TOKEN` secret can be removed. Do not
+rerun the bootstrap workflow for a version already published.
 
 ### 15.4 Why not independent versions
 
