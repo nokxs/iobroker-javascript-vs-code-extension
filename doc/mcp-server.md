@@ -1052,17 +1052,21 @@ Steps of `publish-mcp.yml`:
 
 1. `actions/checkout` and `actions/setup-node` on Node 22 (pin the current major, unlike
    `publish.yml`, which still uses `@v2`).
-2. Read `VERSION=${GITHUB_REF#refs/tags/v}` and validate it against
+2. `npm install --global npm@11` and assert `npm >= 11.5.1`. Node 22 bundles npm 10, which
+   cannot exchange the OIDC token. It would silently publish with the placeholder token from
+   `setup-node` and the registry answers `E404 Not Found - PUT ...` for a package that exists,
+   so the version check turns that into a clear failure.
+3. Read `VERSION=${GITHUB_REF#refs/tags/v}` and validate it against
    `^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$`. Fail on anything else, so a malformed tag
    never reaches the registry.
-3. `npm ci`, `npm run compile:mcp` (webpack production, `dist/mcp-server.js`).
-4. Run the bundle assertions and the stdio smoke test (section 14) against the built file.
+4. `npm ci`, `npm run compile:mcp` (webpack production, `dist/mcp-server.js`).
+5. Run the bundle assertions and the stdio smoke test (section 14) against the built file.
    This is the only test a release needs that `build.yml` does not already cover.
-5. `npm version "$VERSION" --no-git-tag-version --prefix mcp` so `mcp/package.json` matches
+6. `npm version "$VERSION" --no-git-tag-version --prefix mcp` so `mcp/package.json` matches
    the tag, then copy `dist/mcp-server.js` to `mcp/dist/mcp-server.js`.
-6. Publish with npm trusted publishing (`id-token: write`) and provenance. This workflow
+7. Publish with npm trusted publishing (`id-token: write`) and provenance. This workflow
    uses OIDC only; it does not fall back to `NPM_TOKEN`.
-7. For a prerelease tag (`-beta.1`), publish with `--tag next` instead of `latest`.
+8. For a prerelease tag (`-beta.1`), publish with `--tag next` instead of `latest`.
 
 `mcp/dist/` is generated and git ignored.
 
@@ -1323,7 +1327,8 @@ same commit, which is a separate user-facing change; section 18 keeps it as an o
   describes the wrong thing. It needs `aiToolsContribution.test.ts` changed in the same
   commit, which is why it is not part of this design.
 - npm trusted publishing or a granular `NPM_TOKEN`? OIDC is preferred, but it has to be set
-  up once in the npm account settings.
+  up once in the npm account settings, and the runner needs npm 11.5.1 or later because the
+  npm bundled with Node 22 cannot exchange the OIDC token.
 
 ## 19. OpenChamber setup (target state)
 
