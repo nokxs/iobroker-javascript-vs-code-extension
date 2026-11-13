@@ -111,6 +111,12 @@ function parseUrl(url: string): URL {
         throw new ConfigError("IOBROKER_MCP_URL", "must contain a host name.");
     }
 
+    // Credentials in the URL would end up in `--check` output and log lines, where the redactor
+    // cannot recognise them as a secret.
+    if (parsed.username || parsed.password) {
+        throw new ConfigError("IOBROKER_MCP_URL", "must not contain a username or password; use IOBROKER_MCP_USERNAME and IOBROKER_MCP_PASSWORD.");
+    }
+
     return parsed;
 }
 

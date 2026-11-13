@@ -1,6 +1,6 @@
 import type { IJsInstanceService } from "../../../services/jsInstanceService/IJsInstanceService";
 import type { IDirectoryService } from "../../../services/directory/IDirectoryService";
-import type { RemoteLogService } from "../../../services/remote/RemoteLogService";
+import type { LogSource } from "../logs";
 import type { RemoteScriptRepository } from "../../../services/remote/RemoteScriptRepository";
 import type { IScriptRemoteService } from "../../../services/scriptRemote/IScriptRemoteService";
 import type { IStateAndObjectRemoteService } from "../../../services/stateRemote/IStateAndObjectRemoteService";
@@ -56,10 +56,10 @@ export interface RemoteToolDeps {
         "rename" |
         "move" |
         "delete">
-    directories: Pick<IDirectoryService, "createDirectory" | "createDirectoriesRecursively" | "deleteDirectory">
+    directories: Pick<IDirectoryService, "createDirectory" | "createDirectoriesRecursively" | "downloadDirectory" | "deleteDirectory">
     jsInstances: Pick<IJsInstanceService, "getAvailableInstances">
     states: Pick<IStateAndObjectRemoteService, "getState">
-    logs: Pick<RemoteLogService, "getHosts" | "getLogs">
+    logs: LogSource
 }
 
 // ---------------------------------------------------------------------------------------------

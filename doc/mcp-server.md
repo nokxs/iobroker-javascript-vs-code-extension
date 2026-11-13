@@ -381,11 +381,13 @@ dedicated ioBroker user over `admin` so the blast radius of a leaked password is
 
 - Read the password once at startup into a private field. Never put it into a DTO, a tool
   result, an error object or a `Map` that is later serialised.
-- `redact(text)` is applied to **every** string that leaves the process: stderr lines, tool
-  result text, error messages and `hint` fields. It replaces the password, the session
-  token and the values of `access_token=` / `connect.sid=` cookies with `***`. Reason:
-  `axios` and `socket.io` errors can echo request details, and a proxy error can echo a URL
-  with credentials.
+- `redact(text)` is applied to every string that leaves the process as a diagnostic: stderr
+  lines, tool error messages and `hint` fields. It replaces the password, the session token
+  and the values of `access_token=` / `connect.sid=` cookies with `***`. Reason: `axios` and
+  `socket.io` errors can echo request details, and a proxy error can echo a URL with
+  credentials. A successful tool payload is **not** redacted: it is the data the caller asked
+  for, and masking a password that appears in a script source would corrupt the source the
+  next write stores (section 20).
 - Log the token expiry, never the token.
 - Do not log tool payloads. Script sources and state values can contain secrets, so the
   debug level logs the tool name, object id, duration and result size, not content.
@@ -409,8 +411,11 @@ The startup summary is the only place that echoes configuration, and it prints
 
 ### 8.4 Crash and CI hygiene
 
-- `uncaughtException` / `unhandledRejection`: print `redact(error.stack)` to stderr and exit
-  with code 1. A stack trace may contain a header value, hence the redaction.
+- `uncaughtException`: print `redact(error.stack)` to stderr and exit with code 1. A stack
+  trace may contain a header value, hence the redaction.
+- `unhandledRejection`: print `redact(error.stack)` to stderr and keep serving. A stray
+  rejection must not take the client's server down; every tool path bounds and catches its
+  own errors, so this is a diagnostic net rather than the error handling.
 - Release workflows never print the environment. GitHub Actions masks registered secrets,
   but `--provenance` and `npm publish` do not need `NODE_AUTH_TOKEN` in a log line; if a
   debug print is unavoidable, emit `::add-mask::` first.
@@ -567,7 +572,7 @@ stateDiagram-v2
 | `Connecting` | waits for the same in-flight connect promise | `not_connected` after the budget |
 | `Ready` | executes | – |
 | `Reauthenticating` | waits for the same in-flight login promise | budget timeout -> `not_connected` |
-| `Reconnecting` | waits up to the call budget | `not_connected` |
+| `Reconnecting` | waits up to 10 s for the socket client to come back, then `Failed` with the 30 s cooldown | `not_connected` |
 | `NeedsAttention` | immediate `not_connected` with the hint to fix `IOBROKER_MCP_PASSWORD` | – |
 | `Failed` | immediate `not_connected` | process stays alive until the client closes stdin |
 
@@ -577,6 +582,13 @@ requires a restart, which the client configuration makes cheap.
 `Failed` is recoverable, not terminal: the next tool call after a 30 s cooldown moves back
 to `Connecting`, so a wrong URL costs one 10 s attempt per 30 s instead of one per call.
 Only `NeedsAttention` requires a restart.
+
+`Reconnecting` is anchored at the disconnect: a call that arrives while the socket is down
+waits up to 10 s for the client's own retry and then enters `Failed`, so an outage cannot
+start one login per tool call. `Reauthenticating` and `Connecting` share their in-flight
+promise with `ensureConnected`, so concurrent calls never run two logins or two sockets.
+A failed login is counted once per attempt, which keeps `NeedsAttention` at the documented
+third attempt.
 
 ### 10.4 Timeouts, concurrency and backoff
 
@@ -593,9 +605,10 @@ It hardcodes `DEBUG = true`, which stores `ts: 0` for every callback and makes
 `_garbageCollect` return before it looks at the array; the comparison it would use is
 inverted as well (`ts > now` fires callbacks that have not expired). A lost callback
 therefore never rejects, and the extension only survives because its calls are short. The
-server wraps each socket operation in its own `Promise.race` with 10 s; the whole-call
-budget is the backstop. Repairing `SocketIoClient` changes behaviour for the extension and
-is a separate change.
+10 s bound lives in `withAckTimeout` and wraps every object operation in
+`ConnectionServiceAdmin4` and `ConnectionServiceAdmin5`, so the extension gets the same
+protection; a mutation that is called while the client is disconnected now rejects instead
+of hanging. Reparing `SocketIoClient` itself stays a separate change.
 
 30 s is chosen because it stays below the common client default while leaving room for a
 log fetch on a slow host. Clients must not cut a call off earlier: section 11.1 asks for
@@ -1330,10 +1343,32 @@ rediscover them:
 - **Call budget.** A call that triggers the first connect can spend 10 s on the connection and
   then up to 30 s on the tool, so 40 s in total. That stays below the 45 s client recommendation
   from section 11.1.
-- **Shared metadata.** `TOOL_TITLES` and `TOOL_DESCRIPTIONS` are shared with the extension, so
-  the descriptions of the kept tools still mention local files even though the server returns no
-  file fields. The contribution test enforces the equality with `package.json`; changing the text
-  for the server only would need a separate description map.
+- **Shared metadata.** `TOOL_TITLES` and `TOOL_DESCRIPTIONS` are shared with the extension and
+  enforced against `package.json` by the contribution test. The nine tools whose text mentioned a
+  local file, a local folder, `fromDisk` or a dirty state get a server-only description from
+  `REMOTE_TOOL_DESCRIPTIONS` in `src/mcp/tools/remoteToolSet.ts`; a tool surface test fails when a
+  remote description mentions a local file again.
 - **Remote repository.** `RemoteScriptRepository` also refreshes a single directory through
   `IDirectoryService.downloadDirectory`; the design only mentioned script invalidation, but the
   socket pattern `script.js.*` covers channels too.
+- **Shared seams instead of copies.** The rename rule lives on `ScriptId.sanitizeName`, the log
+  parsing on `readLogs` (`src/aiTools/core/logs.ts`) with `HostLogService` as the only host/log IO,
+  the directory target of `create_directory` on `resolveDirectoryTarget`, and the `fileName`/
+  `language` parsing of `create_script` on `scriptNaming`. The extension tools use the same
+  modules, so a fix cannot drift between the two trees.
+- **`create_directory` rollback.** The remote tool removes the directories a failed creation left
+  behind, the same way the extension rolls back. It only deletes a directory that exists on the
+  server, was not in the cache before the call, and has no content.
+- **`create_script` existence check.** The cache can be stale, so the remote tool asks the server
+  for the target id before `setObject` overwrites an existing object.
+- **New script engine.** The engine of a new script is the first javascript instance the server
+  reports; `system.adapter.javascript.0` is only the fallback when there is none.
+- **Unhandled rejections.** The server logs them instead of calling `process.exit(1)`: a stray
+  rejection must not take the client's server down. Every tool path bounds and catches its own
+  errors, so this is a diagnostic net (`ScriptRemoteService.setScriptState` now also awaits its
+  write).
+- **Redaction scope.** `ToolResultMapper` redacts error text only. A successful payload is data
+  the caller asked for; masking a password that appears in a script source would corrupt the
+  source it is about to write back.
+- **`mcp/README.md` and `LICENSE`.** The publish workflow copies `LICENSE` next to the bundle, so
+  the npm page of the package is not empty.

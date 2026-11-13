@@ -1,11 +1,12 @@
 import type { LogHost } from "../../aiTools/core/types";
+import type { LogSource } from "../../aiTools/core/logs";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 
 /**
- * Builds the `logs` dependency of the remote core the same way `AiToolService.createDeps` does for
- * the extension.
+ * The `logs` dependency of the AI tools: hosts come from the ioBroker object view, the log tail
+ * from a host command. One implementation for the extension and the MCP server.
  */
-export class RemoteLogService {
+export class HostLogService implements LogSource {
     constructor(private readonly connectionServiceProvider: IConnectionServiceProvider) { }
 
     async getHosts(): Promise<LogHost[]> {

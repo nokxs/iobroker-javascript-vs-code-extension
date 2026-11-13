@@ -68,8 +68,10 @@ async function main(): Promise<number> {
     });
 
     process.on("unhandledRejection", reason => {
+        // A stray rejection must not end the session: the client would lose the server instead of
+        // seeing one failed tool call. Every tool path bounds and catches its own errors, so this
+        // line is a diagnostic, not the error handling.
         log.error(`Unhandled rejection: ${reason instanceof Error ? log.redact(reason.stack ?? reason.message) : `${reason}`}`);
-        process.exit(1);
     });
 
     const runner = McpServerRunner.create(config, log);

@@ -259,7 +259,7 @@ a value:
 | `IOBROKER_MCP_PASSWORD` | when login is enabled | – | ioBroker password |
 | `IOBROKER_MCP_ALLOW_SELF_SIGNED` | no | `false` | accept self signed certificates for `https://` |
 | `IOBROKER_MCP_READ_ONLY` | no | `false` | expose the `get_*` tools only |
-| `IOBROKER_MCP_SCRIPT_AUTO_RUN` | no | `false` | start a script right after it was created or updated |
+| `IOBROKER_MCP_SCRIPT_AUTO_RUN` | no | `false` | enable a script right after it was created |
 | `IOBROKER_MCP_LOG_LEVEL` | no | `info` | stderr diagnostics: `error`, `warn`, `info`, `debug`, `silly` |
 
 The server exposes 14 tools: the `get_*` read tools of the extension plus `start_script`,

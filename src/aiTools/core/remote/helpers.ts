@@ -10,6 +10,9 @@ import type { DirectoryDto, RemoteToolDeps, ScriptSummaryDto } from "./types";
 export const REMOTE_CONNECTION_HINT =
     "Check IOBROKER_MCP_URL, IOBROKER_MCP_USERNAME and IOBROKER_MCP_PASSWORD, then retry.";
 
+/** Used only when the server reports no javascript instance at all. */
+const FALLBACK_JS_ENGINE = "system.adapter.javascript.0";
+
 export function ensureRemoteConnected(deps: RemoteToolDeps): ToolError | undefined {
     return ensureConnected(deps, REMOTE_CONNECTION_HINT);
 }
@@ -68,13 +71,13 @@ export function fileExtensionOf(engineType: string | undefined): string {
  * The remote counterpart of `ScriptService.getDefaultScript`. The extension's member needs a
  * `ScriptIdService`, whose implementation is VS Code bound, so the server builds the object here.
  */
-export function defaultScript(id: ScriptId, engineType: EngineType): IScript {
+export function defaultScript(id: ScriptId, engineType: EngineType, engine: string | undefined): IScript {
     const sanitizedId = ScriptId.sanitizeId(id);
 
     return {
         _id: sanitizedId,
         common: {
-            engine: "system.adapter.javascript.0",
+            engine: engine ?? FALLBACK_JS_ENGINE,
             engineType: engineType,
             name: ScriptId.lastSegmentOf(`${sanitizedId}`),
             source: "",
@@ -85,6 +88,20 @@ export function defaultScript(id: ScriptId, engineType: EngineType): IScript {
         },
         type: "script"
     };
+}
+
+/**
+ * The engine of a new script: the first javascript instance the server reports, so a script is not
+ * pinned to `javascript.0` on an installation that runs another instance only.
+ */
+export async function firstJsInstanceId(deps: RemoteToolDeps): Promise<string | undefined> {
+    try {
+        const instances = await deps.jsInstances.getAvailableInstances();
+        return instances[0]?._id;
+    } catch {
+        // The upload fails on its own if the socket is broken; the fallback engine is still valid.
+        return undefined;
+    }
 }
 
 /** Best effort cache refresh, mirroring the extension helper. */

@@ -1,5 +1,6 @@
 import { failure, GetJsInstancesDto, GetJsInstancesInput, JsInstanceDto, RemoteToolDeps, success, ToolOutcome } from "./types";
 import { ensureRemoteConnected } from "./helpers";
+import { toFailure } from "../helpers";
 import { toScriptId } from "../validation";
 
 /** Lists the javascript adapter instances that can run scripts. */
@@ -25,7 +26,12 @@ export async function getJsInstances(deps: RemoteToolDeps, input: GetJsInstances
         currentInstanceId = script.common.engine ?? null;
     }
 
-    const instances = await deps.jsInstances.getAvailableInstances();
+    let instances;
+    try {
+        instances = await deps.jsInstances.getAvailableInstances();
+    } catch (error) {
+        return toFailure(error);
+    }
 
     return success({
         instances: instances.map<JsInstanceDto>(instance => ({ id: instance._id })),

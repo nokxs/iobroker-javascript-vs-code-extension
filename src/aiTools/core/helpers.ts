@@ -75,14 +75,6 @@ export function toFailure(error: unknown): ToolOutcome<never> {
 }
 
 /**
- * Mirrors the sanitization of `ScriptRemoteService.rename`, so the new id of a renamed script can
- * be predicted and looked up in the cache afterwards.
- */
-export function sanitizeScriptName(name: string): string {
-    return (name || "").replace(/[\\/\][*,;'"`<>?\s]/g, '_');
-}
-
-/**
  * Re-reads a single script from ioBroker into the cache. Failures are swallowed on purpose:
  * the socket based cache invalidation runs anyway and a stale cache entry is better than
  * reporting a successful write operation as failed.

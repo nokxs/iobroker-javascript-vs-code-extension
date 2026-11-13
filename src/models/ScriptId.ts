@@ -15,7 +15,16 @@ export class ScriptId extends String {
      * have to construct the VS Code bound `ScriptIdService`.
      */
     static sanitizeId(id: ScriptId): ScriptId {
-        return new ScriptId(`${id}`.replace(/[\\/\][*,;'"`<>?&#\s]/g, "_"));
+        return new ScriptId(ScriptId.sanitizeName(`${id}`));
+    }
+
+    /**
+     * The single implementation of the rename/creation rule for one id segment. `sanitizeId`,
+     * `ScriptRemoteService.rename` and the AI tools all use it, so a name maps to the same id
+     * everywhere.
+     */
+    static sanitizeName(name: string): string {
+        return (name ?? "").replace(/[\\/\][*,;'"`<>?&#\s]/g, "_");
     }
 
     /** Id of the root directory that contains all scripts and script directories. */

@@ -19,6 +19,8 @@ export const MAX_LOGIN_ATTEMPTS = 3;
 export const FAILED_COOLDOWN_MS = 30 * 1000;
 const REFRESH_MARGIN_MS = 60 * 1000;
 const MIN_REFRESH_DELAY_MS = 5 * 1000;
+/** Time a tool call gives the socket client to reconnect on its own before forcing a connect. */
+const RECONNECT_GRACE_MS = 10 * 1000;
 
 export type ConnectionState =
     "idle" |
@@ -57,6 +59,7 @@ export class RemoteConnectionService implements IConnectionEventListener {
     private failedLoginAttempts = 0;
     private lastFailureAt = 0;
     private refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    private reconnectWaiter: (() => void) | undefined;
     private listenerRegistered = false;
     private readyHook: (() => void) | undefined;
     private readonly baseUri: VSCodeUri;
@@ -106,6 +109,31 @@ export class RemoteConnectionService implements IConnectionEventListener {
                 "Update IOBROKER_MCP_PASSWORD and restart the server.");
         }
 
+        // A running login is shared like a running connect: a second attempt would log in twice
+        // and race two sockets against each other.
+        if (this.state === "reauthenticating" && this.reauthPromise) {
+            try {
+                await this.reauthPromise;
+            } catch (error) {
+                throw this.toUnavailableError(error);
+            }
+
+            if (this.isConnected()) {
+                return;
+            }
+        }
+
+        // The socket client reconnects on its own with a backoff, so a call that arrives during a
+        // short outage waits for it instead of starting one login attempt per call.
+        if (this.state === "reconnecting") {
+            await this.waitForReconnect();
+            if (this.isConnected()) {
+                return;
+            }
+
+            this.markFailed("The ioBroker connection did not come back.");
+        }
+
         if (this.state === "failed") {
             const remaining = FAILED_COOLDOWN_MS - (Date.now() - this.lastFailureAt);
             if (remaining > 0) {
@@ -146,6 +174,8 @@ export class RemoteConnectionService implements IConnectionEventListener {
         }
 
         this.state = "idle";
+        // A call that waits for a reconnect must not keep the shutdown hanging.
+        this.notifyReconnectWaiter();
     }
 
     onConnected(): void {
@@ -155,8 +185,11 @@ export class RemoteConnectionService implements IConnectionEventListener {
     }
 
     onDisconnected(): void {
-        if (this.state === "ready" || this.state === "reauthenticating") {
+        if (this.state === "ready" || this.state === "reauthenticating" || this.state === "connecting") {
             this.state = "reconnecting";
+            // Anchor the cooldown at the disconnect, so a socket that stays down cannot be
+            // retried by every tool call.
+            this.lastFailureAt = Date.now();
             this.logger.warn("The ioBroker connection was closed. Reconnecting.");
         }
     }
@@ -195,12 +228,7 @@ export class RemoteConnectionService implements IConnectionEventListener {
             this.lastFailureAt = 0;
             this.markReady();
         } catch (error) {
-            this.lastFailureAt = Date.now();
-            if (this.getState() !== "needsAttention") {
-                this.state = "failed";
-            }
-
-            this.logger.error(`Could not connect to ioBroker: ${error instanceof Error ? error.message : `${error}`}`);
+            this.markFailed(`Could not connect to ioBroker: ${error instanceof Error ? error.message : `${error}`}`);
             throw error;
         }
     }
@@ -242,13 +270,15 @@ export class RemoteConnectionService implements IConnectionEventListener {
     }
 
     private async acquireToken(loginType: LoginType, budget: number = LOGIN_BUDGET_MS): Promise<string> {
-        try {
-            const password = await this.credentials.getPassword();
-            if (!password) {
-                this.registerLoginFailure();
-                throw new Error("The ioBroker login is enabled, but IOBROKER_MCP_PASSWORD is not set.");
-            }
+        // The missing password is a configuration error, not a rejected attempt, so it is counted
+        // exactly once - outside the try, which counts every thrown error.
+        const password = await this.credentials.getPassword();
+        if (!password) {
+            this.registerLoginFailure();
+            throw new Error("The ioBroker login is enabled, but IOBROKER_MCP_PASSWORD is not set.");
+        }
 
+        try {
             const token = await withTimeout(
                 this.loginService.getAccessToken(
                     this.baseUri,
@@ -305,24 +335,32 @@ export class RemoteConnectionService implements IConnectionEventListener {
         const adminVersion = this.configRepository.config.adminVersion;
         const service = this.connectionServiceProvider.getConnectionService();
 
-        if (adminVersion === AdminVersion.admin4) {
-            await withTimeout(service.connect(this.baseUri, true, this.options.allowSelfSignedCertificate), SOCKET_BUDGET_MS, "Socket reconnect");
-        } else {
-            const loginType = this.detectedLoginType ?? await this.detectLoginType();
-            const token = loginType === LoginType.noLogin ? undefined : await this.acquireToken(loginType);
-            await withTimeout(
-                service.connectWithToken(this.baseUri, true, this.options.allowSelfSignedCertificate, token ?? "", this.options.username ?? null),
-                SOCKET_BUDGET_MS,
-                "Socket reconnect");
-        }
+        try {
+            if (adminVersion === AdminVersion.admin4) {
+                await withTimeout(service.connect(this.baseUri, true, this.options.allowSelfSignedCertificate), SOCKET_BUDGET_MS, "Socket reconnect");
+            } else {
+                const loginType = this.detectedLoginType ?? await this.detectLoginType();
+                const token = loginType === LoginType.noLogin ? undefined : await this.acquireToken(loginType);
+                await withTimeout(
+                    service.connectWithToken(this.baseUri, true, this.options.allowSelfSignedCertificate, token ?? "", this.options.username ?? null),
+                    SOCKET_BUDGET_MS,
+                    "Socket reconnect");
+            }
 
-        this.failedLoginAttempts = 0;
-        this.markReady();
+            this.failedLoginAttempts = 0;
+            this.markReady();
+        } catch (error) {
+            // Otherwise the state stays `reauthenticating` and the cooldown never starts.
+            this.markFailed(`Re-authentication failed: ${error instanceof Error ? error.message : `${error}`}`);
+            throw error;
+        }
     }
 
     private markReady(): void {
         this.state = "ready";
+        this.lastFailureAt = 0;
         this.logger.info("Connected to ioBroker.");
+        this.notifyReconnectWaiter();
         this.scheduleRefresh();
 
         if (this.readyHook) {
@@ -332,6 +370,41 @@ export class RemoteConnectionService implements IConnectionEventListener {
                 this.logger.warn(`The post-connect hook failed: ${error instanceof Error ? error.message : `${error}`}`);
             }
         }
+    }
+
+    /** Enters `failed` and anchors the cooldown. `needsAttention` stays, it requires a restart. */
+    private markFailed(reason: string): void {
+        if (this.state !== "needsAttention") {
+            this.state = "failed";
+        }
+
+        this.lastFailureAt = Date.now();
+        this.logger.error(reason);
+        this.notifyReconnectWaiter();
+    }
+
+    /** Waits until the state leaves `reconnecting`, at most one connect budget. */
+    private waitForReconnect(): Promise<void> {
+        return new Promise<void>(resolve => {
+            let timer: ReturnType<typeof setTimeout>;
+
+            const finish = () => {
+                clearTimeout(timer);
+                if (this.reconnectWaiter === finish) {
+                    this.reconnectWaiter = undefined;
+                }
+                resolve();
+            };
+
+            timer = setTimeout(finish, RECONNECT_GRACE_MS);
+            this.reconnectWaiter = finish;
+        });
+    }
+
+    private notifyReconnectWaiter(): void {
+        const waiter = this.reconnectWaiter;
+        this.reconnectWaiter = undefined;
+        waiter?.();
     }
 
     /** Renews the token shortly before it expires, so tool calls do not run into a stale session. */

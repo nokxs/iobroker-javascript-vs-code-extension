@@ -25,6 +25,7 @@ export class RemoteScriptRepository implements IScriptChangedEventListener {
     private scripts: IScript[] = [];
     private directories: RemoteDirectory[] = [];
     private loaded = false;
+    private loadPromise: Promise<void> | undefined;
     private readonly root: RemoteDirectory = { _id: ScriptId.rootId, common: {} };
 
     constructor(private readonly deps: RemoteScriptRepositoryDeps) { }
@@ -34,11 +35,23 @@ export class RemoteScriptRepository implements IScriptChangedEventListener {
         this.deps.scriptRemote.registerScriptChangedEventListener(this);
     }
 
-    /** Loads the cache once, so a tool that needs to know an id does not block on every call. */
+    /**
+     * Loads the cache once, so a tool that needs to know an id does not block on every call.
+     * Concurrent callers share one download, the same way `ensureConnected` shares one connect.
+     */
     async ensureLoaded(): Promise<void> {
-        if (!this.loaded) {
-            await this.updateFromServer();
+        if (this.loaded) {
+            return;
         }
+
+        if (!this.loadPromise) {
+            const attempt = this.updateFromServer();
+            this.loadPromise = attempt.then(
+                () => { this.loadPromise = undefined; },
+                (error: unknown) => { this.loadPromise = undefined; throw error; });
+        }
+
+        return this.loadPromise;
     }
 
     async updateFromServer(): Promise<void> {
@@ -77,13 +90,15 @@ export class RemoteScriptRepository implements IScriptChangedEventListener {
 
         // `getObject` answers for scripts and channels alike; only the object type tells them apart.
         const object = await this.deps.scriptRemote.downloadScriptWithId(id) as IScript | null;
-        if (object && isScriptObject(object)) {
+        const kind = object ? objectKind(object) : undefined;
+
+        if (object && kind === "script") {
             this.scripts = this.scripts.filter(candidate => `${candidate._id}`.toLowerCase() !== key);
             this.scripts.push({ ...object, _id: new ScriptId(`${id}`) });
             return;
         }
 
-        if (object) {
+        if (object && kind === "directory") {
             this.directories = this.directories.filter(candidate => `${candidate._id}`.toLowerCase() !== key);
             if (`${id}` !== ScriptId.rootId) {
                 this.directories.push({ _id: new ScriptId(`${id}`), common: object.common });
@@ -91,15 +106,18 @@ export class RemoteScriptRepository implements IScriptChangedEventListener {
             return;
         }
 
-        const directory = await this.deps.directories.downloadDirectory(id) as IDirectory | null;
-        if (directory) {
-            this.directories = this.directories.filter(candidate => `${candidate._id}`.toLowerCase() !== key);
-            if (`${id}` !== ScriptId.rootId) {
-                this.directories.push({ _id: new ScriptId(`${id}`), common: directory.common });
+        if (!object) {
+            const directory = await this.deps.directories.downloadDirectory(id) as IDirectory | null;
+            if (directory) {
+                this.directories = this.directories.filter(candidate => `${candidate._id}`.toLowerCase() !== key);
+                if (`${id}` !== ScriptId.rootId) {
+                    this.directories.push({ _id: new ScriptId(`${id}`), common: directory.common });
+                }
+                return;
             }
-            return;
         }
 
+        // Deleted on the server, or an object type that is neither a script nor a channel.
         this.scripts = this.scripts.filter(candidate => `${candidate._id}`.toLowerCase() !== key);
         this.directories = this.directories.filter(candidate => `${candidate._id}`.toLowerCase() !== key);
     }
@@ -127,7 +145,15 @@ export class RemoteScriptRepository implements IScriptChangedEventListener {
 }
 
 /** `getObject` also answers with channels (directories), which have a different `type`. */
-function isScriptObject(value: IScript): boolean {
-    const type = (value as unknown as { type?: string }).type;
-    return type === undefined || type === "script";
+function objectKind(value: IScript): "script" | "directory" | "other" {
+    if (value.type === "channel") {
+        return "directory";
+    }
+
+    // A script object always carries `type: "script"`; older objects may omit it.
+    if (value.type === undefined || value.type === "script") {
+        return "script";
+    }
+
+    return "other";
 }

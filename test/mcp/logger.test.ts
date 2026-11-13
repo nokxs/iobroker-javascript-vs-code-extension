@@ -77,6 +77,11 @@ suite("MCP secrets", () => {
         assert.throws(
             () => ServerConfig.fromEnvironment({ IOBROKER_MCP_URL: "http://host:8081", IOBROKER_MCP_READ_ONLY: "maybe" }),
             (error: Error & { variable?: string }) => error.variable === "IOBROKER_MCP_READ_ONLY");
+
+        // Credentials in the URL would be printed by `--check`, where the redactor cannot find them.
+        assert.throws(
+            () => ServerConfig.fromEnvironment({ IOBROKER_MCP_URL: "http://admin:secret@host:8081" }),
+            (error: Error & { variable?: string }) => error.variable === "IOBROKER_MCP_URL");
     });
 
     test("defaults match the documented environment", () => {

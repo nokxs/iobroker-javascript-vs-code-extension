@@ -1,7 +1,7 @@
 import { ScriptId } from "../../../models/ScriptId";
 import { failure, RemoteToolDeps, RenameScriptDto, RenameScriptInput, success, ToolOutcome } from "./types";
 import { ensureRemoteConnected, refreshScriptInCache, scriptIdOf } from "./helpers";
-import { sanitizeScriptName, toFailure } from "../helpers";
+import { toFailure } from "../helpers";
 import { toScriptId, validateName } from "../validation";
 
 /** Renames a script on the ioBroker server. The directory stays the same, no local file is moved. */
@@ -30,7 +30,7 @@ export async function renameScript(deps: RemoteToolDeps, input: RenameScriptInpu
 
     const oldScriptId = scriptIdOf(script);
     const parentId = ScriptId.parentIdOf(oldScriptId);
-    const newScriptId = `${parentId}.${sanitizeScriptName(newName)}`;
+    const newScriptId = `${parentId}.${ScriptId.sanitizeName(newName)}`;
 
     if (newScriptId === oldScriptId) {
         return failure("invalid_input", `The script is already called '${newName}'.`);

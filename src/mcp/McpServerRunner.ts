@@ -32,7 +32,7 @@ import { EnvLoginCredentialsService } from "../services/remote/EnvLoginCredentia
 import { NoStatusBarService } from "../services/remote/NoStatusBarService";
 import { NoWorkspaceService } from "../services/remote/NoWorkspaceService";
 import { RemoteConnectionService } from "../services/remote/RemoteConnectionService";
-import { RemoteLogService } from "../services/remote/RemoteLogService";
+import { HostLogService } from "../services/log/HostLogService";
 import { RemoteScriptIdService } from "../services/remote/RemoteScriptIdService";
 import { RemoteScriptRepository } from "../services/remote/RemoteScriptRepository";
 import { StderrDebugLogService } from "../services/remote/StderrDebugLogService";
@@ -133,7 +133,7 @@ export class McpServerRunner {
             directories: directories,
             jsInstances: jsInstances,
             states: states,
-            logs: new RemoteLogService(connectionProvider)
+            logs: new HostLogService(connectionProvider)
         };
 
         const server = new Server(
@@ -208,7 +208,9 @@ export class McpServerRunner {
             // when ioBroker is not reachable. Every tool answers `not_connected` when it needs the
             // connection, which triggers the second attempt below.
             if (this.connection.isConnected()) {
-                await this.repository.ensureLoaded();
+                // The first load downloads all scripts and directories, so it has to share the
+                // budget: a lost socket acknowledgement would otherwise hang the call forever.
+                await withToolBudget(this.repository.ensureLoaded());
             }
 
             let outcome = await withToolBudget(handler(this.deps, args));
@@ -221,7 +223,7 @@ export class McpServerRunner {
                     return this.resultMapper.toErrorResult("not_connected", messageOf(error), hint || undefined);
                 }
 
-                await this.repository.ensureLoaded();
+                await withToolBudget(this.repository.ensureLoaded());
                 outcome = await withToolBudget(handler(this.deps, args));
             }
 

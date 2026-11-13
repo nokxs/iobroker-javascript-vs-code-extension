@@ -44,6 +44,8 @@ jobs:
           npm version "$VERSION" --no-git-tag-version --prefix mcp
           mkdir -p mcp/dist
           cp dist/mcp-server.js mcp/dist/mcp-server.js
+          # npm shows the license of the package folder, not of the repository root.
+          cp LICENSE mcp/LICENSE
       - name: Publish to npm
         run: |
           if printf '%s' "$VERSION" | grep -q '-'; then

@@ -85,6 +85,43 @@ const UPDATE_SCRIPT_SOURCE_DESCRIPTION =
     "script id and the number of written characters. This cannot be undone; confirm the exact script id with " +
     "the user before using this tool.";
 
+/**
+ * The extension descriptions talk about the local file, the dirty state and `fromDisk`. None of that
+ * exists in the server, and a model would look for fields that are not there, so the tools that
+ * differ get their own text.
+ */
+const REMOTE_TOOL_DESCRIPTIONS: Partial<Record<RemoteToolName, string>> = {
+    iobroker_get_scripts:
+        "Lists the ioBroker.javascript directories and scripts on the ioBroker server. Returns directory ids " +
+        "(use them as directoryId for creating or moving scripts) and script ids (use them as scriptId for all " +
+        "other tools) together with the engine type and the enabled state. Use it before any tool that needs a " +
+        "script or directory id. Does not read the script source code, use iobroker_get_script_content for that.",
+    iobroker_get_script_content:
+        "Returns the source code of one ioBroker script as stored on the ioBroker server. The result is marked " +
+        "as truncated when it exceeds maxLength. Only works for script ids, not for directories.",
+    iobroker_create_script:
+        "Creates a new script on the ioBroker server. The source is written to the ioBroker object. Fails when " +
+        "the id already exists in the directory. Pass a directoryId to place the script in a subdirectory; omit " +
+        "it to use the root directory.",
+    iobroker_create_directory:
+        "Creates a directory on the ioBroker server. Pass the full directory id to create missing intermediate " +
+        "directories in one step, or an existing parent id together with a name. Fails when the directory " +
+        "already exists.",
+    iobroker_rename_script:
+        "Renames a script on the ioBroker server. The directory does not change; use iobroker_move_script for " +
+        "that. Returns the old and the new script id.",
+    iobroker_move_script:
+        "Moves a script into another directory on the ioBroker server. The directory has to exist already. " +
+        "Returns the old and the new script id.",
+    iobroker_delete_script:
+        "Deletes a script on the ioBroker server. This cannot be undone. Confirm the exact script id with the " +
+        "user before using this tool.",
+    iobroker_delete_directory:
+        "Deletes an empty directory on the ioBroker server. The directory has to be empty: move or delete its " +
+        "scripts and subdirectories first. This cannot be undone; the root directory, 'script.js.common' and " +
+        "'script.js.global' cannot be deleted. Confirm the exact directory id with the user before using this tool."
+};
+
 type RemoteToolHandler = (deps: RemoteToolDeps, input: Record<string, unknown>) => Promise<ToolOutcome<unknown>>;
 
 const READ_ONLY_TOOLS: readonly RemoteToolName[] = [
@@ -154,7 +191,12 @@ function titleOf(name: RemoteToolName): string {
 }
 
 function descriptionOf(name: RemoteToolName): string {
-    return name === UPDATE_SCRIPT_SOURCE_TOOL ? UPDATE_SCRIPT_SOURCE_DESCRIPTION : TOOL_DESCRIPTIONS[name as ToolName];
+    if (name === UPDATE_SCRIPT_SOURCE_TOOL) {
+        return UPDATE_SCRIPT_SOURCE_DESCRIPTION;
+    }
+
+    const description = (REMOTE_TOOL_DESCRIPTIONS as Record<string, string | undefined>)[name];
+    return description ?? TOOL_DESCRIPTIONS[name as ToolName];
 }
 
 function inputSchemaOf(name: RemoteToolName): Tool["inputSchema"] {

@@ -4,6 +4,9 @@ import { IDirectory } from "../../models/IDirectory";
 import { IScript } from "../../models/IScript";
 import { ScriptId } from "../../models/ScriptId";
 import { RemoteDirectory, RemoteScriptRepository } from "../../services/remote/RemoteScriptRepository";
+import { IJsInstance } from "../../models/IJsInstance";
+import { IState } from "../../models/IState";
+import { getState } from "../../aiTools/core/remote/getState";
 import { RemoteToolDeps, MAX_SCRIPT_SOURCE_LENGTH } from "../../aiTools/core/remote/types";
 import { createDirectory } from "../../aiTools/core/remote/createDirectory";
 import { createScript } from "../../aiTools/core/remote/createScript";
@@ -41,6 +44,19 @@ function script(id: string, source = "", enabled = false): IScript {
             enabled: enabled
         }
     };
+}
+
+function tick(): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, 1));
+}
+
+function requireScript(world: RemoteWorld, id: ScriptId): IScript {
+    const script = world.scripts.find(candidate => `${candidate._id}` === `${id}`);
+    if (!script) {
+        throw new Error(`The script '${id}' is not known to the fake server.`);
+    }
+
+    return script;
 }
 
 function directory(id: string): RemoteDirectory {
@@ -92,8 +108,16 @@ async function createWorld(scripts: IScript[] = [], directories: RemoteDirectory
                     existing.common.source = value.common.source;
                 }
             },
-            startScript: async () => undefined,
-            stopScript: async () => undefined,
+            startScript: async (id: ScriptId) => {
+                await tick();
+                const existing = requireScript(world, id);
+                existing.common.enabled = true;
+            },
+            stopScript: async (id: ScriptId) => {
+                await tick();
+                const existing = requireScript(world, id);
+                existing.common.enabled = false;
+            },
             rename: async (id: ScriptId, name: string) => {
                 world.renamed.push({ id: `${id}`, name: name });
                 const existing = world.scripts.find(candidate => `${candidate._id}` === `${id}`);
@@ -132,12 +156,13 @@ async function createWorld(scripts: IScript[] = [], directories: RemoteDirectory
                     }
                 }
             },
+            downloadDirectory: async (id: ScriptId) => <IDirectory><unknown>world.directories.find(candidate => `${candidate._id}` === `${id}`) ?? null,
             deleteDirectory: async (id: ScriptId) => {
                 world.deletedDirectories.push(`${id}`);
                 world.directories = world.directories.filter(candidate => `${candidate._id}` !== `${id}`);
             }
         },
-        jsInstances: { getAvailableInstances: async () => [] },
+        jsInstances: { getAvailableInstances: async () => <IJsInstance[]>[{ _id: "system.adapter.javascript.0" }] },
         states: { getState: async () => <never><unknown>undefined },
         logs: { getHosts: async () => [], getLogs: async () => [] }
     };
@@ -276,13 +301,98 @@ suite("AI tools remote core", () => {
         const started = await startScript(world.deps, { scriptId: "script.js.common.A" });
         assert.ok(started.ok);
         assert.strictEqual(started.data.enabled, true);
+        // The write has to be awaited, otherwise the state is not on the server yet.
+        assert.strictEqual(requireScript(world, new ScriptId("script.js.common.A")).common.enabled, true);
 
         const stopped = await stopScript(world.deps, { scriptId: "script.js.common.B" });
         assert.ok(stopped.ok);
         assert.strictEqual(stopped.data.enabled, false);
+        assert.strictEqual(requireScript(world, new ScriptId("script.js.common.B")).common.enabled, false);
 
         const deleted = await deleteScript(world.deps, { scriptId: "script.js.common.A" });
         assert.ok(deleted.ok);
         assert.deepStrictEqual(world.deleted, ["script.js.common.A"]);
+    });
+
+    test("a failing start/stop write is a tool error, not an unhandled rejection", async () => {
+        const world = await createWorld([script("script.js.common.A")]);
+        world.deps.scriptRemote.startScript = async () => {
+            throw new Error("The socket is closed.");
+        };
+
+        const result = await startScript(world.deps, { scriptId: "script.js.common.A" });
+        assert.ok(!result.ok);
+        assert.strictEqual(result.error.code, "server_error");
+        assert.ok(result.error.message.includes("socket is closed"));
+    });
+
+    test("createScript refuses an id that only the server knows", async () => {
+        const world = await createWorld([], [directory("script.js.common")]);
+        // The cache does not contain the script, the server does.
+        world.scripts.push(script("script.js.common.Neu"));
+
+        const result = await createScript(world.deps, {
+            directoryId: "script.js.common",
+            fileName: "Neu",
+            language: "javascript"
+        });
+
+        assert.ok(!result.ok);
+        assert.strictEqual(result.error.code, "already_exists");
+        assert.deepStrictEqual(world.uploaded, []);
+    });
+
+    test("createScript uses an existing javascript instance as engine", async () => {
+        const world = await createWorld([], [directory("script.js.common")]);
+        world.deps.jsInstances = {
+            getAvailableInstances: async () => <IJsInstance[]>[{ _id: "system.adapter.javascript.2" }]
+        };
+
+        const result = await createScript(world.deps, {
+            directoryId: "script.js.common",
+            fileName: "Neu",
+            language: "javascript"
+        });
+
+        assert.ok(result.ok);
+        assert.strictEqual(world.uploaded[0].common.engine, "system.adapter.javascript.2");
+    });
+
+    test("createDirectory rolls back the directories a failed creation left behind", async () => {
+        const world = await createWorld([], [directory("script.js.common")]);
+        world.deps.directories.createDirectoriesRecursively = async (id: ScriptId) => {
+            // The first level is created, then the socket drops.
+            world.directories.push(directory("script.js.common.Folder"));
+            throw new Error(`Could not create '${id}'.`);
+        };
+
+        const result = await createDirectory(world.deps, { directoryId: "script.js.common.Folder.Deep" });
+
+        assert.ok(!result.ok);
+        assert.strictEqual(result.error.code, "server_error");
+        assert.deepStrictEqual(world.deletedDirectories, ["script.js.common.Folder"]);
+        assert.ok(!world.directories.some(candidate => `${candidate._id}` === "script.js.common.Folder"));
+    });
+
+    test("createDirectory does not roll back when nothing was created", async () => {
+        const world = await createWorld([], [directory("script.js.common")]);
+        world.deps.directories.createDirectoriesRecursively = async () => {
+            throw new Error("The connection is closed.");
+        };
+
+        const result = await createDirectory(world.deps, { directoryId: "script.js.common.Folder" });
+
+        assert.ok(!result.ok);
+        assert.deepStrictEqual(world.deletedDirectories, []);
+    });
+
+    test("getState reports not_found for an unknown id instead of a server error", async () => {
+        const world = await createWorld();
+        world.deps.states = { getState: async () => <IState><unknown>null };
+
+        const result = await getState(world.deps, { stateId: "0_userdata.0.Missing" });
+
+        assert.ok(!result.ok);
+        assert.strictEqual(result.error.code, "not_found");
     });
 });

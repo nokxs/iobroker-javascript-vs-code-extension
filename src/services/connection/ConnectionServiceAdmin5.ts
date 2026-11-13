@@ -10,6 +10,7 @@ import { ISocketIoClient } from "../socketIoClient/ISocketIoClient";
 import { IState } from "../../models/IState";
 import { IObjectList } from "../../models/IObjectList";
 import { HOST_COMMAND_TIMEOUT_MS, readLogLinesAnswer } from "./hostCommandAnswer";
+import { withAckTimeout } from "./withAckTimeout";
 import { IStatusBarService } from "../statusBar/IStatusBarService";
 
 @injectable()
@@ -147,7 +148,7 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
     }
 
     getObject<TObject>(objectId: string | ScriptId): Promise<TObject> {
-        return new Promise<TObject>((resolve, reject) => {
+        return withAckTimeout(new Promise<TObject>((resolve, reject) => {
             if (this.client && this.isConnected) {
                 this.client.emit("getObject", objectId, (err: any, script: TObject) => {
                     if (err) {
@@ -159,11 +160,11 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
             } else {
                 reject(new Error(`Could not get object with id '${objectId}': Client is not connect`));
             }
-        });
+        }), `getObject '${objectId}'`);
     }
 
     setObject(objectId: string | ScriptId, obj: any): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
+        return withAckTimeout(new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
                 this.client.emit("setObject", objectId, obj, (err: any) => {
                     if (err) {
@@ -175,11 +176,11 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
             } else {
                 reject(new Error(`Cannot get object with id '${objectId}': Client is not connect`));
             }
-        });
+        }), `setObject '${objectId}'`);
     }
 
     deleteObject(objectId: string | ScriptId): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
+        return withAckTimeout(new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
                 this.client.emit("delObject", objectId, (err: any) => {
                     if (err) {
@@ -189,13 +190,13 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                     }
                 });
             } else {
-                reject(`Could not delete object '${objectId}': Client is not connected`);
+                reject(new Error(`Could not delete object '${objectId}': Client is not connected`));
             }
-        });
+        }), `delObject '${objectId}'`);
     }
 
     extendObject(objectId: string | ScriptId, obj: any): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
+        return withAckTimeout(new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
                 this.client.emit("extendObject", objectId, obj, (err: any) => {
                     if (err) {
@@ -204,12 +205,14 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                         resolve();
                     }
                 });
+            } else {
+                reject(new Error(`Could not extend object '${objectId}': Client is not connected`));
             }
-        });
+        }), `extendObject '${objectId}'`);
     }
 
     getSystemObjectView<TResult>(type: string, startKey: string, endKey: string): Promise<TResult[]> {
-        return new Promise<TResult[]>((resolve, reject) => {
+        return withAckTimeout(new Promise<TResult[]>((resolve, reject) => {
             if (this.client && this.isConnected) {
                 this.client.emit("getObjectView", "system", type, { "startkey": startKey, "endkey": `${endKey}\u9999` }, (err: any, doc: { rows: { id: string, value: TResult }[] }) => {
                     if (err) {
@@ -218,9 +221,9 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                     resolve(doc.rows.map(row => row.value));
                 });
             } else {
-                reject(`Error while retreiving object view: Type: ${type} | startKey: ${startKey} | endKey: ${endKey}`);
+                reject(new Error(`Error while retreiving object view: Type: ${type} | startKey: ${startKey} | endKey: ${endKey}`));
             }
-        });
+        }), `getObjectView '${type}'`);
     }
 
     getState(id: string): Promise<IState> {

@@ -4,8 +4,7 @@ import { CreateScriptDto, CreateScriptInput, failure, success, ToolDeps, ToolOut
 import { ensureConnected } from "./connection";
 import { findDirectory, refreshScriptInCache, toFailure } from "./helpers";
 import { toDirectoryId, toMessage, validateName } from "./validation";
-
-const KNOWN_EXTENSIONS = [".js", ".ts"];
+import { normalizeFileName, toEngineType } from "./scriptNaming";
 
 /**
  * Creates a script on the ioBroker server and the matching local file. The same source is written
@@ -73,28 +72,4 @@ export async function createScript(deps: ToolDeps, input: CreateScriptInput): Pr
 
         return toFailure(error);
     }
-}
-
-function toEngineType(raw: unknown): ToolOutcome<EngineType> {
-    if (raw === "typescript" || raw === EngineType.typescript) {
-        return success(EngineType.typescript);
-    }
-
-    if (raw === "javascript" || raw === EngineType.javascript) {
-        return success(EngineType.javascript);
-    }
-
-    return failure("invalid_input", "'language' must be either 'javascript' or 'typescript'.");
-}
-
-function normalizeFileName(fileName: string): string {
-    let result = fileName;
-
-    for (const extension of KNOWN_EXTENSIONS) {
-        if (result.toLowerCase().endsWith(extension)) {
-            result = result.substring(0, result.length - extension.length);
-        }
-    }
-
-    return result.trim();
 }

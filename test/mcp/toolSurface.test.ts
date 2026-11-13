@@ -89,6 +89,17 @@ suite("MCP tool surface", () => {
         }
     });
 
+    test("the descriptions do not promise a local file", () => {
+        // The server has no workspace, no local script file and no dirty state. A description that
+        // mentions them makes a model look for fields that the tool does not return.
+        for (const tool of listRemoteTools(false)) {
+            const text = `${tool.title ?? ""} ${tool.description ?? ""}`.toLowerCase();
+            for (const forbidden of ["local file", "local folder", "fromdisk", "on disk", "workspace", "unsaved"]) {
+                assert.ok(!text.includes(forbidden), `${tool.name} mentions '${forbidden}': ${tool.description}`);
+            }
+        }
+    });
+
     test("the shared metadata covers every contributed tool", () => {
         for (const name of TOOL_NAMES) {
             assert.ok(TOOL_TITLES[name], name);

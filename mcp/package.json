@@ -6,7 +6,8 @@
         "iobroker-mcp": "dist/mcp-server.js"
     },
     "files": [
-        "dist/mcp-server.js"
+        "dist/mcp-server.js",
+        "README.md"
     ],
     "engines": {
         "node": ">=22"

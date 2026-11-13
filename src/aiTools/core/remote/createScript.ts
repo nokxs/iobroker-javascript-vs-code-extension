@@ -1,11 +1,10 @@
-import { EngineType } from "../../../models/EngineType";
+import { IScript } from "../../../models/IScript";
 import { ScriptId } from "../../../models/ScriptId";
 import { CreateScriptDto, CreateScriptInput, failure, RemoteToolDeps, success, ToolOutcome } from "./types";
-import { defaultScript, ensureRemoteConnected, findDirectory, refreshScriptInCache } from "./helpers";
+import { defaultScript, ensureRemoteConnected, findDirectory, refreshScriptInCache, firstJsInstanceId } from "./helpers";
 import { toFailure } from "../helpers";
-import { toDirectoryId, toMessage, validateName } from "../validation";
-
-const KNOWN_EXTENSIONS = [".js", ".ts"];
+import { toDirectoryId, validateName } from "../validation";
+import { normalizeFileName, toEngineType } from "../scriptNaming";
 
 /**
  * Creates a script on the ioBroker server. The source starts in the server object, because the
@@ -50,12 +49,24 @@ export async function createScript(deps: RemoteToolDeps, input: CreateScriptInpu
     }
 
     const source = typeof input.source === "string" ? input.source : "";
-    const script = defaultScript(new ScriptId(`${directory._id}.${fileName}`), engineType);
-    script.common.source = source;
+    const script = defaultScript(
+        new ScriptId(`${directory._id}.${fileName}`),
+        engineType,
+        await firstJsInstanceId(deps));
 
-    if (deps.scripts.getScriptFromId(script._id)) {
-        return failure("already_exists", `The script '${script._id}' does already exist on the ioBroker server.`, "Choose a different 'fileName' or delete the existing script first.");
+    // The cache can be stale, so the server is asked before it is overwritten by `setObject`.
+    let existing: IScript | null;
+    try {
+        existing = await deps.scriptRemote.downloadScriptWithId(script._id);
+    } catch (error) {
+        return toFailure(error);
     }
+
+    if (existing) {
+        return failure("already_exists", `The id '${script._id}' does already exist on the ioBroker server.`, "Choose a different 'fileName' or delete the existing script first.");
+    }
+
+    script.common.source = source;
 
     try {
         await deps.scriptRemote.uploadScript(script);
@@ -67,35 +78,6 @@ export async function createScript(deps: RemoteToolDeps, input: CreateScriptInpu
             engineType: `${script.common.engineType ?? engineType}`
         });
     } catch (error) {
-        const message = toMessage(error);
-        if (message.includes("does already exist")) {
-            return failure("already_exists", message, "Choose a different 'fileName' or delete the existing script first.");
-        }
-
         return toFailure(error);
     }
-}
-
-function toEngineType(raw: unknown): ToolOutcome<EngineType> {
-    if (raw === "typescript" || raw === EngineType.typescript) {
-        return success(EngineType.typescript);
-    }
-
-    if (raw === "javascript" || raw === EngineType.javascript) {
-        return success(EngineType.javascript);
-    }
-
-    return failure("invalid_input", "'language' must be either 'javascript' or 'typescript'.");
-}
-
-function normalizeFileName(fileName: string): string {
-    let result = fileName;
-
-    for (const extension of KNOWN_EXTENSIONS) {
-        if (result.toLowerCase().endsWith(extension)) {
-            result = result.substring(0, result.length - extension.length);
-        }
-    }
-
-    return result.trim();
 }
