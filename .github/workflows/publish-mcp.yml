@@ -19,6 +19,18 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+      # Node 22 bundles npm 10, which cannot exchange the OIDC token for a publish token.
+      # Without this step npm falls back to the placeholder token from setup-node and the
+      # registry answers with a misleading E404 instead of an authentication error.
+      - name: Install npm with trusted publishing support
+        run: |
+          npm install --global npm@11
+          NPM_VERSION=$(npm --version)
+          echo "npm $NPM_VERSION"
+          if [ "$(printf '%s\n' 11.5.1 "$NPM_VERSION" | sort -V | head -n1)" != "11.5.1" ]; then
+            echo "Trusted publishing requires npm 11.5.1 or later, found $NPM_VERSION" >&2
+            exit 1
+          fi
       - name: Read and validate the version from the tag
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
