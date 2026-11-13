@@ -49,6 +49,7 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
     private scripts: ILocalScript[] = [];
     private directories: IDirectory[] = [];
     private scriptEventListeners: Array<IScriptChangedEventListener> = new Array();
+    private workspaceHandlersRegistered = false;
 
     /**
      * Updates that are currently running, keyed by the lower cased script id. A single operation
@@ -74,11 +75,21 @@ export class ScriptRepositoryService implements IScriptRepositoryService, IScrip
         this.scriptRemoteService.registerScriptChangedEventListener(this);
         this.raiseScriptChangedEvent(undefined);
         
+        // init() runs on every full connect; workspace listeners must exist only once.
+        if (this.workspaceHandlersRegistered) {
+            return;
+        }
+        this.workspaceHandlersRegistered = true;
         this.handleTextDocumentChanges();
         this.handleFileChangeOnDisk();
         this.handleDocumentCreation();
         this.handDocumentDeletion();
         this.handleGitChanges();
+    }
+
+    async reloadFromServer(): Promise<void> {
+        await this.updateFromServer();
+        this.raiseScriptChangedEvent(undefined);
     }
 
     registerScriptChangedEventListener(listener: IScriptChangedEventListener): void {

@@ -13,7 +13,11 @@ export class Config {
         readonly scriptAutoRun?: boolean,
         readonly forceLogin?: boolean,
         readonly iobrokerNodeTypesVersion?: string,
-        readonly aiTools?: boolean) {}
+        readonly aiTools?: boolean,
+        readonly connectionTimeoutMs?: number,
+        readonly readyTimeoutMs?: number,
+        readonly heartbeatTimeoutMs?: number,
+        readonly reconnectMaxDelayMs?: number) {}
 }
 
 export class ScriptExplorerConfig {
