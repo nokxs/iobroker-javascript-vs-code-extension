@@ -11,6 +11,7 @@ import { ILoginCredentialsService } from '../loginCredentialsService/ILoginCrede
 import { IDebugLogService } from '../debugLogService/IDebugLogService';
 import { IConfigRepositoryService } from '../configRepository/IConfigRepositoryService';
 import { LoginType } from './LoginType';
+import { resolveConnectionTimeouts } from '../socketIoClient/ConnectionTimeouts';
 
 interface ILoginError {
     message: string;
@@ -131,7 +132,7 @@ export class LoginService implements ILoginService {
 
     private async getServerTime(baseUri: Uri, allowSelfSignedCertificate: boolean): Promise<Date> {
         const httpsAgent = this.createHttpsAgent(allowSelfSignedCertificate);
-        const response = await axios.get(baseUri.toString(), { httpsAgent: httpsAgent });
+        const response = await axios.get(baseUri.toString(), { httpsAgent: httpsAgent, timeout: this.getRequestTimeoutMs() });
         const dateHeader = response.headers.date;
 
         if (dateHeader) {
@@ -165,6 +166,11 @@ export class LoginService implements ILoginService {
 
             req.on('error', (e) => {
                 reject(e);
+            });
+
+            const timeoutMs = this.getRequestTimeoutMs();
+            req.setTimeout(timeoutMs, () => {
+                req.destroy(new Error(`Login request to '${path}' timed out after ${timeoutMs / 1000} seconds`));
             });
 
             req.write(postData);
@@ -269,6 +275,10 @@ export class LoginService implements ILoginService {
         return new https.Agent({
             rejectUnauthorized: !allowSelfSignedCertificate
         });
+    }
+
+    private getRequestTimeoutMs(): number {
+        return resolveConnectionTimeouts(this.configRepository.config).connectionTimeoutMs;
     }
 
     private logDebug(message: string) {

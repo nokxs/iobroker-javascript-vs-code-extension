@@ -10,6 +10,7 @@ import { IState } from '../../models/IState';
 import { ScriptId } from "../../models/ScriptId";
 import { injectable } from "inversify";
 import { HOST_COMMAND_TIMEOUT_MS, readLogLinesAnswer } from "./hostCommandAnswer";
+import { ConnectionTimeouts } from "../socketIoClient/ConnectionTimeouts";
 
 @injectable()
 export class ConnectionServiceAdmin4 implements IConnectionService {
@@ -20,6 +21,14 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
 
     private connectionEventListeners: Array<IConnectionEventListener> = new Array();
     private client: SocketIOClient.Socket | undefined = undefined;
+
+    configureTimeouts(timeouts: ConnectionTimeouts): void {
+        this.connectionTimeout = timeouts.connectionTimeoutMs;
+    }
+
+    async reconnectNow(): Promise<boolean> {
+        return this.isConnected;
+    }
     
     registerConnectionEventListener(listener: IConnectionEventListener): void {
         if (this.connectionEventListeners.includes(listener)) {
@@ -96,9 +105,7 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
         return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
 
-                this.client.on("log", (message: ILogMessage) => {
-                    logAction(message);
-                });
+                this.client.on("log", logAction);
     
                 this.client.emit("requireLog", true, (err: any) => {
                     if (err) {
