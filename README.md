@@ -241,7 +241,7 @@ Keep in mind:
 ### Standalone MCP server (remote only)
 
 The extension also ships a real MCP server as a separate npm package,
-[`@nokxs/iobroker-mcp`](https://www.npmjs.com/package/@nokxs/iobroker-mcp). It speaks the Model
+[`@liofly/iobroker-mcp`](https://www.npmjs.com/package/@liofly/iobroker-mcp). It speaks the Model
 Context Protocol over stdio, talks to ioBroker directly and needs no local workspace, no script
 files and no extension installation. Any MCP client can start it with `npx`.
 
@@ -293,7 +293,7 @@ Example for OpenChamber:
 Command:
 npx
 -y
-@nokxs/iobroker-mcp@1.15.0
+@liofly/iobroker-mcp@1.15.0
 
 Environment variables:
 IOBROKER_MCP_URL       = http://192.168.1.10:8081
