@@ -19,7 +19,7 @@ interface FakeWorld {
     credentials: EnvLoginCredentialsService
 }
 
-function createWorld(loginFails = false, password: string | undefined = "super-secret-password", loginDelayMs = 5): FakeWorld {
+function createWorld(loginFails = false, password: string | undefined = "super-secret-password", loginDelayMs = 5, loginError?: () => unknown): FakeWorld {
     let connected = false;
     let loginCount = 0;
     let connectCount = 0;
@@ -66,7 +66,7 @@ function createWorld(loginFails = false, password: string | undefined = "super-s
             await delay(loginDelayMs);
 
             if (loginFails) {
-                throw new Error("Invalid password");
+                throw loginError ? loginError() : new Error("Invalid password");
             }
 
             const token = { token: "connect.sid=secret-token", expires: new Date(Date.now() + 3600 * 1000) };
@@ -115,6 +115,23 @@ suite("MCP connection", () => {
         assert.strictEqual(world.connects(), 1);
         assert.strictEqual(world.connection.isConnected(), true);
         assert.strictEqual(world.connection.getState(), "ready");
+    });
+
+    test("a login rejection that is not an Error is reported with its message", async () => {
+        // LoginService rejects with a plain object on a non-200 login response, so this is the
+        // shape a wrong password produces.
+        const world = createWorld(true, "super-secret-password", 5, () => ({
+            message: "Login failed. Received status code '400'",
+            isLoginUrlAvailable: false
+        }));
+
+        const error = await world.connection.ensureConnected().then(
+            () => undefined,
+            (rejection: unknown) => rejection);
+
+        assert.ok(error instanceof ConnectionUnavailableError, `${error}`);
+        assert.ok(error.message.includes("Login failed. Received status code '400'"), error.message);
+        assert.ok(!error.message.includes("[object Object]"), error.message);
     });
 
     test("a failed login reports not_connected and does not hammer ioBroker", async () => {
