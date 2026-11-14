@@ -524,6 +524,12 @@ Four rules make it stable:
 - **Bounded retries.** A wrong password must not loop against ioBroker (account lockout).
   After three failed attempts with backoff, tool calls answer
   `{ code: "not_connected", hint: "Update IOBROKER_MCP_PASSWORD and restart the server." }`.
+- **Rejections that are not `Error` objects.** `LoginService` rejects with a plain
+  `{ message, isLoginUrlAvailable }` object on a non-200 login response, and axios can reject
+  with its own error shape. `RemoteConnectionService` therefore formats every rejection through
+  `formatError` (`src/services/formatError.ts`), the same helper the extension uses, instead of
+  `error.message` or a template literal: a template literal turns the login object into
+  `[object Object]` in both the log line and the `not_connected` message.
 
 While a re-auth runs, tool calls wait for the in-flight promise instead of triggering
 their own login. If the socket never comes back, calls fail with `not_connected` after a
@@ -1303,6 +1309,7 @@ the SDK client inside the host. `build.yml` runs `npm run compile:mcp` and then
 | 20 | Denied state batch | an id outside the allowlist fails the whole call with `not_allowed` and the patterns in the hint; the fake records zero writes | unit |
 | 21 | State write execution | a missing or non-state object is `failed` per entry and the batch continues; a socket error reports the rest as `notAttempted`; an unreachable `getState` keeps the write `verified: false` instead of failing | unit |
 | 22 | Allowlist configuration | a comma, whitespace inside a pattern, more than 50 patterns or a long pattern -> exit 2 and the variable name, never a value | protocol |
+| 23 | Login rejection without an `Error` | a plain `{ message, isLoginUrlAvailable }` object from `LoginService` reaches the client as `not_connected: Login failed. Received status code '400'`, never as `[object Object]` | unit |
 
 ### 16.3 Manual client checklist
 

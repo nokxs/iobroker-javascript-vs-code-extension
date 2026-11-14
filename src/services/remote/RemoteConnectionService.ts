@@ -10,6 +10,7 @@ import { ILoginService } from "../loginHttpClient/ILoginService";
 import { LoginType } from "../loginHttpClient/LoginType";
 import type { ILogger } from "../../mcp/Logger";
 import { EnvConfigRepositoryService } from "./EnvConfigRepositoryService";
+import { formatError } from "../formatError";
 
 /** Section 10.4 of the design. */
 export const CONNECT_BUDGET_MS = 10 * 1000;
@@ -172,7 +173,7 @@ export class RemoteConnectionService implements IConnectionEventListener {
                 // A connection that never came up has no socket to wait for, so the close is bounded.
                 await withTimeout(this.connectionServiceProvider.getConnectionService().disconnect(), 2000, "Shutdown");
             } catch (error) {
-                this.logger.debug(`Could not close the ioBroker connection: ${error instanceof Error ? error.message : `${error}`}`);
+                this.logger.debug(`Could not close the ioBroker connection: ${formatError(error)}`);
             }
         }
 
@@ -198,7 +199,7 @@ export class RemoteConnectionService implements IConnectionEventListener {
 
     onReAuthenticate(): void {
         this.reauthenticate().catch(error => {
-            this.logger.error(`Re-authentication failed: ${error instanceof Error ? error.message : `${error}`}`);
+            this.logger.error(`Re-authentication failed: ${formatError(error)}`);
         });
     }
 
@@ -230,7 +231,7 @@ export class RemoteConnectionService implements IConnectionEventListener {
             this.lastFailureAt = 0;
             this.markReady();
         } catch (error) {
-            this.markFailed(`Could not connect to ioBroker: ${error instanceof Error ? error.message : `${error}`}`);
+            this.markFailed(`Could not connect to ioBroker: ${formatError(error)}`);
             throw error;
         }
     }
@@ -353,7 +354,7 @@ export class RemoteConnectionService implements IConnectionEventListener {
             this.markReady();
         } catch (error) {
             // Otherwise the state stays `reauthenticating` and the cooldown never starts.
-            this.markFailed(`Re-authentication failed: ${error instanceof Error ? error.message : `${error}`}`);
+            this.markFailed(`Re-authentication failed: ${formatError(error)}`);
             throw error;
         }
     }
@@ -369,7 +370,7 @@ export class RemoteConnectionService implements IConnectionEventListener {
             try {
                 this.readyHook();
             } catch (error) {
-                this.logger.warn(`The post-connect hook failed: ${error instanceof Error ? error.message : `${error}`}`);
+                this.logger.warn(`The post-connect hook failed: ${formatError(error)}`);
             }
         }
     }
@@ -425,7 +426,7 @@ export class RemoteConnectionService implements IConnectionEventListener {
             this.refreshTimer = setTimeout(() => {
                 this.refreshTimer = undefined;
                 this.reauthenticate().catch(error => {
-                    this.logger.error(`Proactive re-authentication failed: ${error instanceof Error ? error.message : `${error}`}`);
+                    this.logger.error(`Proactive re-authentication failed: ${formatError(error)}`);
                 });
             }, delay);
 
@@ -434,7 +435,7 @@ export class RemoteConnectionService implements IConnectionEventListener {
                 this.refreshTimer.unref();
             }
         }).catch(error => {
-            this.logger.debug(`Could not read the access token expiry: ${error instanceof Error ? error.message : `${error}`}`);
+            this.logger.debug(`Could not read the access token expiry: ${formatError(error)}`);
         });
     }
 
@@ -452,7 +453,7 @@ export class RemoteConnectionService implements IConnectionEventListener {
             return error;
         }
 
-        const message = error instanceof Error ? error.message : `${error}`;
+        const message = formatError(error);
         if (this.state === "needsAttention") {
             return new ConnectionUnavailableError(message, "Update IOBROKER_MCP_PASSWORD and restart the server.");
         }
