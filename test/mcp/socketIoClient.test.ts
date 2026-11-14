@@ -8,6 +8,13 @@ import { IDebugLogService } from "../../src/services/debugLogService/IDebugLogSe
 const READY = [0, 1, "___ready___"];
 const PING = [1];
 const RECONNECT_TIMEOUT = 3000;
+/**
+ * `SocketIoClient` sends a ping when `now - lastSent` has reached its 5 s heartbeat interval, but
+ * the heartbeat timer fires every 5 s as well. The first tick can land a millisecond before the
+ * interval is reached and then sends nothing, so the first ping may legitimately arrive with the
+ * second tick at 10 s. A deadline of 9 s made this test fail roughly once in ten loaded runs.
+ */
+const PING_DEADLINE_MS = 12000;
 
 const silentLog = <IDebugLogService><unknown>{
     log: () => undefined,
@@ -94,7 +101,7 @@ suite("SocketIoClient heartbeat", () => {
             // server suppressed every client ping and the admin server dropped the socket.
             await waitFor(
                 () => admin.received.some(frame => JSON.stringify(frame) === JSON.stringify(PING)),
-                9000,
+                PING_DEADLINE_MS,
                 "a client ping");
         } finally {
             await client.close();
