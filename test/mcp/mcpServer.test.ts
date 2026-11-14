@@ -43,6 +43,16 @@ async function expectProtocolError(promise: Promise<unknown>): Promise<McpError>
     throw new Error("expected a protocol error, but the call succeeded");
 }
 
+/**
+ * The client prefixes the message with `MCP error <code>: ` once. A server that throws the SDK's
+ * `McpError` makes it appear twice, because that class already added the prefix.
+ */
+function assertSinglePrefix(error: McpError): void {
+    const occurrences = error.message.split("MCP error").length - 1;
+    assert.strictEqual(occurrences, 1, `expected one prefix, got: ${error.message}`);
+    assert.ok(!error.message.includes("MCP error -32602: MCP error"), error.message);
+}
+
 suite("MCP protocol", () => {
     test("initialize and tools/list answer without touching ioBroker", async () => {
         const client = await connectClient();
@@ -70,6 +80,8 @@ suite("MCP protocol", () => {
 
             const error = await expectProtocolError(client.callTool({ name: "iobroker_start_script", arguments: { scriptId: "script.js.common.Test" } }));
             assert.strictEqual(error.code, ErrorCode.InvalidParams);
+            assert.ok(error.message.includes("read-only mode"));
+            assertSinglePrefix(error);
         } finally {
             await client.close();
         }
@@ -82,6 +94,7 @@ suite("MCP protocol", () => {
             const error = await expectProtocolError(client.callTool({ name: "iobroker_does_not_exist", arguments: {} }));
             assert.strictEqual(error.code, ErrorCode.InvalidParams);
             assert.ok(error.message.includes("iobroker_does_not_exist"));
+            assertSinglePrefix(error);
         } finally {
             await client.close();
         }

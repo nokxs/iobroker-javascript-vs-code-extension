@@ -526,7 +526,7 @@ and stores the result in the `IConfigRepositoryService` before the first
 | notifications | ignored in v1; a cancelled call keeps running until its budget ends |
 | `ping` | answered by the SDK's `Protocol` base class (it registers `PingRequestSchema`), no handler in the server |
 | unknown method | SDK answers with method-not-found |
-| unknown tool name | `McpError(ErrorCode.InvalidParams, ...)` raised by the handler, which the SDK serialises as `-32602` |
+| unknown tool name | `ProtocolError(ErrorCode.InvalidParams, ...)` raised by the handler, which the SDK serialises as `-32602` |
 
 `BUILD_VERSION` is injected by webpack `DefinePlugin` from the release tag, so
 `initialize` and `--version` always agree and no runtime `package.json` read is needed.
@@ -1415,3 +1415,9 @@ rediscover them:
   source it is about to write back.
 - **`mcp/README.md` and `LICENSE`.** The publish workflow copies `LICENSE` next to the bundle, so
   the npm page of the package is not empty.
+- **`ProtocolError` instead of `McpError`.** The SDK's `McpError` constructor builds its message as
+  `MCP error <code>: <text>`, and the SDK client prefixes again when it receives the error
+  response, so a thrown `McpError` reaches the client as
+  `MCP error -32602: MCP error -32602: ...`. The server's own guards throw a small
+  `ProtocolError` with a `code` and a plain message instead: the SDK serialises both as-is and the
+  prefix appears once, in the client. A protocol test asserts that.
