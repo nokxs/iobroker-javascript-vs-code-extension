@@ -6,6 +6,8 @@ export interface IObjectCommon {
     type?: string;
     /** Unit of a state, e.g. `°C` or `%`. */
     unit?: string;
-    read?: string;
-    write?: string;
+    /** Whether the state is readable; ioBroker stores a boolean, absent means true. */
+    read?: boolean;
+    /** Whether the state is writable; ioBroker stores a boolean, absent means true. */
+    write?: boolean;
 }

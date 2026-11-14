@@ -27,6 +27,8 @@ interface RemoteWorld {
     scripts: IScript[]
     directories: RemoteDirectory[]
     objects: IObjectWithId[]
+    stateValues: Map<string, IState>
+    writes: Array<{ id: string, state: Pick<IState, "val" | "ack"> }>
     uploaded: IScript[]
     updated: IScript[]
     renamed: Array<{ id: string, name: string }>
@@ -77,6 +79,8 @@ async function createWorld(scripts: IScript[] = [], directories: RemoteDirectory
         scripts: scripts,
         directories: directories,
         objects: objects,
+        stateValues: new Map<string, IState>(),
+        writes: [],
         uploaded: [],
         updated: [],
         renamed: [],
@@ -173,11 +177,17 @@ async function createWorld(scripts: IScript[] = [], directories: RemoteDirectory
         },
         jsInstances: { getAvailableInstances: async () => <IJsInstance[]>[{ _id: "system.adapter.javascript.0" }] },
         states: {
-            getState: async () => <never><unknown>undefined,
+            getState: async (id: string) => world.stateValues.get(id) ?? <never><unknown>undefined,
             getObjectsOfType: async (type: string, parentId: string) => world.objects.filter(object =>
                 (object.type ?? "state") === type &&
-                (parentId.length === 0 || object._id.startsWith(`${parentId}.`)))
+                (parentId.length === 0 || object._id.startsWith(`${parentId}.`))),
+            getObject: async (id: string) => world.objects.find(object => object._id === id) ?? null,
+            setState: async (id: string, state: Pick<IState, "val" | "ack">) => {
+                world.writes.push({ id: id, state: state });
+                world.stateValues.set(id, <IState>{ val: state.val, ack: state.ack, ts: Date.now(), lc: Date.now(), from: "test" });
+            }
         },
+        writableStates: [],
         logs: { getHosts: async () => [], getLogs: async () => [] }
     };
 
@@ -402,7 +412,12 @@ suite("AI tools remote core", () => {
 
     test("getState reports not_found for an unknown id instead of a server error", async () => {
         const world = await createWorld();
-        world.deps.states = { getState: async () => <IState><unknown>null, getObjectsOfType: async () => [] };
+        world.deps.states = {
+            getState: async () => <IState><unknown>null,
+            getObjectsOfType: async () => [],
+            getObject: async () => null,
+            setState: async () => undefined
+        };
 
         const result = await getState(world.deps, { stateId: "0_userdata.0.Missing" });
 
@@ -418,7 +433,9 @@ suite("AI tools remote core", () => {
         ]);
         world.deps.states = {
             getState: async (id: string) => known.get(id) ?? <IState><unknown>null,
-            getObjectsOfType: async () => []
+            getObjectsOfType: async () => [],
+            getObject: async () => null,
+            setState: async () => undefined
         };
 
         const result = await getStates(world.deps, {
@@ -460,7 +477,9 @@ suite("AI tools remote core", () => {
             getState: async (id: string) => <IState><unknown>{ val: 21.5, ack: true, ts: 1000, lc: 900, from: "system.adapter.javascript.0", id: id },
             getObjectsOfType: async (type: string, parentId: string) => world.objects.filter(object =>
                 (object.type ?? "state") === type &&
-                (parentId.length === 0 || object._id.startsWith(`${parentId}.`)))
+                (parentId.length === 0 || object._id.startsWith(`${parentId}.`))),
+            getObject: async (id: string) => world.objects.find(object => object._id === id) ?? null,
+            setState: async () => undefined
         };
 
         const subtree = await getObjects(world.deps, { parentId: "0_userdata.0.Heizung", withValues: true });

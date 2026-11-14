@@ -92,5 +92,6 @@ suite("MCP secrets", () => {
         assert.strictEqual(config.allowSelfSignedCertificate, false);
         assert.strictEqual(config.scriptAutoRun, false);
         assert.strictEqual(config.logLevel, "info");
+        assert.deepStrictEqual(config.writableStates, []);
     });
 });

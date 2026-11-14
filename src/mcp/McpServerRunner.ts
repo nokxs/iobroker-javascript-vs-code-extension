@@ -41,7 +41,7 @@ import type { Logger } from "./Logger";
 import type { ServerConfig } from "./ServerConfig";
 import { ToolResultMapper } from "./ToolResultMapper";
 import { BUILD_VERSION } from "./version";
-import { getRemoteToolHandler, isReadOnlyTool, isRemoteToolName, listRemoteTools } from "./tools/remoteToolSet";
+import { getRemoteToolHandler, isReadOnlyTool, isRemoteToolName, listRemoteTools, SET_STATES_TOOL } from "./tools/remoteToolSet";
 
 /** Section 10.4: the whole tool call, the cap and the read-only contract. */
 export const TOOL_CALL_BUDGET_MS = 30 * 1000;
@@ -50,7 +50,9 @@ export const MAX_CONCURRENT_CALLS = 8;
 const INSTRUCTIONS =
     "ioBroker script ids look like 'script.js.common.MyScript'. Use iobroker_get_scripts first to look up " +
     "script and directory ids. Read a script with iobroker_get_script_content before editing it, then write the " +
-    "complete source with iobroker_update_script_source.";
+    "complete source with iobroker_update_script_source. State writes are restricted by the server's " +
+    "IOBROKER_MCP_WRITABLE_STATES allowlist: call iobroker_get_writable_states to see which states are writable " +
+    "and use iobroker_set_states for the values. Never try to write a state that is not listed there.";
 
 class ToolCallTimeoutError extends Error {
     constructor() {
@@ -133,6 +135,7 @@ export class McpServerRunner {
             directories: directories,
             jsInstances: jsInstances,
             states: states,
+            writableStates: config.writableStates,
             logs: new HostLogService(connectionProvider)
         };
 
@@ -169,13 +172,17 @@ export class McpServerRunner {
             this.logger.warn("IOBROKER_MCP_ALLOW_SELF_SIGNED is ignored for an http:// URL.");
         }
 
+        if (this.config.writableStates.includes("*")) {
+            this.logger.warn("IOBROKER_MCP_WRITABLE_STATES contains '*', which allows writing every ioBroker state.");
+        }
+
         await this.server.connect(transport);
         await this.closed;
     }
 
     private registerHandlers(): void {
         this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-            tools: listRemoteTools(this.config.readOnly)
+            tools: listRemoteTools(this.config.readOnly, this.config.writableStates.length > 0)
         }));
 
         this.server.setRequestHandler(CallToolRequestSchema, async request => {
@@ -192,6 +199,10 @@ export class McpServerRunner {
 
         if (this.config.readOnly && !isReadOnlyTool(name)) {
             throw new McpError(ErrorCode.InvalidParams, `The tool '${name}' is not available in read-only mode.`);
+        }
+
+        if (name === SET_STATES_TOOL && this.config.writableStates.length === 0) {
+            throw new McpError(ErrorCode.InvalidParams, `The tool '${name}' requires IOBROKER_MCP_WRITABLE_STATES.`);
         }
 
         if (this.activeCalls >= MAX_CONCURRENT_CALLS) {

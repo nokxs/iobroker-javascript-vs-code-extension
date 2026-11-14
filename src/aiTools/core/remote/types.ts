@@ -23,13 +23,21 @@ export type {
     GetStateInput,
     GetStatesDto,
     GetStatesInput,
+    GetWritableStatesDto,
+    GetWritableStatesInput,
     LogLevel,
     MoveScriptInput,
     ObjectSummaryDto,
     ObjectTypeFilter,
     RenameScriptInput,
     ScriptLanguage,
-    StartStopScriptInput
+    SetStateInput,
+    SetStatesDto,
+    SetStatesInput,
+    StartStopScriptInput,
+    StateWriteFailureDto,
+    WritableStateDto,
+    WrittenStateDto
 } from "../types";
 
 export {
@@ -44,6 +52,7 @@ export {
     MAX_SCRIPT_CONTENT_LENGTH,
     MAX_SCRIPT_LIMIT,
     MAX_STATE_IDS,
+    MAX_STATE_WRITES,
     OBJECT_TYPE_FILTERS,
     success
 } from "../types";
@@ -69,7 +78,9 @@ export interface RemoteToolDeps {
         "delete">
     directories: Pick<IDirectoryService, "createDirectory" | "createDirectoriesRecursively" | "downloadDirectory" | "deleteDirectory">
     jsInstances: Pick<IJsInstanceService, "getAvailableInstances">
-    states: Pick<IStateAndObjectRemoteService, "getState" | "getObjectsOfType">
+    states: Pick<IStateAndObjectRemoteService, "getState" | "getObjectsOfType" | "getObject" | "setState">
+    /** The `IOBROKER_MCP_WRITABLE_STATES` allowlist; empty disables every state write. */
+    writableStates: readonly string[]
     logs: LogSource
 }
 

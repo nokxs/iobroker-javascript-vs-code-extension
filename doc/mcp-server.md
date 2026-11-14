@@ -80,7 +80,7 @@ Comparison of both modes:
 | Filesystem access | required | none |
 | Configuration | `.iobroker-config.json` + SecretStorage | environment variables |
 | Secrets at rest | OS keychain via VS Code | client config (see section 8) |
-| Tools | 19 | 16 (15 kept, 1 new, 4 dropped) |
+| Tools | 19 | 18 (16 kept, 2 new, 4 dropped) |
 | Re-auth | password from SecretStorage | password from env, held in memory |
 
 ## 4. Threat model and attack surface
@@ -127,9 +127,9 @@ server that is already compromised.
 | T4 | Credential visible in the process list | – | **eliminated** by refusing a password CLI flag | env only, no argv |
 | T5 | Credential in logs, tool results, error messages or crash output | partly handled | reduced by a redaction layer | section 8 |
 | T6 | Credential stored in plain text in the client configuration | n/a (SecretStorage) | **accepted** | scoped entry, file permissions, wrapper or secret manager (section 8.1) |
-| T7 | Agent performs destructive operations (delete all scripts, stop production scripts) | same risk | reduced | read-only mode, `destructiveHint`, client confirmation |
-| T8 | Indirect prompt injection: a log line or script source says "delete all scripts" | same risk | **not solvable at protocol level** | read-only mode for exploration, no auto-approve, confirmations for write tools |
-| T9 | Exfiltration of read data into a place a third party can see (script name, state value) | same risk | **accepted**, the model can only write to ioBroker | confirmations, read-only mode |
+| T7 | Agent performs destructive operations (delete all scripts, stop production scripts, overwrite a heating setpoint) | same risk | reduced | read-only mode, `destructiveHint`, client confirmation, state-write allowlist (section 4.4) |
+| T8 | Indirect prompt injection: a log line or script source says "delete all scripts" or "set the thermostat to 5 °C" | same risk | **not solvable at protocol level** | read-only mode for exploration, no auto-approve, confirmations for write tools, state-write allowlist |
+| T9 | Exfiltration of read data into a place a third party can see (script name, state value) | same risk | **accepted**, the model can only write to ioBroker and only inside the state allowlist | confirmations, read-only mode |
 | T10 | Man-in-the-middle between server and ioBroker | same risk | unchanged | TLS by default, `ALLOW_SELF_SIGNED` off by default, warning for `http://` on a non-loopback host; self-signed acceptance via a per-connection agent, not `NODE_TLS_REJECT_UNAUTHORIZED` |
 | T11 | Denial of service against ioBroker through retry storms or log spam | possible | reduced | bounded retries with backoff, response size caps (section 10.4) |
 | T12 | Another local process impersonates the server | – | **not applicable** | stdio has no listener; the client owns the child process |
@@ -148,19 +148,26 @@ Explicit allow-list, derived from the tool set:
 | read | `system.host.*` names | `get_logs` host resolution |
 | read | log lines of one host via the `getLogs` host command | `get_logs` |
 | read | adapter instances `system.adapter.javascript.*` | `get_js_instances` |
-| read | any id that is a state, via the `getState` socket call | `get_state` |
+| read | any id that is a state, via the `getState` socket call | `get_state`, `get_states` |
+| read | state objects below the allowlist prefixes, via `getSystemObjectView` | `get_writable_states`, `get_objects` |
 | write | `script.js.*` | `create_script`, `update_script_source`, `rename_script`, `move_script`, `delete_script`, `start_script`, `stop_script` |
 | write | directory objects below `script.js.*` | `create_directory`, `delete_directory` |
-| write | **nothing outside `script.js.*`** | – |
+| write | state values whose id matches `IOBROKER_MCP_WRITABLE_STATES` | `set_states` |
+| write | **nothing else** | – |
 
-Two consequences worth documenting:
+Three consequences worth documenting:
 
 - `iobroker_get_state` accepts any state id, so read access is effectively "any state in the
   installation". That is intended (debugging needs it) and is the reason read-only mode is a
   guard against accidents, not a security boundary against a curious model.
-- No tool writes states and no tool sends an arbitrary host command. The log tool uses the
-  `getLogs` read command of `sendToHost`, not `cmd`, so it cannot be used to execute
-  anything on the host.
+- State writes are opt-in and fail closed. A write tool that is always available would widen
+  the blast radius from scripts to every value in the installation, so the server advertises
+  `iobroker_set_states` only when `IOBROKER_MCP_WRITABLE_STATES` is not empty, and the core
+  checks every id against the same patterns again before it writes anything (section 5).
+  Object definitions are never written: no `set_object`, no `extendObject`, only
+  `setState` values.
+- No tool sends an arbitrary host command. The log tool uses the `getLogs` read command of
+  `sendToHost`, not `cmd`, so it cannot be used to execute anything on the host.
 
 ### 4.5 Residual risks accepted
 
@@ -169,6 +176,13 @@ Two consequences worth documenting:
   `/proc/<pid>/environ`, and appears in a core dump unless core dumps are disabled.
 - A compromised model can still destroy work inside ioBroker (T7) and can move data
   inside ioBroker (T9). Client-side confirmation is the only control.
+- A writable state is still a production value: an allowlisted heating setpoint, a switch
+  or an alarm can be overwritten within the allowlist. The patterns must therefore be as
+  narrow as the task, and a bare `*` allows every state in the installation (the server logs
+  a warning for it at startup).
+- Write verification is best effort. Admin 4 has no `getState` socket call, so a written
+  state reports `verified: false` instead of failing; the write itself may still have
+  succeeded. A state without an entry in the object database is rejected per id.
 - No per-tool rate limit beyond the in-flight cap; a misbehaving client can still load the
   ioBroker instance (T11).
 
@@ -184,6 +198,7 @@ Kept unchanged in behaviour:
 | `iobroker_get_state` | unchanged |
 | `iobroker_get_states` | new: batches up to 50 ids, unknown ids land in `missing` instead of failing the call |
 | `iobroker_get_objects` | new: lists the objects below an id with `type`, `role` and `unit`, filters by role or text, `withValues` reads the values of up to 50 states |
+| `iobroker_get_writable_states` | new: lists the configured allowlist patterns and the existing state objects they match, with a `writable` flag |
 | `iobroker_get_logs` | unchanged |
 | `iobroker_start_script` | unchanged |
 | `iobroker_stop_script` | unchanged |
@@ -209,6 +224,23 @@ New, replaces the upload semantics:
 |---|---|---|
 | `iobroker_update_script_source` | `scriptId`, `source` | writes `common.source` through `scriptRemote.update` |
 
+State writes, opt-in only (section 4.4):
+
+| Tool | Input | Behaviour |
+|---|---|---|
+| `iobroker_get_writable_states` | `search`, `limit` | expands `IOBROKER_MCP_WRITABLE_STATES` into existing state objects; answers `patterns`, `states`, `truncated`; read-only and always advertised |
+| `iobroker_set_states` | `states`: 1-50 × `{ stateId, value, ack? }` | validates the whole batch, then writes sequentially with `setState`; answers `written`, `failed`, `notAttempted`; advertised only with an allowlist |
+
+`iobroker_set_states` writes state values only, never object definitions, and `ack`
+defaults to `false`. Validation runs before the lazy connect, so a malformed or forbidden
+batch fails without touching ioBroker. A single id outside the allowlist rejects the whole
+batch, so a valid prefix cannot smuggle a forbidden id into the second half. A missing
+object or a non-state object is a per-entry `failed`; a socket error stops the batch and
+reports the untouched rest as `notAttempted`. The object's `common.write === false` is a
+warning, not a failure, because some adapters accept a value anyway. `iobroker_set_states`
+is annotated `destructiveHint: true, idempotentHint: true`: writing the same value twice
+leaves the same state, but replacing a production value is a destructive update.
+
 `iobroker_update_script_source` is the missing piece for an agent that edits a script:
 the extension never needed it because the editor saved to disk and the user uploaded.
 `IScriptRemoteService.update(scriptId, script)` already exists and does an
@@ -216,8 +248,8 @@ the extension never needed it because the editor saved to disk and the user uplo
 
 Result DTOs that lose fields (`filePath`, `isDirty`, `isRemoteOnly`, `fromDisk`) live in
 `src/aiTools/core/remote/types.ts`, next to the remote implementations. The shared
-`src/aiTools/core/types.ts` stays untouched, because the extension still returns those
-fields (section 13).
+`src/aiTools/core/types.ts` gained only the state-write input/output types and
+`MAX_STATE_WRITES`; the extension still returns the dropped fields (section 13).
 
 ## 6. Architecture
 
@@ -253,33 +285,34 @@ Tool surface:
 
 | Source | Content |
 |---|---|
-| `REMOTE_TOOL_NAMES` (new, `src/mcp/tools/remoteToolSet.ts`) | exactly the 16 tools the server implements: the 15 kept names from section 5 plus `iobroker_update_script_source` |
-| `TOOL_SCHEMAS` | the 15 input schemas, imported unchanged |
-| `REMOTE_TOOL_SCHEMAS` (new, same file) | the input schema of `iobroker_update_script_source` only |
-| `TOOL_TITLES` / `TOOL_DESCRIPTIONS` (new, in `schemas.ts`) | title and description for all 19 contributed tools; the server uses the 15 shared ones. The new tool's metadata lives in `remoteToolSet.ts` |
+| `REMOTE_TOOL_NAMES` (new, `src/mcp/tools/remoteToolSet.ts`) | exactly the 18 tools the server implements: the 16 names from section 5 plus `iobroker_get_writable_states` and `iobroker_set_states` |
+| `TOOL_SCHEMAS` | the 16 input schemas, imported unchanged |
+| `REMOTE_TOOL_SCHEMAS` (new, same file) | the input schemas of `iobroker_update_script_source`, `iobroker_get_writable_states` and `iobroker_set_states` |
+| `TOOL_TITLES` / `TOOL_DESCRIPTIONS` (new, in `schemas.ts`) | title and description for all 19 contributed tools; the server uses the 16 shared ones. The metadata of the three remote-only tools lives in `remoteToolSet.ts` |
 
 ```
-tools/list -> REMOTE_TOOL_NAMES (filtered by the read-only flag)
+tools/list -> REMOTE_TOOL_NAMES (filtered by read-only and the allowlist)
               map name -> { name, title, description, inputSchema, annotations }
 tools/call -> remote tool set -> ToolOutcome -> CallToolResult
 ```
 
 `TOOL_NAMES` is **not** the source for `tools/list`: it has 19 entries, contains the four
-dropped sync tools and lacks `iobroker_update_script_source`. Using it would advertise
-four tools without a handler and hide the one tool that replaces them.
-`iobroker_update_script_source` must not be added to `src/aiTools/schemas.ts` or
-`package.json`: the extension has no adapter for it and
+dropped sync tools and lacks the three remote-only tools. Using it would advertise four
+tools without a handler and hide the tools that replace them.
+None of the three remote-only tools may be added to `src/aiTools/schemas.ts` or
+`package.json`: the extension has no adapter for them and
 [aiToolsContribution.test.ts](../src/test/suite/aiToolsContribution.test.ts) would fail
 (section 16.1).
 
 The types follow from that: `ToolName` is `keyof typeof TOOL_SCHEMAS`
-([schemas.ts](../src/aiTools/schemas.ts)), so it cannot represent the new tool and
-`isToolName()` returns `false` for it. `remoteToolSet.ts` declares
-`type RemoteToolName = ToolName | "iobroker_update_script_source"` and a lookup that reads
+([schemas.ts](../src/aiTools/schemas.ts)), so it cannot represent the remote-only tools and
+`isToolName()` returns `false` for them. `remoteToolSet.ts` declares
+`type RemoteToolName` as the tuple of `REMOTE_TOOL_NAMES` and a lookup that reads
 `TOOL_SCHEMAS[name]` and falls back to `REMOTE_TOOL_SCHEMAS[name]`. The `tools/call` guard
 checks the remote map, never `isToolName`. The read-only filter uses the same
 `readOnlyHint` values as the annotations table below, so the exposed list and the hints
-cannot disagree.
+cannot disagree. `iobroker_set_states` is additionally hidden when the allowlist is empty,
+and a direct call to it is rejected as `-32602` (section 5).
 
 Additions per tool:
 
@@ -288,7 +321,8 @@ Additions per tool:
   the schema property descriptions. The MCP server needs both per tool, so they are copied
   into `TOOL_TITLES`/`TOOL_DESCRIPTIONS` next to `TOOL_SCHEMAS` for all 19 entries, and the
   contribution test is extended to assert equality with the `package.json` entries, so the
-  duplication cannot drift. The new tool carries its own pair in `remoteToolSet.ts`.
+  duplication cannot drift. The three remote-only tools carry their own metadata in
+  `remoteToolSet.ts`.
 - `annotations`: the defaults are not "off": `readOnlyHint` defaults to `false`,
   `destructiveHint` to **`true`**, `idempotentHint` to `false` and `openWorldHint` to
   `true`. The server therefore sets every value explicitly:
@@ -298,6 +332,7 @@ Additions per tool:
   | `get_*` | `true` | – (meaningless when read-only) | `true` | `false` |
   | `start_script`, `stop_script` | `false` | `false` | `true` | `false` |
   | `create_script`, `create_directory` | `false` | `false` | `false` | `false` |
+  | `set_states` | `false` | `true` | `true` | `false` |
   | `update_script_source` | `false` | `true` | `false` | `false` |
   | `delete_script`, `delete_directory` | `false` | `true` | `false` | `false` |
   | `rename_script`, `move_script` | `false` | `true` | `false` | `false` |
@@ -325,7 +360,18 @@ no config file and no `--workspace` argument.
 | `IOBROKER_MCP_ALLOW_SELF_SIGNED` | no | `false` | accept self signed certificates for `https://` URLs; ignored with a warning for `http://` |
 | `IOBROKER_MCP_READ_ONLY` | no | `false` | expose `get_*` tools only; `start_script` and `stop_script` are hidden as well |
 | `IOBROKER_MCP_SCRIPT_AUTO_RUN` | no | `false` | maps to `scriptAutoRun` |
+| `IOBROKER_MCP_WRITABLE_STATES` | no | – | `;` separated glob patterns of writable state ids; unset or empty disables `iobroker_set_states` |
 | `IOBROKER_MCP_LOG_LEVEL` | no | `info` | stderr diagnostics only |
+
+`IOBROKER_MCP_WRITABLE_STATES` is parsed at startup and is fail closed: entries are trimmed,
+empty entries are skipped, and a comma, whitespace inside an entry, a pattern longer than
+512 characters or more than 50 patterns is a startup error (exit code 2). The separator is
+`;` because an ioBroker id cannot contain it, so no escaping is needed. The patterns follow
+the ioBroker glob rules: `*` matches any sequence including dots (`0_userdata.0.*` covers
+the whole subtree), `?` matches exactly one character, everything else is literal, and the
+comparison is case sensitive. `*` alone is accepted but logs a warning at startup, because
+it allows writing every state. `--check` prints the patterns (`writableStates=...`) since
+they are not secret.
 
 Derived instead of configured:
 
@@ -521,7 +567,7 @@ and stores the result in the `IConfigRepositoryService` before the first
 | Request | Behaviour |
 |---|---|
 | `initialize` | `serverInfo: { name: "iobroker-mcp", version: BUILD_VERSION }`, capabilities only for `tools`, without `listChanged` (the list is static per process). `protocolVersion` is filled by the SDK from its supported list; the server does not override it, so a client that asks for 2025-06-18 gets that version echoed |
-| `tools/list` | pure function over `REMOTE_TOOL_NAMES` and the schema map, no IO, filtered by read-only; cannot fail |
+| `tools/list` | pure function over `REMOTE_TOOL_NAMES` and the schema map, no IO, filtered by read-only and the state allowlist; cannot fail |
 | `tools/call` | never throws across the JSON-RPC boundary, every outcome is mapped (below) |
 | notifications | ignored in v1; a cancelled call keeps running until its budget ends |
 | `ping` | answered by the SDK's `Protocol` base class (it registers `PingRequestSchema`), no handler in the server |
@@ -742,9 +788,9 @@ Two practical notes:
 ### 11.3 Variables the server reads
 
 Only the variables from section 7: `IOBROKER_MCP_URL`, `_USERNAME`, `_PASSWORD`,
-`_ALLOW_SELF_SIGNED`, `_READ_ONLY`, `_SCRIPT_AUTO_RUN`, `_LOG_LEVEL`. No `IOBROKER_*`
-variable is inherited implicitly, and nothing is read from `HOME` except what Node and the
-socket library need internally.
+`_ALLOW_SELF_SIGNED`, `_READ_ONLY`, `_SCRIPT_AUTO_RUN`, `_WRITABLE_STATES`, `_LOG_LEVEL`.
+No `IOBROKER_*` variable is inherited implicitly, and nothing is read from `HOME` except
+what Node and the socket library need internally.
 
 ### 11.4 Clients without environment support
 
@@ -879,7 +925,7 @@ more code than the orchestration it replaces.
 | A. Make `ToolDeps` fields optional and branch inside `core` | every function gets `if (deps.files)` branches, the extension path becomes harder to test |
 | B. Separate remote core modules, shared helpers and types | slight duplication of orchestration, but no conditional paths and no risk for the existing tools |
 
-**Decision: B.** `src/aiTools/core/remote/` holds the 16 remote implementations
+**Decision: B.** `src/aiTools/core/remote/` holds the 18 remote implementations
 (`types.ts` for the DTOs, `helpers.ts` for the pure helpers). `validation.ts`,
 `connection.ts`, `ScriptId`, `EngineType` and the failure/success helpers are imported
 unchanged. The existing `src/aiTools/core/*` files stay untouched, so the extension keeps
@@ -904,7 +950,8 @@ interface RemoteToolDeps {
         | "rename" | "move" | "delete">
     directories: Pick<IDirectoryService, "createDirectory" | "createDirectoriesRecursively" | "deleteDirectory">
     jsInstances: Pick<IJsInstanceService, "getAvailableInstances">
-    states: Pick<IStateAndObjectRemoteService, "getState">
+    states: Pick<IStateAndObjectRemoteService, "getState" | "getObjectsOfType" | "getObject" | "setState">
+    writableStates: readonly string[]
     logs: Pick<RemoteLogService, "getHosts" | "getLogs">
 }
 ```
@@ -1217,9 +1264,9 @@ unpublishing.
 
 | Layer | Scope | Location | Runner |
 |---|---|---|---|
-| Unit | the 14 remote core functions against fakes, mirroring `aiToolsCore.test.ts` | `src/test/suite/aiToolsRemoteCore.test.ts` | existing `npm test` (extension host) |
+| Unit | the 18 remote core functions against fakes, mirroring `aiToolsCore.test.ts`; the state-write validation, execution and discovery plus the glob matcher live in `test/mcp/writableStates.test.ts` | `src/test/suite/aiToolsRemoteCore.test.ts`, `test/mcp/writableStates.test.ts` | existing `npm test` (extension host) / `npm run test:mcp` |
 | Protocol | spawn the built `dist/mcp-server.js`, speak MCP over stdio with the SDK client | `test/mcp/mcpServer.test.ts` | new `npm run test:mcp` (plain mocha, no extension host) |
-| Contract | extension side: `TOOL_NAMES` == `TOOL_SCHEMAS` == `package.json` contributions. Server side: `REMOTE_TOOL_NAMES` == registered handlers == `tools/list`, and every entry is either in `TOOL_NAMES` or the new tool | extend `aiToolsContribution.test.ts` and `test/mcp/toolSurface.test.ts` | `npm test` / `npm run test:mcp` |
+| Contract | extension side: `TOOL_NAMES` == `TOOL_SCHEMAS` == `package.json` contributions. Server side: `REMOTE_TOOL_NAMES` == registered handlers == `tools/list`, and every entry is either in `TOOL_NAMES` or one of the remote-only tools | extend `aiToolsContribution.test.ts` and `test/mcp/toolSurface.test.ts` | `npm test` / `npm run test:mcp` |
 | Bundle | static assertions on `dist/mcp-server.js` | `test/mcp/bundle.test.ts` | `npm run test:mcp` |
 | Manual | real clients and a real ioBroker | checklist 16.3 | – |
 
@@ -1237,7 +1284,7 @@ the SDK client inside the host. `build.yml` runs `npm run compile:mcp` and then
 | 1 | Wrong password | exactly 3 login attempts with backoff and no interactive prompt (the retry inside `LoginService.getAccessToken` is removed, section 9), then `not_connected`; no password in message or stderr | unit + protocol |
 | 2 | Token expires while a call is in flight | one login, the call completes after re-auth instead of failing | unit (fake clock) |
 | 3 | Two calls hit `reauthenticate` at once | single flight: the fake login counts exactly one request | unit |
-| 4 | Read-only mode | `tools/list` has no write tool, `start_script`/`stop_script` included; a direct `tools/call` with a write name -> `-32602` | protocol |
+| 4 | Read-only mode | `tools/list` has no write tool, `start_script`/`stop_script`/`set_states` included; a direct `tools/call` with a write name -> `-32602` | protocol |
 | 5 | Socket disconnect and reconnect | backoff sequence observed, calls during the outage fail with `not_connected` after the budget | unit |
 | 6 | ioBroker restarted (cookie rejected) | reconnect, then re-login, then `Ready` | manual |
 | 7 | Malformed input: missing `scriptId`, wrong type, 1 MB `source`, `null` arguments | `isError` with `invalid_input`, process survives, next call works | protocol |
@@ -1252,6 +1299,10 @@ the SDK client inside the host. `build.yml` runs `npm run compile:mcp` and then
 | 16 | Tool surface consistency | `REMOTE_TOOL_NAMES` == registered handlers == `tools/list`; the extension side still satisfies `TOOL_NAMES` == `TOOL_SCHEMAS` == contributions | contract |
 | 17 | Bundle hygiene | no `require("vscode")`, no `console.log(`, shebang on line 1 | bundle |
 | 18 | Concurrency cap | the 9th parallel call is rejected immediately, the first 8 finish | unit |
+| 19 | State write allowlist | no allowlist: `tools/list` has 17 tools and no `set_states`, a direct call -> `-32602`; with an allowlist: 18 tools, `get_writable_states` lists the patterns and matching states | protocol + unit |
+| 20 | Denied state batch | an id outside the allowlist fails the whole call with `not_allowed` and the patterns in the hint; the fake records zero writes | unit |
+| 21 | State write execution | a missing or non-state object is `failed` per entry and the batch continues; a socket error reports the rest as `notAttempted`; an unreachable `getState` keeps the write `verified: false` instead of failing | unit |
+| 22 | Allowlist configuration | a comma, whitespace inside a pattern, more than 50 patterns or a long pattern -> exit 2 and the variable name, never a value | protocol |
 
 ### 16.3 Manual client checklist
 
@@ -1262,9 +1313,14 @@ Per client, once per release that touches the transport:
 3. `iobroker_get_scripts` returns ids, `iobroker_get_script_content` returns a source,
    `iobroker_get_logs` returns filtered lines.
 4. With `IOBROKER_MCP_READ_ONLY=true`: the write tools are absent.
-5. Restart the client: the password is not asked again and the first call succeeds.
-6. Restart ioBroker: the next call reconnects without user interaction.
-7. Change the password in ioBroker: the next call reports `not_connected` with the hint;
+5. Without `IOBROKER_MCP_WRITABLE_STATES`: `iobroker_set_states` is absent and
+   `iobroker_get_writable_states` answers an empty list without connecting.
+6. With an allowlist: `iobroker_get_writable_states` lists the patterns and matching states;
+   `iobroker_set_states` writes one state and reports `verified: true` on Admin 5+, `false` on
+   Admin 4; a denied id writes nothing and names the patterns.
+7. Restart the client: the password is not asked again and the first call succeeds.
+8. Restart ioBroker: the next call reconnects without user interaction.
+9. Change the password in ioBroker: the next call reports `not_connected` with the hint;
    after updating the environment and restarting the server it works again.
 
 ### 16.4 Not covered on purpose
@@ -1283,7 +1339,8 @@ Per client, once per release that touches the transport:
    `NoStatusBarService` and `EnvLoginCredentialsService`, plus the two runtime-`vscode`
    seams from section 12 (`IStatusBarService` in the connection services, `sanatizeId` as a
    `ScriptId` static).
-2. `src/aiTools/core/remote/` with the 14 tools, sharing validation and helpers.
+2. `src/aiTools/core/remote/` with the 18 tools, sharing validation and helpers; the state-write
+   core (`stateAndObjectWrite.ts`, `writableTargets.ts`) plus the `IoBrokerId` glob rules.
 3. `src/mcp` entry point, env validation, `--version`/`--check`, `tools/list` from
    `REMOTE_TOOL_NAMES` plus the schema map, `ToolOutcome` -> `CallToolResult` mapping.
 4. Login and re-auth in `RemoteConnectionService`: admin version detection on first
@@ -1347,11 +1404,19 @@ IOBROKER_MCP_PASSWORD  = <password>
 
 Optional:
 IOBROKER_MCP_READ_ONLY = true
+
+Optional, state writes:
+IOBROKER_MCP_WRITABLE_STATES = 0_userdata.0.*
 ```
 
 No workspace, no `--workspace` argument, no files in the project. The password is managed
 by OpenChamber and is used for silent re-auth; changing it in ioBroker requires updating
-the environment variable and restarting the server. The pinned version (`@1.15.0`, without
+the environment variable and restarting the server. `IOBROKER_MCP_WRITABLE_STATES` is
+optional and only needed when the agent should change state values: leave it unset and
+`iobroker_set_states` is not advertised at all, which is the right default for a client that
+runs without per-call confirmation. When it is set, scope it to the subtree the task needs
+instead of `*`. The state-write tools require a release that contains them; the pinned
+`@1.15.1` predates them. The pinned version (`@1.15.0`, without
 `@latest`) is intentional: it documents which extension version the agent workflow was
 built for (section 15.5) and prevents the tool surface from changing between sessions.
 
@@ -1415,3 +1480,15 @@ rediscover them:
   source it is about to write back.
 - **`mcp/README.md` and `LICENSE`.** The publish workflow copies `LICENSE` next to the bundle, so
   the npm page of the package is not empty.
+- **State-write allowlist.** Fail closed instead of opt out: the write tool is not advertised
+  without `IOBROKER_MCP_WRITABLE_STATES`, and the core validates the batch again, so the
+  transport is not the only place that enforces the patterns. The matcher is an explicit
+  `IoBrokerId.matchesPattern` (only `*` and `?`) instead of a general glob library, so an
+  allowlist entry cannot behave differently than its author expects. Only `setState` is used;
+  object definitions stay out of reach. Validation runs before the lazy connect, so a malformed
+  batch fails identically whether or not ioBroker is reachable.
+- **Write verification.** After `setState`, the tool re-reads the state and reports
+  `verified: true` only when value and `ack` match. Admin 4 has no working `getState`, so a
+  failed re-read reports `verified: false` and never turns a successful write into an error.
+  `common.write === false` becomes a per-entry warning because some adapters accept the value
+  anyway.

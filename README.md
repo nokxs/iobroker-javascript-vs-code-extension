@@ -262,14 +262,24 @@ a value:
 | `IOBROKER_MCP_ALLOW_SELF_SIGNED` | no | `false` | accept self signed certificates for `https://` |
 | `IOBROKER_MCP_READ_ONLY` | no | `false` | expose the `get_*` tools only |
 | `IOBROKER_MCP_SCRIPT_AUTO_RUN` | no | `false` | enable a script right after it was created |
+| `IOBROKER_MCP_WRITABLE_STATES` | no | – | `;` separated glob patterns of writable state ids; unset or empty disables `iobroker_set_states` |
 | `IOBROKER_MCP_LOG_LEVEL` | no | `info` | stderr diagnostics: `error`, `warn`, `info`, `debug`, `silly` |
 
-The server exposes 14 tools: the `get_*` read tools of the extension plus `start_script`,
-`stop_script`, `create_script`, `create_directory`, `rename_script`, `move_script`,
-`delete_script`, `delete_directory` and `iobroker_update_script_source`. The four sync tools
+`IOBROKER_MCP_WRITABLE_STATES` is fail closed and uses the ioBroker glob rules: `*` matches any
+sequence including dots (`0_userdata.0.*` covers the whole subtree), `?` matches exactly one
+character and everything else is literal. The separator is `;` because an ioBroker id cannot
+contain it. Without the variable the server advertises 17 tools and `iobroker_set_states` is
+hidden; with it the server advertises 18. The read-only mode hides `iobroker_set_states` as well.
+
+The server exposes 18 tools: the `get_*` read tools of the extension plus
+`iobroker_get_writable_states`, `iobroker_set_states`, `start_script`, `stop_script`,
+`create_script`, `create_directory`, `rename_script`, `move_script`, `delete_script`,
+`delete_directory` and `iobroker_update_script_source`. The four sync tools
 (`upload_*`, `download_script`, `get_changed_scripts`) do not exist, because there is nothing
 local to upload, download or compare. `iobroker_update_script_source` replaces the upload flow:
-read with `iobroker_get_script_content`, send the complete new source.
+read with `iobroker_get_script_content`, send the complete new source. `iobroker_set_states`
+writes only state values (never object definitions) and only states that match the allowlist;
+`iobroker_get_writable_states` lists the configured patterns and the existing states they match.
 
 `--version`, `--check` and `--help` are the only command line flags. `--check` validates the
 environment, prints a redacted summary to stderr and exits `0` or `2` without connecting.
