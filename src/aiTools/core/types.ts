@@ -19,6 +19,8 @@ export const MAX_LOG_LIMIT = 500;
 export const MAX_LOG_RESPONSE_CHARACTERS = 30000;
 /** `iobroker_get_states` answers up to this many ids in one call. */
 export const MAX_STATE_IDS = 50;
+/** `iobroker_set_states` writes up to this many states in one call. */
+export const MAX_STATE_WRITES = 50;
 export const DEFAULT_OBJECT_LIMIT = 100;
 export const MAX_OBJECT_LIMIT = 500;
 /** Reading a value costs one roundtrip per state, so `withValues` is capped separately. */
@@ -31,6 +33,7 @@ export type ToolErrorCode =
     "invalid_input" |
     "already_exists" |
     "not_found" |
+    "not_allowed" |
     "ambiguous" |
     "not_connected" |
     "unsaved_changes" |
@@ -139,6 +142,21 @@ export interface GetObjectsInput {
     search?: string
     limit?: number
     withValues?: boolean
+}
+
+export interface GetWritableStatesInput {
+    search?: string
+    limit?: number
+}
+
+export interface SetStateInput {
+    stateId: string
+    value: unknown
+    ack?: boolean
+}
+
+export interface SetStatesInput {
+    states: SetStateInput[]
 }
 
 export type LogLevel = "silly" | "debug" | "info" | "warn" | "error";
@@ -286,6 +304,45 @@ export interface GetObjectsDto {
     truncated: boolean
     /** True when more state objects were listed than their values were read. */
     valuesTruncated: boolean
+}
+
+export interface WritableStateDto {
+    id: string
+    name: string
+    role?: string
+    unit?: string
+    /** False when the object sets `common.write` to false; the adapter may ignore writes. */
+    writable: boolean
+}
+
+export interface GetWritableStatesDto {
+    /** The configured allowlist patterns; empty means this server cannot write states. */
+    patterns: string[]
+    states: WritableStateDto[]
+    truncated: boolean
+}
+
+export interface WrittenStateDto {
+    id: string
+    value: unknown
+    acknowledged: boolean
+    /** True when reading the state back confirmed value and acknowledge flag. */
+    verified: boolean
+    /** Set when the object marks itself as not writable. */
+    warning?: string
+}
+
+export interface StateWriteFailureDto {
+    id: string
+    code: ToolErrorCode
+    message: string
+}
+
+export interface SetStatesDto {
+    written: WrittenStateDto[]
+    failed: StateWriteFailureDto[]
+    /** Ids after the entry that stopped the batch; they were not touched. */
+    notAttempted: string[]
 }
 
 export interface GetLogsDto {

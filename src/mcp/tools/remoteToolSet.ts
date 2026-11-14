@@ -11,12 +11,14 @@ import { getScriptContent } from "../../aiTools/core/remote/getScriptContent";
 import { getScripts } from "../../aiTools/core/remote/getScripts";
 import { getState } from "../../aiTools/core/remote/getState";
 import { getStates } from "../../aiTools/core/remote/getStates";
+import { getWritableStates } from "../../aiTools/core/remote/getWritableStates";
 import { createDirectory } from "../../aiTools/core/remote/createDirectory";
 import { createScript } from "../../aiTools/core/remote/createScript";
 import { deleteDirectory } from "../../aiTools/core/remote/deleteDirectory";
 import { deleteScript } from "../../aiTools/core/remote/deleteScript";
 import { moveScript } from "../../aiTools/core/remote/moveScript";
 import { renameScript } from "../../aiTools/core/remote/renameScript";
+import { setStates } from "../../aiTools/core/remote/setStates";
 import { startScript, stopScript } from "../../aiTools/core/remote/startStopScript";
 import { updateScriptSource } from "../../aiTools/core/remote/updateScriptSource";
 import type {
@@ -31,18 +33,24 @@ import type {
     GetScriptsInput,
     GetStateInput,
     GetStatesInput,
+    GetWritableStatesInput,
     MoveScriptInput,
     RenameScriptInput,
+    SetStatesInput,
     StartStopScriptInput,
     UpdateScriptSourceInput
 } from "../../aiTools/core/remote/types";
 
 /** The new tool that replaces the upload semantics of the extension. */
 export const UPDATE_SCRIPT_SOURCE_TOOL = "iobroker_update_script_source";
+/** Read-only discovery of the writable-state allowlist. */
+export const GET_WRITABLE_STATES_TOOL = "iobroker_get_writable_states";
+/** The batched write of state values, advertised only when the allowlist is not empty. */
+export const SET_STATES_TOOL = "iobroker_set_states";
 
 /**
  * Exactly the tools the MCP server implements. Deliberately not `TOOL_NAMES`: that list has the
- * four sync tools, which have no remote counterpart, and lacks the new update tool.
+ * four sync tools, which have no remote counterpart, and lacks the remote-only tools.
  */
 export const REMOTE_TOOL_NAMES = [
     "iobroker_get_scripts",
@@ -51,6 +59,7 @@ export const REMOTE_TOOL_NAMES = [
     "iobroker_get_state",
     "iobroker_get_states",
     "iobroker_get_objects",
+    GET_WRITABLE_STATES_TOOL,
     "iobroker_get_logs",
     "iobroker_start_script",
     "iobroker_stop_script",
@@ -60,12 +69,22 @@ export const REMOTE_TOOL_NAMES = [
     "iobroker_move_script",
     "iobroker_delete_script",
     "iobroker_delete_directory",
+    SET_STATES_TOOL,
     UPDATE_SCRIPT_SOURCE_TOOL
 ] as const;
 
 export type RemoteToolName = typeof REMOTE_TOOL_NAMES[number];
 
-/** The input schema of the new tool. It is not contributed to package.json (see the design). */
+/** Tools whose schema and metadata live here because they are not contributed to package.json. */
+const REMOTE_ONLY_TOOL_NAMES = [
+    UPDATE_SCRIPT_SOURCE_TOOL,
+    GET_WRITABLE_STATES_TOOL,
+    SET_STATES_TOOL
+] as const;
+
+type RemoteOnlyToolName = typeof REMOTE_ONLY_TOOL_NAMES[number];
+
+/** The input schemas of the remote-only tools. */
 export const REMOTE_TOOL_SCHEMAS = {
     [UPDATE_SCRIPT_SOURCE_TOOL]: {
         type: "object",
@@ -81,15 +100,77 @@ export const REMOTE_TOOL_SCHEMAS = {
         },
         required: ["scriptId", "source"],
         additionalProperties: false
+    },
+    [GET_WRITABLE_STATES_TOOL]: {
+        type: "object",
+        properties: {
+            search: {
+                type: "string",
+                description: "Optional case-insensitive substring that the state id or name has to contain, e.g. 'temperatur'."
+            },
+            limit: {
+                type: "number",
+                description: "Maximum number of writable states to return (1-500, default 100). The result is marked as truncated when more match."
+            }
+        },
+        required: [],
+        additionalProperties: false
+    },
+    [SET_STATES_TOOL]: {
+        type: "object",
+        properties: {
+            states: {
+                type: "array",
+                items: {
+                    type: "object",
+                    properties: {
+                        stateId: {
+                            type: "string",
+                            description: "Full ioBroker state id that matches the server allowlist, e.g. '0_userdata.0.temperature'."
+                        },
+                        value: {
+                            description: "The new value: a string, a number, a boolean or null."
+                        },
+                        ack: {
+                            type: "boolean",
+                            description: "Acknowledgement flag of the new value. Default false."
+                        }
+                    },
+                    required: ["stateId", "value"],
+                    additionalProperties: false
+                },
+                description: "One to 50 state writes. The call writes nothing when any id is outside the allowlist."
+            }
+        },
+        required: ["states"],
+        additionalProperties: false
     }
 } as const;
 
-const UPDATE_SCRIPT_SOURCE_TITLE = "Update ioBroker script source";
+const REMOTE_ONLY_TOOL_TITLES: Record<RemoteOnlyToolName, string> = {
+    [UPDATE_SCRIPT_SOURCE_TOOL]: "Update ioBroker script source",
+    [GET_WRITABLE_STATES_TOOL]: "Get writable ioBroker states",
+    [SET_STATES_TOOL]: "Set ioBroker states"
+};
+
 const UPDATE_SCRIPT_SOURCE_DESCRIPTION =
     "Replaces the source code of an existing script on the ioBroker server. Use iobroker_get_script_content " +
     "before editing so the rest of the script is preserved, and send the complete new source. Returns the " +
     "script id and the number of written characters. This cannot be undone; confirm the exact script id with " +
     "the user before using this tool.";
+
+const GET_WRITABLE_STATES_DESCRIPTION =
+    "Lists the state ids this server is allowed to write, based on the server's IOBROKER_MCP_WRITABLE_STATES " +
+    "allowlist. Returns the configured glob patterns and up to limit existing matching state objects with id, " +
+    "name, role, unit and a writable flag. Use it before iobroker_set_states; an empty list means this server " +
+    "cannot write any state. Read-only and requires an active ioBroker connection when patterns are configured.";
+
+const SET_STATES_DESCRIPTION =
+    "Sets the values of one to 50 existing ioBroker states in one call. Every id must match the server's " +
+    "IOBROKER_MCP_WRITABLE_STATES allowlist; when one id is not allowed the call writes nothing. Returns the " +
+    "written, failed and notAttempted entries, including whether reading the value back confirmed the write. " +
+    "The acknowledgement flag defaults to false. Check the ids with iobroker_get_writable_states first and " +
+    "confirm the overwrite with the user. Requires an active ioBroker connection.";
 
 /**
  * The extension descriptions talk about the local file, the dirty state and `fromDisk`. None of that
@@ -125,7 +206,10 @@ const REMOTE_TOOL_DESCRIPTIONS: Partial<Record<RemoteToolName, string>> = {
     iobroker_delete_directory:
         "Deletes an empty directory on the ioBroker server. The directory has to be empty: move or delete its " +
         "scripts and subdirectories first. This cannot be undone; the root directory, 'script.js.common' and " +
-        "'script.js.global' cannot be deleted. Confirm the exact directory id with the user before using this tool."
+        "'script.js.global' cannot be deleted. Confirm the exact directory id with the user before using this tool.",
+    [UPDATE_SCRIPT_SOURCE_TOOL]: UPDATE_SCRIPT_SOURCE_DESCRIPTION,
+    [GET_WRITABLE_STATES_TOOL]: GET_WRITABLE_STATES_DESCRIPTION,
+    [SET_STATES_TOOL]: SET_STATES_DESCRIPTION
 };
 
 type RemoteToolHandler = (deps: RemoteToolDeps, input: Record<string, unknown>) => Promise<ToolOutcome<unknown>>;
@@ -137,6 +221,7 @@ const READ_ONLY_TOOLS: readonly RemoteToolName[] = [
     "iobroker_get_state",
     "iobroker_get_states",
     "iobroker_get_objects",
+    GET_WRITABLE_STATES_TOOL,
     "iobroker_get_logs"
 ];
 
@@ -158,6 +243,7 @@ const HANDLERS: Record<RemoteToolName, RemoteToolHandler> = {
     iobroker_get_state: (deps, input) => getState(deps, input as unknown as GetStateInput),
     iobroker_get_states: (deps, input) => getStates(deps, input as unknown as GetStatesInput),
     iobroker_get_objects: (deps, input) => getObjects(deps, input as unknown as GetObjectsInput),
+    [GET_WRITABLE_STATES_TOOL]: (deps, input) => getWritableStates(deps, input as unknown as GetWritableStatesInput),
     iobroker_get_logs: (deps, input) => getLogs(deps, input as unknown as GetLogsInput),
     iobroker_start_script: (deps, input) => startScript(deps, input as unknown as StartStopScriptInput),
     iobroker_stop_script: (deps, input) => stopScript(deps, input as unknown as StartStopScriptInput),
@@ -167,6 +253,7 @@ const HANDLERS: Record<RemoteToolName, RemoteToolHandler> = {
     iobroker_move_script: (deps, input) => moveScript(deps, input as unknown as MoveScriptInput),
     iobroker_delete_script: (deps, input) => deleteScript(deps, input as unknown as DeleteScriptInput),
     iobroker_delete_directory: (deps, input) => deleteDirectory(deps, input as unknown as DeleteDirectoryInput),
+    [SET_STATES_TOOL]: (deps, input) => setStates(deps, input as unknown as SetStatesInput),
     [UPDATE_SCRIPT_SOURCE_TOOL]: (deps, input) => updateScriptSource(deps, input as unknown as UpdateScriptSourceInput)
 };
 
@@ -183,10 +270,15 @@ export function getRemoteToolHandler(name: RemoteToolName): RemoteToolHandler {
     return HANDLERS[name];
 }
 
-/** The static `tools/list` answer, filtered by the read-only switch. Pure, no IO. */
-export function listRemoteTools(readOnly: boolean): Tool[] {
+/**
+ * The static `tools/list` answer, filtered by the read-only switch and by the presence of an
+ * allowlist. Pure, no IO. `iobroker_get_writable_states` stays visible without an allowlist, so a
+ * model can learn that nothing is writable; `iobroker_set_states` is not advertised at all.
+ */
+export function listRemoteTools(readOnly: boolean, writableStatesEnabled = false): Tool[] {
     return REMOTE_TOOL_NAMES
         .filter(name => !readOnly || isReadOnlyTool(name))
+        .filter(name => name !== SET_STATES_TOOL || writableStatesEnabled)
         .map(name => ({
             name: name,
             title: titleOf(name),
@@ -196,23 +288,23 @@ export function listRemoteTools(readOnly: boolean): Tool[] {
         }));
 }
 
+function isRemoteOnlyTool(name: RemoteToolName): name is RemoteOnlyToolName {
+    return (REMOTE_ONLY_TOOL_NAMES as readonly string[]).includes(name);
+}
+
 function titleOf(name: RemoteToolName): string {
-    return name === UPDATE_SCRIPT_SOURCE_TOOL ? UPDATE_SCRIPT_SOURCE_TITLE : TOOL_TITLES[name as ToolName];
+    return isRemoteOnlyTool(name) ? REMOTE_ONLY_TOOL_TITLES[name] : TOOL_TITLES[name as ToolName];
 }
 
 function descriptionOf(name: RemoteToolName): string {
-    if (name === UPDATE_SCRIPT_SOURCE_TOOL) {
-        return UPDATE_SCRIPT_SOURCE_DESCRIPTION;
-    }
-
     const description = (REMOTE_TOOL_DESCRIPTIONS as Record<string, string | undefined>)[name];
     return description ?? TOOL_DESCRIPTIONS[name as ToolName];
 }
 
 function inputSchemaOf(name: RemoteToolName): Tool["inputSchema"] {
-    const schema = name === UPDATE_SCRIPT_SOURCE_TOOL
-        ? REMOTE_TOOL_SCHEMAS[UPDATE_SCRIPT_SOURCE_TOOL]
-        : TOOL_SCHEMAS[name];
+    const schema = isRemoteOnlyTool(name)
+        ? REMOTE_TOOL_SCHEMAS[name]
+        : TOOL_SCHEMAS[name as ToolName];
 
     // The shared schemas are `as const`, so their arrays are readonly; the protocol type wants
     // mutable arrays.
@@ -230,6 +322,12 @@ function annotationsOf(name: RemoteToolName): ToolAnnotations {
 
     if (IDEMPOTENT_WRITE_TOOLS.includes(name)) {
         return { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+    }
+
+    if (name === SET_STATES_TOOL) {
+        // Writing the same value twice leaves the same state, but overwriting a value is a
+        // destructive update of the installation.
+        return { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false };
     }
 
     if (NON_DESTRUCTIVE_CREATE_TOOLS.includes(name)) {

@@ -4,7 +4,7 @@ import { IConnectionEventListener } from "../connection/IConnectionEventListener
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { IStateAndObjectRemoteService } from "./IStateAndObjectRemoteService";
 import { IState } from "../../models/IState";
-import { IObjectWithId } from "../../models/IObject";
+import { IObject, IObjectWithId } from "../../models/IObject";
 import { IObjectList } from "../../models/IObjectList";
 import { IObjectChangedEventListener } from "./IObjectChangedEventListener";
 
@@ -38,6 +38,14 @@ export class StateAndObjectRemoteService implements IStateAndObjectRemoteService
 
     getState(id: string): Promise<IState> {
         return this.connectionServiceProvider.getConnectionService().getState(id);
+    }
+
+    getObject(id: string): Promise<IObject | null> {
+        return this.connectionServiceProvider.getConnectionService().getObject<IObject>(id);
+    }
+
+    setState(id: string, state: Pick<IState, "val" | "ack">): Promise<void> {
+        return this.connectionServiceProvider.getConnectionService().setState(id, state);
     }
 
     getObjectsOfType(type: string, parentId: string): Promise<IObjectWithId[]> {

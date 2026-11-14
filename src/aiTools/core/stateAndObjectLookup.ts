@@ -191,7 +191,7 @@ function toStateDto(id: string, state: IState): GetStateDto {
     };
 }
 
-function toObjectSummary(object: IObjectWithId): ObjectSummaryDto {
+export function toObjectSummary(object: IObjectWithId): ObjectSummaryDto {
     const summary: ObjectSummaryDto = {
         id: object._id,
         name: objectName(object),

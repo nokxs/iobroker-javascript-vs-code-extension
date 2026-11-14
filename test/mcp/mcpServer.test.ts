@@ -52,11 +52,38 @@ suite("MCP protocol", () => {
             assert.strictEqual(client.getServerVersion()?.version, EXPECTED_VERSION);
 
             const listed = await client.listTools();
-            assert.strictEqual(listed.tools.length, 16);
+            assert.strictEqual(listed.tools.length, 17);
             assert.ok(listed.tools.some(tool => tool.name === "iobroker_get_scripts"));
             assert.ok(listed.tools.some(tool => tool.name === "iobroker_update_script_source"));
+            assert.ok(listed.tools.some(tool => tool.name === "iobroker_get_writable_states"));
+            assert.ok(!listed.tools.some(tool => tool.name === "iobroker_set_states"));
         } finally {
             await client.close();
+        }
+    });
+
+    test("an allowlist advertises the write tool, read-only still hides it", async () => {
+        const client = await connectClient({ IOBROKER_MCP_WRITABLE_STATES: "0_userdata.0.*;alias.0.Test" });
+
+        try {
+            const listed = await client.listTools();
+            assert.strictEqual(listed.tools.length, 18);
+            assert.ok(listed.tools.some(tool => tool.name === "iobroker_set_states"));
+        } finally {
+            await client.close();
+        }
+
+        const readOnlyClient = await connectClient({
+            IOBROKER_MCP_WRITABLE_STATES: "0_userdata.0.*",
+            IOBROKER_MCP_READ_ONLY: "true"
+        });
+
+        try {
+            const listed = await readOnlyClient.listTools();
+            assert.strictEqual(listed.tools.length, 8);
+            assert.ok(!listed.tools.some(tool => tool.name === "iobroker_set_states"));
+        } finally {
+            await readOnlyClient.close();
         }
     });
 
@@ -65,11 +92,59 @@ suite("MCP protocol", () => {
 
         try {
             const listed = await client.listTools();
-            assert.strictEqual(listed.tools.length, 7);
+            assert.strictEqual(listed.tools.length, 8);
             assert.ok(!listed.tools.some(tool => tool.name === "iobroker_start_script"));
+            assert.ok(!listed.tools.some(tool => tool.name === "iobroker_set_states"));
+            assert.ok(listed.tools.some(tool => tool.name === "iobroker_get_writable_states"));
 
             const error = await expectProtocolError(client.callTool({ name: "iobroker_start_script", arguments: { scriptId: "script.js.common.Test" } }));
             assert.strictEqual(error.code, ErrorCode.InvalidParams);
+        } finally {
+            await client.close();
+        }
+    });
+
+    test("set_states requires an allowlist and is a protocol error otherwise", async () => {
+        const client = await connectClient();
+
+        try {
+            const error = await expectProtocolError(client.callTool({
+                name: "iobroker_set_states",
+                arguments: { states: [{ stateId: "0_userdata.0.Test", value: 1 }] }
+            }));
+            assert.strictEqual(error.code, ErrorCode.InvalidParams);
+            assert.ok(error.message.includes("IOBROKER_MCP_WRITABLE_STATES"));
+        } finally {
+            await client.close();
+        }
+    });
+
+    test("set_states validates and enforces the allowlist before connecting", async () => {
+        const client = await connectClient({ IOBROKER_MCP_WRITABLE_STATES: "0_userdata.0.*" });
+
+        try {
+            const malformed = await client.callTool({
+                name: "iobroker_set_states",
+                arguments: { states: [{ stateId: "0_userdata.0.Test", value: { nested: true } }] }
+            });
+            assert.strictEqual(malformed.isError, true);
+            assert.ok(textOf(malformed).startsWith("invalid_input"));
+
+            const denied = await client.callTool({
+                name: "iobroker_set_states",
+                arguments: { states: [{ stateId: "alias.0.Test", value: 1 }] }
+            });
+            assert.strictEqual(denied.isError, true);
+            assert.ok(textOf(denied).startsWith("not_allowed"));
+            assert.ok(textOf(denied).includes("0_userdata.0.*"));
+
+            // The allowed id passes validation and reaches the missing connection.
+            const notConnected = await client.callTool({
+                name: "iobroker_set_states",
+                arguments: { states: [{ stateId: "0_userdata.0.Test", value: 1 }] }
+            });
+            assert.strictEqual(notConnected.isError, true);
+            assert.ok(textOf(notConnected).startsWith("not_connected"));
         } finally {
             await client.close();
         }
@@ -126,13 +201,34 @@ suite("MCP command line", () => {
     test("--check validates the environment and prints a redacted summary", () => {
         const result = spawnSync(process.execPath, [SERVER_PATH, "--check"], {
             encoding: "utf8",
-            env: baseEnv({ IOBROKER_MCP_USERNAME: "admin", IOBROKER_MCP_PASSWORD: "super-secret-password" })
+            env: baseEnv({
+                IOBROKER_MCP_USERNAME: "admin",
+                IOBROKER_MCP_PASSWORD: "super-secret-password",
+                IOBROKER_MCP_WRITABLE_STATES: "0_userdata.0.*;alias.0.Test"
+            })
         });
 
         assert.strictEqual(result.status, 0);
         assert.ok(result.stderr.includes('password="***"'));
         assert.ok(!result.stderr.includes("super-secret-password"));
+        assert.ok(result.stderr.includes("writableStates=0_userdata.0.*;alias.0.Test"));
         assert.strictEqual(result.stdout, "");
+    });
+
+    test("--check rejects an allowlist with a comma or whitespace inside a pattern", () => {
+        const comma = spawnSync(process.execPath, [SERVER_PATH, "--check"], {
+            encoding: "utf8",
+            env: baseEnv({ IOBROKER_MCP_WRITABLE_STATES: "0_userdata.0.*,alias.0.Test" })
+        });
+        assert.strictEqual(comma.status, 2);
+        assert.ok(comma.stderr.includes("IOBROKER_MCP_WRITABLE_STATES"));
+
+        const whitespace = spawnSync(process.execPath, [SERVER_PATH, "--check"], {
+            encoding: "utf8",
+            env: baseEnv({ IOBROKER_MCP_WRITABLE_STATES: "0_userdata.0.Two Words" })
+        });
+        assert.strictEqual(whitespace.status, 2);
+        assert.ok(whitespace.stderr.includes("IOBROKER_MCP_WRITABLE_STATES"));
     });
 
     test("--check exits with 2 and names the missing variable", () => {

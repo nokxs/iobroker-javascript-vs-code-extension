@@ -15,6 +15,8 @@ The server is configured completely through environment variables:
   IOBROKER_MCP_ALLOW_SELF_SIGNED  optional, default false
   IOBROKER_MCP_READ_ONLY          optional, default false; hides every write tool
   IOBROKER_MCP_SCRIPT_AUTO_RUN    optional, default false
+  IOBROKER_MCP_WRITABLE_STATES    optional, ';' separated glob patterns of writable state ids;
+                                  unset or empty disables iobroker_set_states
   IOBROKER_MCP_LOG_LEVEL          optional, one of error, warn, info, debug, silly
 
 Flags:
