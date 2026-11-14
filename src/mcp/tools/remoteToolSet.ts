@@ -6,9 +6,11 @@ import type { ToolOutcome } from "../../aiTools/core/remote/types";
 import type { RemoteToolDeps } from "../../aiTools/core/remote/types";
 import { getJsInstances } from "../../aiTools/core/remote/getJsInstances";
 import { getLogs } from "../../aiTools/core/remote/getLogs";
+import { getObjects } from "../../aiTools/core/remote/getObjects";
 import { getScriptContent } from "../../aiTools/core/remote/getScriptContent";
 import { getScripts } from "../../aiTools/core/remote/getScripts";
 import { getState } from "../../aiTools/core/remote/getState";
+import { getStates } from "../../aiTools/core/remote/getStates";
 import { createDirectory } from "../../aiTools/core/remote/createDirectory";
 import { createScript } from "../../aiTools/core/remote/createScript";
 import { deleteDirectory } from "../../aiTools/core/remote/deleteDirectory";
@@ -24,9 +26,11 @@ import type {
     DeleteScriptInput,
     GetJsInstancesInput,
     GetLogsInput,
+    GetObjectsInput,
     GetScriptContentInput,
     GetScriptsInput,
     GetStateInput,
+    GetStatesInput,
     MoveScriptInput,
     RenameScriptInput,
     StartStopScriptInput,
@@ -45,6 +49,8 @@ export const REMOTE_TOOL_NAMES = [
     "iobroker_get_script_content",
     "iobroker_get_js_instances",
     "iobroker_get_state",
+    "iobroker_get_states",
+    "iobroker_get_objects",
     "iobroker_get_logs",
     "iobroker_start_script",
     "iobroker_stop_script",
@@ -129,6 +135,8 @@ const READ_ONLY_TOOLS: readonly RemoteToolName[] = [
     "iobroker_get_script_content",
     "iobroker_get_js_instances",
     "iobroker_get_state",
+    "iobroker_get_states",
+    "iobroker_get_objects",
     "iobroker_get_logs"
 ];
 
@@ -148,6 +156,8 @@ const HANDLERS: Record<RemoteToolName, RemoteToolHandler> = {
     iobroker_get_script_content: (deps, input) => getScriptContent(deps, input as unknown as GetScriptContentInput),
     iobroker_get_js_instances: (deps, input) => getJsInstances(deps, input as unknown as GetJsInstancesInput),
     iobroker_get_state: (deps, input) => getState(deps, input as unknown as GetStateInput),
+    iobroker_get_states: (deps, input) => getStates(deps, input as unknown as GetStatesInput),
+    iobroker_get_objects: (deps, input) => getObjects(deps, input as unknown as GetObjectsInput),
     iobroker_get_logs: (deps, input) => getLogs(deps, input as unknown as GetLogsInput),
     iobroker_start_script: (deps, input) => startScript(deps, input as unknown as StartStopScriptInput),
     iobroker_stop_script: (deps, input) => stopScript(deps, input as unknown as StartStopScriptInput),

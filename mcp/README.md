@@ -43,7 +43,7 @@ without connecting. `--version` and `--help` do not touch the network either.
 ## Tools
 
 Read: `iobroker_get_scripts`, `iobroker_get_script_content`, `iobroker_get_js_instances`,
-`iobroker_get_state`, `iobroker_get_logs`.
+`iobroker_get_state`, `iobroker_get_states`, `iobroker_get_objects`, `iobroker_get_logs`.
 
 Write: `iobroker_start_script`, `iobroker_stop_script`, `iobroker_create_script`,
 `iobroker_create_directory`, `iobroker_rename_script`, `iobroker_move_script`,

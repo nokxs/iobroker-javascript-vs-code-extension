@@ -454,6 +454,68 @@
 				}
 			},
 			{
+				"name": "iobroker_get_states",
+				"displayName": "Get ioBroker states",
+				"toolReferenceName": "iobrokerStates",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Reads the current value of up to 50 ioBroker states in one call, each with the acknowledge flag and the timestamps. Use it instead of iobroker_get_state as soon as you need more than one id. Ids that do not exist are returned in 'missing' and do not fail the call. Requires an active ioBroker connection.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"stateIds": {
+							"type": "array",
+							"items": { "type": "string" },
+							"description": "Full ioBroker state ids, up to 50 per call, e.g. ['0_userdata.0.temperature', 'javascript.0.myState']. Prefer this tool over iobroker_get_state as soon as you need more than one id. Ids that do not exist are returned in 'missing' instead of failing the call."
+						}
+					},
+					"required": [
+						"stateIds"
+					],
+					"additionalProperties": false
+				}
+			},
+			{
+				"name": "iobroker_get_objects",
+				"displayName": "Browse ioBroker objects",
+				"toolReferenceName": "iobrokerObjects",
+				"canBeReferencedInPrompt": true,
+				"when": "iobrokerAiToolsEnabled",
+				"modelDescription": "Lists the ioBroker objects below an id, so state ids can be found without reading a script: the result has id, name, type, role and unit per object, and with withValues also the value of up to 50 states. Filter by object type, role or a substring of the id or name. Browsing without a parent id needs a role or a search. Read-only and requires an active ioBroker connection.",
+				"inputSchema": {
+					"type": "object",
+					"properties": {
+						"parentId": {
+							"type": "string",
+							"description": "ioBroker id whose subtree is browsed, e.g. '0_userdata.0' or 'alias.0.UG.Technikraum'. Omit only together with 'role' or 'search'."
+						},
+						"type": {
+							"type": "string",
+							"enum": ["state", "channel", "device", "folder", "all"],
+							"description": "Object type to list. 'state' for values, 'all' (default) for the structure below the parent id."
+						},
+						"role": {
+							"type": "string",
+							"description": "Optional exact ioBroker role filter, e.g. 'value.temperature' or 'switch'. Case-insensitive."
+						},
+						"search": {
+							"type": "string",
+							"description": "Optional case-insensitive substring that the id or the name has to contain, e.g. 'brauchwasser'."
+						},
+						"limit": {
+							"type": "number",
+							"description": "Maximum number of objects to return (1-500, default 100). The result is marked as truncated when more match."
+						},
+						"withValues": {
+							"type": "boolean",
+							"description": "Also return value, acknowledged and timestamp of up to 50 listed states. Default false."
+						}
+					},
+					"required": [],
+					"additionalProperties": false
+				}
+			},
+			{
 				"name": "iobroker_get_logs",
 				"displayName": "Get ioBroker logs",
 				"toolReferenceName": "iobrokerLogs",

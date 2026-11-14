@@ -52,7 +52,7 @@ suite("MCP protocol", () => {
             assert.strictEqual(client.getServerVersion()?.version, EXPECTED_VERSION);
 
             const listed = await client.listTools();
-            assert.strictEqual(listed.tools.length, 14);
+            assert.strictEqual(listed.tools.length, 16);
             assert.ok(listed.tools.some(tool => tool.name === "iobroker_get_scripts"));
             assert.ok(listed.tools.some(tool => tool.name === "iobroker_update_script_source"));
         } finally {
@@ -65,7 +65,7 @@ suite("MCP protocol", () => {
 
         try {
             const listed = await client.listTools();
-            assert.strictEqual(listed.tools.length, 5);
+            assert.strictEqual(listed.tools.length, 7);
             assert.ok(!listed.tools.some(tool => tool.name === "iobroker_start_script"));
 
             const error = await expectProtocolError(client.callTool({ name: "iobroker_start_script", arguments: { scriptId: "script.js.common.Test" } }));

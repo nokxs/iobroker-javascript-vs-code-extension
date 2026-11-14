@@ -16,11 +16,17 @@ export type {
     DeleteScriptInput,
     GetJsInstancesInput,
     GetLogsInput,
+    GetObjectsDto,
+    GetObjectsInput,
     GetScriptContentInput,
     GetScriptsInput,
     GetStateInput,
+    GetStatesDto,
+    GetStatesInput,
     LogLevel,
     MoveScriptInput,
+    ObjectSummaryDto,
+    ObjectTypeFilter,
     RenameScriptInput,
     ScriptLanguage,
     StartStopScriptInput
@@ -28,12 +34,17 @@ export type {
 
 export {
     DEFAULT_LOG_LIMIT,
+    DEFAULT_OBJECT_LIMIT,
     DEFAULT_SCRIPT_LIMIT,
     failure,
     MAX_LOG_LIMIT,
     MAX_LOG_RESPONSE_CHARACTERS,
+    MAX_OBJECT_LIMIT,
+    MAX_OBJECT_VALUES,
     MAX_SCRIPT_CONTENT_LENGTH,
     MAX_SCRIPT_LIMIT,
+    MAX_STATE_IDS,
+    OBJECT_TYPE_FILTERS,
     success
 } from "../types";
 
@@ -58,7 +69,7 @@ export interface RemoteToolDeps {
         "delete">
     directories: Pick<IDirectoryService, "createDirectory" | "createDirectoriesRecursively" | "downloadDirectory" | "deleteDirectory">
     jsInstances: Pick<IJsInstanceService, "getAvailableInstances">
-    states: Pick<IStateAndObjectRemoteService, "getState">
+    states: Pick<IStateAndObjectRemoteService, "getState" | "getObjectsOfType">
     logs: LogSource
 }
 

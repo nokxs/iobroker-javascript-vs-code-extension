@@ -209,6 +209,8 @@ hand takes effect without restarting VS Code. Running the command again disables
 | `iobroker_get_changed_scripts` | List scripts whose local file differs from the server |
 | `iobroker_get_js_instances` | List javascript adapter instances |
 | `iobroker_get_state` | Read the current value of an ioBroker state |
+| `iobroker_get_states` | Read up to 50 states in one call |
+| `iobroker_get_objects` | Browse objects below an id, filtered by type, role or text |
 | `iobroker_get_logs` | Read and filter a tail of a host log |
 | `iobroker_upload_script` | Upload one script to ioBroker |
 | `iobroker_upload_all_changed_scripts` | Upload all changed scripts |
