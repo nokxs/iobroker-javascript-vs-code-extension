@@ -258,6 +258,22 @@ export class ConnectionServiceAdmin4 implements IConnectionService {
         throw new Error("Not implemented");
     }
 
+    setState(id: string, state: Pick<IState, "val" | "ack">): Promise<void> {
+        return withAckTimeout(new Promise<void>((resolve, reject) => {
+            if (this.client && this.isConnected) {
+                this.client.emit("setState", id, state, (err: any) => {
+                    if (err) {
+                        reject(new Error(`Could not set state with id '${id}': ${err}`));
+                    } else {
+                        resolve();
+                    }
+                });
+            } else {
+                reject(new Error(`Could not set state with id '${id}': Client is not connect`));
+            }
+        }), `setState '${id}'`);
+    }
+
     getLogs(hostId: string, lines: number): Promise<string[]> {
         return new Promise<string[]>((resolve, reject) => {
             const client = this.client;

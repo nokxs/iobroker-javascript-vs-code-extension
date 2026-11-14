@@ -9,6 +9,8 @@ export class ConfigError extends Error {
 }
 
 const LOG_LEVELS: LogLevel[] = ["error", "warn", "info", "debug", "silly"];
+const MAX_WRITABLE_STATE_PATTERNS = 50;
+const MAX_WRITABLE_STATE_PATTERN_LENGTH = 512;
 
 /**
  * The complete configuration of the server. The environment is the only source; a variable that is
@@ -23,7 +25,9 @@ export class ServerConfig {
         readonly allowSelfSignedCertificate: boolean,
         readonly readOnly: boolean,
         readonly scriptAutoRun: boolean,
-        readonly logLevel: LogLevel
+        readonly logLevel: LogLevel,
+        /** Glob patterns of the states `iobroker_set_states` may write; empty disables writes. */
+        readonly writableStates: readonly string[]
     ) { }
 
     static fromEnvironment(env: { [key: string]: string | undefined }): ServerConfig {
@@ -51,7 +55,8 @@ export class ServerConfig {
             readBoolean(env, "IOBROKER_MCP_ALLOW_SELF_SIGNED", false),
             readBoolean(env, "IOBROKER_MCP_READ_ONLY", false),
             readBoolean(env, "IOBROKER_MCP_SCRIPT_AUTO_RUN", false),
-            readLogLevel(env)
+            readLogLevel(env),
+            readWritableStates(env)
         );
     }
 
@@ -64,7 +69,8 @@ export class ServerConfig {
             allowSelfSignedCertificate: this.allowSelfSignedCertificate,
             readOnly: this.readOnly,
             scriptAutoRun: this.scriptAutoRun,
-            logLevel: this.logLevel
+            logLevel: this.logLevel,
+            writableStates: this.writableStates
         };
     }
 
@@ -76,7 +82,8 @@ export class ServerConfig {
             `readOnly=${this.readOnly}`,
             `allowSelfSigned=${this.allowSelfSignedCertificate}`,
             `scriptAutoRun=${this.scriptAutoRun}`,
-            `logLevel=${this.logLevel}`
+            `logLevel=${this.logLevel}`,
+            `writableStates=${this.writableStates.length === 0 ? "(none)" : this.writableStates.join(";")}`
         ].join(" ");
     }
 }
@@ -161,4 +168,53 @@ function readLogLevel(env: { [key: string]: string | undefined }): LogLevel {
     }
 
     return value as LogLevel;
+}
+
+/**
+ * Semicolon separated glob patterns of the states the server may write. An unset or empty
+ * variable disables `iobroker_set_states` completely (fail closed). The separator is `;` because
+ * ioBroker ids cannot contain it, so no escaping is needed and a comma in an entry is a mistake
+ * worth reporting instead of silently treating it as a separator.
+ */
+function readWritableStates(env: { [key: string]: string | undefined }): string[] {
+    const raw = readOptional(env, "IOBROKER_MCP_WRITABLE_STATES");
+    if (raw === undefined) {
+        return [];
+    }
+
+    const patterns: string[] = [];
+    for (const part of raw.split(";")) {
+        const pattern = part.trim();
+        if (pattern.length === 0) {
+            continue;
+        }
+
+        if (pattern.includes(",")) {
+            throw new ConfigError(
+                "IOBROKER_MCP_WRITABLE_STATES",
+                `must use ';' as separator, but '${pattern}' contains a comma.`);
+        }
+
+        if (/\s/.test(pattern)) {
+            throw new ConfigError(
+                "IOBROKER_MCP_WRITABLE_STATES",
+                `must not contain whitespace inside a pattern: '${pattern}'.`);
+        }
+
+        if (pattern.length > MAX_WRITABLE_STATE_PATTERN_LENGTH) {
+            throw new ConfigError(
+                "IOBROKER_MCP_WRITABLE_STATES",
+                `must not contain a pattern longer than ${MAX_WRITABLE_STATE_PATTERN_LENGTH} characters.`);
+        }
+
+        patterns.push(pattern);
+    }
+
+    if (patterns.length > MAX_WRITABLE_STATE_PATTERNS) {
+        throw new ConfigError(
+            "IOBROKER_MCP_WRITABLE_STATES",
+            `must not contain more than ${MAX_WRITABLE_STATE_PATTERNS} patterns, but ${patterns.length} were given.`);
+    }
+
+    return patterns;
 }
