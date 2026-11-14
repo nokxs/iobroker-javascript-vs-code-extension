@@ -1,8 +1,9 @@
 import { Container } from "inversify";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError } from "@modelcontextprotocol/sdk/types.js";
+import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { ProtocolError } from "./ProtocolError";
 import TYPES from "../Types";
 import { AdminVersionDetector } from "../services/adminVersionDetector/AdminVersionDetector";
 import { IAdminVersionDetector } from "../services/adminVersionDetector/IAdminVersionDetector";
@@ -194,15 +195,15 @@ export class McpServerRunner {
         // A name outside the advertised list is a protocol error, not a tool result: a model that
         // hallucinated it should see a hard failure instead of a plausible-looking answer.
         if (!isRemoteToolName(name)) {
-            throw new McpError(ErrorCode.InvalidParams, `Unknown tool '${name}'.`);
+            throw new ProtocolError(ErrorCode.InvalidParams, `Unknown tool '${name}'.`);
         }
 
         if (this.config.readOnly && !isReadOnlyTool(name)) {
-            throw new McpError(ErrorCode.InvalidParams, `The tool '${name}' is not available in read-only mode.`);
+            throw new ProtocolError(ErrorCode.InvalidParams, `The tool '${name}' is not available in read-only mode.`);
         }
 
         if (name === SET_STATES_TOOL && this.config.writableStates.length === 0) {
-            throw new McpError(ErrorCode.InvalidParams, `The tool '${name}' requires IOBROKER_MCP_WRITABLE_STATES.`);
+            throw new ProtocolError(ErrorCode.InvalidParams, `The tool '${name}' requires IOBROKER_MCP_WRITABLE_STATES.`);
         }
 
         if (this.activeCalls >= MAX_CONCURRENT_CALLS) {
