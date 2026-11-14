@@ -17,6 +17,15 @@ export const MAX_SCRIPT_LIMIT = 500;
 export const DEFAULT_LOG_LIMIT = 100;
 export const MAX_LOG_LIMIT = 500;
 export const MAX_LOG_RESPONSE_CHARACTERS = 30000;
+/** `iobroker_get_states` answers up to this many ids in one call. */
+export const MAX_STATE_IDS = 50;
+export const DEFAULT_OBJECT_LIMIT = 100;
+export const MAX_OBJECT_LIMIT = 500;
+/** Reading a value costs one roundtrip per state, so `withValues` is capped separately. */
+export const MAX_OBJECT_VALUES = 50;
+export const OBJECT_TYPE_FILTERS = ["state", "channel", "device", "folder", "all"] as const;
+
+export type ObjectTypeFilter = typeof OBJECT_TYPE_FILTERS[number];
 
 export type ToolErrorCode =
     "invalid_input" |
@@ -86,7 +95,7 @@ export interface ToolDeps {
     directories: Pick<IDirectoryService, "downloadDirectory" | "createDirectory" | "createDirectoriesRecursively" | "deleteDirectory">
     files: Pick<IScriptFileService, "exists" | "write" | "writeContent" | "rename" | "move" | "delete" | "getFileUri" | "getDirectoryUri" | "directoryExists" | "isEmptyDirectory" | "createDirectory" | "deleteDirectory">
     jsInstances: Pick<IJsInstanceService, "getAvailableInstances">
-    states: Pick<IStateAndObjectRemoteService, "getState">
+    states: Pick<IStateAndObjectRemoteService, "getState" | "getObjectsOfType">
     logs: LogSource
     documents: IDocumentState
 }
@@ -117,6 +126,19 @@ export interface GetJsInstancesInput {
 
 export interface GetStateInput {
     stateId: string
+}
+
+export interface GetStatesInput {
+    stateIds: string[]
+}
+
+export interface GetObjectsInput {
+    parentId?: string
+    type?: ObjectTypeFilter
+    role?: string
+    search?: string
+    limit?: number
+    withValues?: boolean
 }
 
 export type LogLevel = "silly" | "debug" | "info" | "warn" | "error";
@@ -238,6 +260,32 @@ export interface GetStateDto {
     timestamp: number
     lastChanged: number
     from: string
+}
+
+export interface GetStatesDto {
+    states: GetStateDto[]
+    /** Ids ioBroker answered with `null`; they do not fail the whole call. */
+    missing: string[]
+}
+
+export interface ObjectSummaryDto {
+    id: string
+    name: string
+    type: string
+    role?: string
+    unit?: string
+    /** Only set with `withValues` and only for state objects. */
+    value?: unknown
+    acknowledged?: boolean
+    timestamp?: number
+}
+
+export interface GetObjectsDto {
+    parentId: string | null
+    objects: ObjectSummaryDto[]
+    truncated: boolean
+    /** True when more state objects were listed than their values were read. */
+    valuesTruncated: boolean
 }
 
 export interface GetLogsDto {

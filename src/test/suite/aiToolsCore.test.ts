@@ -3,6 +3,7 @@ import { Uri } from "vscode";
 import { IDirectory } from "../../models/IDirectory";
 import { ILocalScript } from "../../models/ILocalScript";
 import { IScript } from "../../models/IScript";
+import { IState } from "../../models/IState";
 import { ScriptId } from "../../models/ScriptId";
 import { createDirectory } from "../../aiTools/core/createDirectory";
 import { createScript } from "../../aiTools/core/createScript";
@@ -12,7 +13,9 @@ import { downloadScript } from "../../aiTools/core/downloadScript";
 import { getScriptContent } from "../../aiTools/core/getScriptContent";
 import { getScripts } from "../../aiTools/core/getScripts";
 import { getLogs } from "../../aiTools/core/getLogs";
+import { getObjects } from "../../aiTools/core/getObjects";
 import { getState } from "../../aiTools/core/getState";
+import { getStates } from "../../aiTools/core/getStates";
 import { moveScript } from "../../aiTools/core/moveScript";
 import { renameScript } from "../../aiTools/core/renameScript";
 import { uploadScript } from "../../aiTools/core/uploadScript";
@@ -154,7 +157,8 @@ function createWorld(scripts: ILocalScript[] = [], directories: IDirectory[] = [
         },
         jsInstances: { getAvailableInstances: async () => [{ _id: "system.adapter.javascript.0" }] },
         states: {
-            getState: async (id: string) => ({ val: 21.5, ack: true, ts: 1000, lc: 900, from: "system.adapter.javascript.0", id: id })
+            getState: async (id: string) => ({ val: 21.5, ack: true, ts: 1000, lc: 900, from: "system.adapter.javascript.0", id: id }),
+            getObjectsOfType: async () => []
         },
         logs: {
             getHosts: async () => [{ id: "system.host.home", name: "home" }],
@@ -762,5 +766,48 @@ suite("AI tools core", () => {
         assert.strictEqual(validateName("../../x", "fileName").ok, false);
         assert.strictEqual(validateName("", "fileName").ok, false);
         assert.strictEqual(validateName(".hidden", "fileName").ok, false);
+    });
+
+    test("get_states reads several states and keeps unknown ids out of the result", async () => {
+        const world = createWorld();
+        const known = new Map<string, IState>([
+            ["0_userdata.0.temperature", <IState><unknown>{ val: 21.5, ack: true, ts: 1000, lc: 900, from: "system.adapter.javascript.0" }]
+        ]);
+        world.deps.states = {
+            getState: async (id: string) => known.get(id) ?? <IState><unknown>null,
+            getObjectsOfType: async () => []
+        };
+
+        const outcome = await getStates(world.deps, { stateIds: ["0_userdata.0.temperature", "0_userdata.0.missing"] });
+
+        assert.strictEqual(outcome.ok, true);
+        if (outcome.ok) {
+            assert.deepStrictEqual(outcome.data.states.map(state => state.id), ["0_userdata.0.temperature"]);
+            assert.deepStrictEqual(outcome.data.missing, ["0_userdata.0.missing"]);
+        }
+    });
+
+    test("get_objects asks the service for the subtree and maps the objects", async () => {
+        const world = createWorld();
+        const requested: Array<{ type: string, parentId: string }> = [];
+        world.deps.states = {
+            getState: async () => <IState><unknown>null,
+            getObjectsOfType: async (type: string, parentId: string) => {
+                requested.push({ type: type, parentId: parentId });
+                return type === "state" && parentId === "0_userdata.0"
+                    ? [{ _id: "0_userdata.0.temperature", type: "state", common: { name: "Temperatur", role: "value.temperature", unit: "°C" } }]
+                    : [];
+            }
+        };
+
+        const outcome = await getObjects(world.deps, { parentId: "0_userdata.0", type: "state" });
+
+        assert.strictEqual(outcome.ok, true);
+        if (outcome.ok) {
+            assert.deepStrictEqual(requested, [{ type: "state", parentId: "0_userdata.0" }]);
+            assert.deepStrictEqual(outcome.data.objects, [
+                { id: "0_userdata.0.temperature", name: "Temperatur", type: "state", role: "value.temperature", unit: "°C" }
+            ]);
+        }
     });
 });

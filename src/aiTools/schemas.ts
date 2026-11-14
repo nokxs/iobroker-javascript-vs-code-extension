@@ -67,6 +67,50 @@ export const TOOL_SCHEMAS = {
         required: ["stateId"],
         additionalProperties: false
     },
+    iobroker_get_states: {
+        type: "object",
+        properties: {
+            stateIds: {
+                type: "array",
+                items: { type: "string" },
+                description: "Full ioBroker state ids, up to 50 per call, e.g. ['0_userdata.0.temperature', 'javascript.0.myState']. Prefer this tool over iobroker_get_state as soon as you need more than one id. Ids that do not exist are returned in 'missing' instead of failing the call."
+            }
+        },
+        required: ["stateIds"],
+        additionalProperties: false
+    },
+    iobroker_get_objects: {
+        type: "object",
+        properties: {
+            parentId: {
+                type: "string",
+                description: "ioBroker id whose subtree is browsed, e.g. '0_userdata.0' or 'alias.0.UG.Technikraum'. Omit only together with 'role' or 'search'."
+            },
+            type: {
+                type: "string",
+                enum: ["state", "channel", "device", "folder", "all"],
+                description: "Object type to list. 'state' for values, 'all' (default) for the structure below the parent id."
+            },
+            role: {
+                type: "string",
+                description: "Optional exact ioBroker role filter, e.g. 'value.temperature' or 'switch'. Case-insensitive."
+            },
+            search: {
+                type: "string",
+                description: "Optional case-insensitive substring that the id or the name has to contain, e.g. 'brauchwasser'."
+            },
+            limit: {
+                type: "number",
+                description: "Maximum number of objects to return (1-500, default 100). The result is marked as truncated when more match."
+            },
+            withValues: {
+                type: "boolean",
+                description: "Also return value, acknowledged and timestamp of up to 50 listed states. Default false."
+            }
+        },
+        required: [],
+        additionalProperties: false
+    },
     iobroker_get_logs: {
         type: "object",
         properties: {
@@ -258,6 +302,8 @@ export const TOOL_TITLES: Record<ToolName, string> = {
     iobroker_get_changed_scripts: "Get changed ioBroker scripts",
     iobroker_get_js_instances: "Get ioBroker javascript instances",
     iobroker_get_state: "Get ioBroker state",
+    iobroker_get_states: "Get ioBroker states",
+    iobroker_get_objects: "Browse ioBroker objects",
     iobroker_get_logs: "Get ioBroker logs",
     iobroker_upload_script: "Upload ioBroker script",
     iobroker_upload_all_changed_scripts: "Upload all changed ioBroker scripts",
@@ -278,6 +324,8 @@ export const TOOL_DESCRIPTIONS: Record<ToolName, string> = {
     iobroker_get_changed_scripts: "Lists the ioBroker scripts whose local file differs from the version on the ioBroker server. Set 'refresh' to true to re-evaluate every script against the server first; that requires an active connection and is slower. Use iobroker_upload_all_changed_scripts to push the changes to the server.",
     iobroker_get_js_instances: "Lists the installed javascript adapter instances of ioBroker. When a scriptId is given, the result also contains the instance the script currently runs on. Read-only and requires an active ioBroker connection.",
     iobroker_get_state: "Reads the current value of an ioBroker state, including the acknowledge flag and the timestamps. Use it to inspect what an ioBroker script produced or to debug state based logic. Requires an active ioBroker connection.",
+    iobroker_get_states: "Reads the current value of up to 50 ioBroker states in one call, each with the acknowledge flag and the timestamps. Use it instead of iobroker_get_state as soon as you need more than one id. Ids that do not exist are returned in 'missing' and do not fail the call. Requires an active ioBroker connection.",
+    iobroker_get_objects: "Lists the ioBroker objects below an id, so state ids can be found without reading a script: the result has id, name, type, role and unit per object, and with withValues also the value of up to 50 states. Filter by object type, role or a substring of the id or name. Browsing without a parent id needs a role or a search. Read-only and requires an active ioBroker connection.",
     iobroker_get_logs: "Reads the tail of an ioBroker host log. Requests up to 500 recent log lines (100 by default) and then filters whole entries by minimum severity, source substring and text substring, keeping continuation lines such as stack traces with their entry. Specify hostId when more than one host is configured. The response is capped at 30,000 characters. Requires an active ioBroker connection; log contents may contain sensitive information.",
     iobroker_upload_script: "Uploads the local content of one script to the ioBroker server and overwrites the server version. Unsaved editor content is not included, the file has to be saved first. Use iobroker_upload_all_changed_scripts to upload every changed script at once.",
     iobroker_upload_all_changed_scripts: "Uploads every script whose local file differs from the ioBroker server. Returns the uploaded ids and the ids that failed with a reason. Use it after editing several scripts. Unsaved editor content is not included.",

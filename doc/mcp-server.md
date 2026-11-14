@@ -16,7 +16,7 @@ Contents: [1 Problem](#1-problem) · [2 Goals](#2-goals-and-non-goals) ·
 
 ## 1. Problem
 
-The extension already exposes 17 language model tools, but they are registered with
+The extension already exposes 19 language model tools, but they are registered with
 `vscode.lm.registerTool` in
 [AiToolService.ts](../src/services/aiTool/AiToolService.ts). The command title
 `iobroker: Enable/disable MCP server (AI tools)` and the README section "MCP server"
@@ -80,7 +80,7 @@ Comparison of both modes:
 | Filesystem access | required | none |
 | Configuration | `.iobroker-config.json` + SecretStorage | environment variables |
 | Secrets at rest | OS keychain via VS Code | client config (see section 8) |
-| Tools | 17 | 14 (13 kept, 1 new, 4 dropped) |
+| Tools | 19 | 16 (15 kept, 1 new, 4 dropped) |
 | Re-auth | password from SecretStorage | password from env, held in memory |
 
 ## 4. Threat model and attack surface
@@ -182,6 +182,8 @@ Kept unchanged in behaviour:
 | `iobroker_get_script_content` | always reads `common.source`; `fromDisk` is dropped |
 | `iobroker_get_js_instances` | unchanged |
 | `iobroker_get_state` | unchanged |
+| `iobroker_get_states` | new: batches up to 50 ids, unknown ids land in `missing` instead of failing the call |
+| `iobroker_get_objects` | new: lists the objects below an id with `type`, `role` and `unit`, filters by role or text, `withValues` reads the values of up to 50 states |
 | `iobroker_get_logs` | unchanged |
 | `iobroker_start_script` | unchanged |
 | `iobroker_stop_script` | unchanged |
@@ -251,10 +253,10 @@ Tool surface:
 
 | Source | Content |
 |---|---|
-| `REMOTE_TOOL_NAMES` (new, `src/mcp/tools/remoteToolSet.ts`) | exactly the 14 tools the server implements: the 13 kept names from section 5 plus `iobroker_update_script_source` |
-| `TOOL_SCHEMAS` | the 13 input schemas, imported unchanged |
+| `REMOTE_TOOL_NAMES` (new, `src/mcp/tools/remoteToolSet.ts`) | exactly the 16 tools the server implements: the 15 kept names from section 5 plus `iobroker_update_script_source` |
+| `TOOL_SCHEMAS` | the 15 input schemas, imported unchanged |
 | `REMOTE_TOOL_SCHEMAS` (new, same file) | the input schema of `iobroker_update_script_source` only |
-| `TOOL_TITLES` / `TOOL_DESCRIPTIONS` (new, in `schemas.ts`) | title and description for all 17 contributed tools; the server uses the 13 shared ones. The new tool's metadata lives in `remoteToolSet.ts` |
+| `TOOL_TITLES` / `TOOL_DESCRIPTIONS` (new, in `schemas.ts`) | title and description for all 19 contributed tools; the server uses the 15 shared ones. The new tool's metadata lives in `remoteToolSet.ts` |
 
 ```
 tools/list -> REMOTE_TOOL_NAMES (filtered by the read-only flag)
@@ -262,7 +264,7 @@ tools/list -> REMOTE_TOOL_NAMES (filtered by the read-only flag)
 tools/call -> remote tool set -> ToolOutcome -> CallToolResult
 ```
 
-`TOOL_NAMES` is **not** the source for `tools/list`: it has 17 entries, contains the four
+`TOOL_NAMES` is **not** the source for `tools/list`: it has 19 entries, contains the four
 dropped sync tools and lacks `iobroker_update_script_source`. Using it would advertise
 four tools without a handler and hide the one tool that replaces them.
 `iobroker_update_script_source` must not be added to `src/aiTools/schemas.ts` or
@@ -284,7 +286,7 @@ Additions per tool:
 - `description` and `title`: today they live in `package.json`
   (`contributes.languageModelTools`, fields `modelDescription` and `displayName`) and in
   the schema property descriptions. The MCP server needs both per tool, so they are copied
-  into `TOOL_TITLES`/`TOOL_DESCRIPTIONS` next to `TOOL_SCHEMAS` for all 17 entries, and the
+  into `TOOL_TITLES`/`TOOL_DESCRIPTIONS` next to `TOOL_SCHEMAS` for all 19 entries, and the
   contribution test is extended to assert equality with the `package.json` entries, so the
   duplication cannot drift. The new tool carries its own pair in `remoteToolSet.ts`.
 - `annotations`: the defaults are not "off": `readOnlyHint` defaults to `false`,
@@ -877,7 +879,7 @@ more code than the orchestration it replaces.
 | A. Make `ToolDeps` fields optional and branch inside `core` | every function gets `if (deps.files)` branches, the extension path becomes harder to test |
 | B. Separate remote core modules, shared helpers and types | slight duplication of orchestration, but no conditional paths and no risk for the existing tools |
 
-**Decision: B.** `src/aiTools/core/remote/` holds the 14 remote implementations
+**Decision: B.** `src/aiTools/core/remote/` holds the 16 remote implementations
 (`types.ts` for the DTOs, `helpers.ts` for the pure helpers). `validation.ts`,
 `connection.ts`, `ScriptId`, `EngineType` and the failure/success helpers are imported
 unchanged. The existing `src/aiTools/core/*` files stay untouched, so the extension keeps

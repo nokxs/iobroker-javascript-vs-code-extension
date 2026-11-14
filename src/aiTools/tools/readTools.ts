@@ -4,14 +4,18 @@ import { getJsInstances } from "../core/getJsInstances";
 import { getLogs } from "../core/getLogs";
 import { getScriptContent } from "../core/getScriptContent";
 import { getScripts } from "../core/getScripts";
+import { getObjects } from "../core/getObjects";
 import { getState } from "../core/getState";
+import { getStates } from "../core/getStates";
 import {
     GetChangedScriptsInput,
     GetJsInstancesInput,
     GetLogsInput,
+    GetObjectsInput,
     GetScriptContentInput,
     GetScriptsInput,
     GetStateInput,
+    GetStatesInput,
     ToolOutcome
 } from "../core/types";
 
@@ -52,6 +56,22 @@ export class GetStateTool extends BaseTool<GetStateInput> {
 
     protected run(input: GetStateInput): Promise<ToolOutcome<unknown>> {
         return getState(this.deps, input);
+    }
+}
+
+export class GetStatesTool extends BaseTool<GetStatesInput> {
+    readonly name = "iobroker_get_states" as const;
+
+    protected run(input: GetStatesInput): Promise<ToolOutcome<unknown>> {
+        return getStates(this.deps, input);
+    }
+}
+
+export class GetObjectsTool extends BaseTool<GetObjectsInput> {
+    readonly name = "iobroker_get_objects" as const;
+
+    protected run(input: GetObjectsInput): Promise<ToolOutcome<unknown>> {
+        return getObjects(this.deps, input);
     }
 }
 

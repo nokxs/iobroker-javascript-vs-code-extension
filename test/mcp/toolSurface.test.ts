@@ -10,8 +10,8 @@ import {
 } from "../../src/mcp/tools/remoteToolSet";
 
 suite("MCP tool surface", () => {
-    test("the server implements the 14 remote tools exactly once", () => {
-        assert.strictEqual(REMOTE_TOOL_NAMES.length, 14);
+    test("the server implements the 16 remote tools exactly once", () => {
+        assert.strictEqual(REMOTE_TOOL_NAMES.length, 16);
         assert.strictEqual(new Set(REMOTE_TOOL_NAMES).size, REMOTE_TOOL_NAMES.length);
 
         for (const name of REMOTE_TOOL_NAMES) {
@@ -39,15 +39,17 @@ suite("MCP tool surface", () => {
 
     test("tools/list is filtered by the read-only switch", () => {
         const all = listRemoteTools(false);
-        assert.strictEqual(all.length, 14);
+        assert.strictEqual(all.length, 16);
 
         const readOnly = listRemoteTools(true);
         assert.deepStrictEqual(readOnly.map(tool => tool.name).sort(), [
             "iobroker_get_js_instances",
             "iobroker_get_logs",
+            "iobroker_get_objects",
             "iobroker_get_script_content",
             "iobroker_get_scripts",
-            "iobroker_get_state"
+            "iobroker_get_state",
+            "iobroker_get_states"
         ]);
 
         for (const name of REMOTE_TOOL_NAMES) {

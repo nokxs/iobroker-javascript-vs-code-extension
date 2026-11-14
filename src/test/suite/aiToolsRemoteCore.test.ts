@@ -5,8 +5,11 @@ import { IScript } from "../../models/IScript";
 import { ScriptId } from "../../models/ScriptId";
 import { RemoteDirectory, RemoteScriptRepository } from "../../services/remote/RemoteScriptRepository";
 import { IJsInstance } from "../../models/IJsInstance";
+import { IObjectWithId } from "../../models/IObject";
 import { IState } from "../../models/IState";
+import { getObjects } from "../../aiTools/core/remote/getObjects";
 import { getState } from "../../aiTools/core/remote/getState";
+import { getStates } from "../../aiTools/core/remote/getStates";
 import { RemoteToolDeps, MAX_SCRIPT_SOURCE_LENGTH } from "../../aiTools/core/remote/types";
 import { createDirectory } from "../../aiTools/core/remote/createDirectory";
 import { createScript } from "../../aiTools/core/remote/createScript";
@@ -23,6 +26,7 @@ interface RemoteWorld {
     deps: RemoteToolDeps
     scripts: IScript[]
     directories: RemoteDirectory[]
+    objects: IObjectWithId[]
     uploaded: IScript[]
     updated: IScript[]
     renamed: Array<{ id: string, name: string }>
@@ -63,11 +67,16 @@ function directory(id: string): RemoteDirectory {
     return { _id: new ScriptId(id), common: { name: ScriptId.lastSegmentOf(id) } };
 }
 
-async function createWorld(scripts: IScript[] = [], directories: RemoteDirectory[] = []): Promise<RemoteWorld> {
+function stateObject(id: string, type: string, role: string | undefined, name: string, unit?: string): IObjectWithId {
+    return { _id: id, type: type, common: { name: name, role: role, unit: unit } };
+}
+
+async function createWorld(scripts: IScript[] = [], directories: RemoteDirectory[] = [], objects: IObjectWithId[] = []): Promise<RemoteWorld> {
     const world: RemoteWorld = {
         deps: <RemoteToolDeps><unknown>{},
         scripts: scripts,
         directories: directories,
+        objects: objects,
         uploaded: [],
         updated: [],
         renamed: [],
@@ -163,7 +172,12 @@ async function createWorld(scripts: IScript[] = [], directories: RemoteDirectory
             }
         },
         jsInstances: { getAvailableInstances: async () => <IJsInstance[]>[{ _id: "system.adapter.javascript.0" }] },
-        states: { getState: async () => <never><unknown>undefined },
+        states: {
+            getState: async () => <never><unknown>undefined,
+            getObjectsOfType: async (type: string, parentId: string) => world.objects.filter(object =>
+                (object.type ?? "state") === type &&
+                (parentId.length === 0 || object._id.startsWith(`${parentId}.`)))
+        },
         logs: { getHosts: async () => [], getLogs: async () => [] }
     };
 
@@ -388,11 +402,126 @@ suite("AI tools remote core", () => {
 
     test("getState reports not_found for an unknown id instead of a server error", async () => {
         const world = await createWorld();
-        world.deps.states = { getState: async () => <IState><unknown>null };
+        world.deps.states = { getState: async () => <IState><unknown>null, getObjectsOfType: async () => [] };
 
         const result = await getState(world.deps, { stateId: "0_userdata.0.Missing" });
 
         assert.ok(!result.ok);
         assert.strictEqual(result.error.code, "not_found");
+    });
+
+    test("getStates reads several states in the given order and reports missing ids", async () => {
+        const world = await createWorld();
+        const known = new Map<string, IState>([
+            ["0_userdata.0.A", <IState><unknown>{ val: 21.5, ack: true, ts: 1000, lc: 900, from: "system.adapter.javascript.0" }],
+            ["0_userdata.0.B", <IState><unknown>{ val: false, ack: false, ts: 2000, lc: 2000, from: "system.adapter.javascript.1" }]
+        ]);
+        world.deps.states = {
+            getState: async (id: string) => known.get(id) ?? <IState><unknown>null,
+            getObjectsOfType: async () => []
+        };
+
+        const result = await getStates(world.deps, {
+            stateIds: ["0_userdata.0.A", "0_userdata.0.Missing", "0_userdata.0.B", "0_userdata.0.A"]
+        });
+
+        assert.ok(result.ok);
+        if (!result.ok) {
+            return;
+        }
+
+        assert.deepStrictEqual(result.data.states.map(state => state.id), ["0_userdata.0.A", "0_userdata.0.B"]);
+        assert.strictEqual(result.data.states[0].value, 21.5);
+        assert.strictEqual(result.data.states[1].acknowledged, false);
+        assert.deepStrictEqual(result.data.missing, ["0_userdata.0.Missing"]);
+    });
+
+    test("getStates rejects more than 50 ids and empty arrays", async () => {
+        const world = await createWorld();
+        const tooMany = Array.from({ length: 51 }, (_, index) => `0_userdata.0.S${index}`);
+
+        const tooManyResult = await getStates(world.deps, { stateIds: tooMany });
+        const emptyResult = await getStates(world.deps, { stateIds: [] });
+
+        assert.ok(!tooManyResult.ok);
+        assert.strictEqual(tooManyResult.error.code, "invalid_input");
+        assert.ok(!emptyResult.ok);
+        assert.strictEqual(emptyResult.error.code, "invalid_input");
+    });
+
+    test("getObjects lists the subtree, filters by role and reads values on request", async () => {
+        const world = await createWorld([], [], [
+            stateObject("0_userdata.0.Heizung.Temperatur", "state", "value.temperature", "Temperatur", "°C"),
+            stateObject("0_userdata.0.Heizung.Schalter", "state", "switch", "Schalter"),
+            stateObject("0_userdata.0.Heizung", "channel", undefined, "Heizung"),
+            stateObject("0_userdata.0.Andere.Temperatur", "state", "value.temperature", "Temperatur", "°C")
+        ]);
+        world.deps.states = {
+            getState: async (id: string) => <IState><unknown>{ val: 21.5, ack: true, ts: 1000, lc: 900, from: "system.adapter.javascript.0", id: id },
+            getObjectsOfType: async (type: string, parentId: string) => world.objects.filter(object =>
+                (object.type ?? "state") === type &&
+                (parentId.length === 0 || object._id.startsWith(`${parentId}.`)))
+        };
+
+        const subtree = await getObjects(world.deps, { parentId: "0_userdata.0.Heizung", withValues: true });
+        const byRole = await getObjects(world.deps, { parentId: "0_userdata.0", role: "value.temperature" });
+        const bySearch = await getObjects(world.deps, { search: "heizung" });
+
+        assert.ok(subtree.ok);
+        if (!subtree.ok) {
+            return;
+        }
+
+        assert.deepStrictEqual(subtree.data.objects.map(object => object.id), [
+            "0_userdata.0.Heizung.Schalter",
+            "0_userdata.0.Heizung.Temperatur"
+        ]);
+        assert.strictEqual(subtree.data.objects[1].unit, "°C");
+        assert.strictEqual(subtree.data.objects[1].value, 21.5);
+        assert.strictEqual(subtree.data.objects[0].value, 21.5);
+
+        assert.ok(byRole.ok);
+        if (!byRole.ok) {
+            return;
+        }
+
+        assert.deepStrictEqual(byRole.data.objects.map(object => object.id), [
+            "0_userdata.0.Andere.Temperatur",
+            "0_userdata.0.Heizung.Temperatur"
+        ]);
+        assert.strictEqual(byRole.data.objects[0].value, undefined);
+
+        assert.ok(bySearch.ok);
+        if (!bySearch.ok) {
+            return;
+        }
+
+        assert.deepStrictEqual(bySearch.data.objects.map(object => object.id), [
+            "0_userdata.0.Heizung",
+            "0_userdata.0.Heizung.Schalter",
+            "0_userdata.0.Heizung.Temperatur"
+        ]);
+        assert.strictEqual(bySearch.data.parentId, null);
+    });
+
+    test("getObjects marks a limited list as truncated and refuses an unfiltered full browse", async () => {
+        const world = await createWorld([], [], [
+            stateObject("0_userdata.0.A", "state", "switch", "A"),
+            stateObject("0_userdata.0.B", "state", "switch", "B")
+        ]);
+
+        const limited = await getObjects(world.deps, { parentId: "0_userdata.0", limit: 1 });
+        const unfiltered = await getObjects(world.deps, {});
+
+        assert.ok(limited.ok);
+        if (!limited.ok) {
+            return;
+        }
+
+        assert.strictEqual(limited.data.objects.length, 1);
+        assert.strictEqual(limited.data.truncated, true);
+
+        assert.ok(!unfiltered.ok);
+        assert.strictEqual(unfiltered.error.code, "invalid_input");
     });
 });

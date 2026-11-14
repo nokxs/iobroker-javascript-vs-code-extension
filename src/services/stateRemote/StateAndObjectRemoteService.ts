@@ -4,6 +4,7 @@ import { IConnectionEventListener } from "../connection/IConnectionEventListener
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
 import { IStateAndObjectRemoteService } from "./IStateAndObjectRemoteService";
 import { IState } from "../../models/IState";
+import { IObjectWithId } from "../../models/IObject";
 import { IObjectList } from "../../models/IObjectList";
 import { IObjectChangedEventListener } from "./IObjectChangedEventListener";
 
@@ -37,6 +38,13 @@ export class StateAndObjectRemoteService implements IStateAndObjectRemoteService
 
     getState(id: string): Promise<IState> {
         return this.connectionServiceProvider.getConnectionService().getState(id);
+    }
+
+    getObjectsOfType(type: string, parentId: string): Promise<IObjectWithId[]> {
+        // `getSystemObjectView` appends a high character to the end key, so a key that is identical
+        // to the start key covers every object of the subtree below it.
+        const startKey = parentId.length > 0 ? `${parentId}.` : "";
+        return this.connectionServiceProvider.getConnectionService().getSystemObjectView<IObjectWithId>(type, startKey, startKey);
     }
 
     onConnected(): void {

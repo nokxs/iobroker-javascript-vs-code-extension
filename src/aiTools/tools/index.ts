@@ -4,9 +4,11 @@ import {
     GetChangedScriptsTool,
     GetJsInstancesTool,
     GetLogsTool,
+    GetObjectsTool,
     GetScriptContentTool,
     GetScriptsTool,
-    GetStateTool
+    GetStateTool,
+    GetStatesTool
 } from "./readTools";
 import {
     CreateDirectoryTool,
@@ -30,6 +32,8 @@ export function createTools(deps: ToolDeps, isEnabled: () => boolean, refreshTre
         new GetChangedScriptsTool(deps, isEnabled, refreshTree),
         new GetJsInstancesTool(deps, isEnabled, refreshTree),
         new GetStateTool(deps, isEnabled, refreshTree),
+        new GetStatesTool(deps, isEnabled, refreshTree),
+        new GetObjectsTool(deps, isEnabled, refreshTree),
         new GetLogsTool(deps, isEnabled, refreshTree),
         new UploadScriptTool(deps, isEnabled, refreshTree),
         new UploadAllChangedScriptsTool(deps, isEnabled, refreshTree),
