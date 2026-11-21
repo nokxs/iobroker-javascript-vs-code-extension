@@ -119,12 +119,14 @@ suite('LogMirrorService Test Suite', () => {
         })));
 
         await service.open(createFolder(tempRoot));
+        assert.strictEqual(service.isOpen(), true);
         service.write(sampleMessage('flushed'));
         await service.disposeAsync();
 
         const content = fs.readFileSync(target, 'utf8');
         assert.ok(content.includes('mirror started'));
         assert.ok(content.includes('script.js.demo: flushed'));
+        assert.strictEqual(service.isOpen(), false);
         assert.strictEqual((service as any).mirrorStream, undefined);
     });
 

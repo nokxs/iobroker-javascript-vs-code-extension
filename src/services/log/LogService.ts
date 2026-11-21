@@ -45,6 +45,12 @@ export class LogService implements ILogService {
         if (!this.receiving) {
             return;
         }
+        // Full connect already opened the mirror in startReceiving(); auto-reconnect
+        // calls onConnected after onDisconnected disposed it. Skip if still open so
+        // we do not write duplicate "mirror started" headers.
+        if (this.logMirrorService.isOpen()) {
+            return;
+        }
         await this.openMirrorIfConfigured();
     }
 

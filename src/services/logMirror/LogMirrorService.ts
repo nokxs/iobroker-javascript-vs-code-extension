@@ -124,6 +124,10 @@ export class LogMirrorService implements ILogMirrorService {
         this.writeRaw(line);
     }
 
+    isOpen(): boolean {
+        return this.mirrorStream !== undefined;
+    }
+
     dispose(): void {
         this.generation++;
         if (this.mirrorStream) {
