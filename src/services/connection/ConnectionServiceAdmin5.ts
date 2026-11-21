@@ -58,9 +58,7 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
         return new Promise<void>((resolve, reject) => {
             if (this.client && this.isConnected) {
 
-                this.client.on("log", (message: ILogMessage) => {
-                    logAction(message);
-                });
+                this.client.on("log", logAction);
 
                 this.client.emit("requireLog", true, (err: any) => {
                     if (err) {
@@ -69,6 +67,8 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                         resolve();
                     }
                 });
+            } else {
+                reject(new Error("Could not register for logs: Client is not connected"));
             }
         });
     }

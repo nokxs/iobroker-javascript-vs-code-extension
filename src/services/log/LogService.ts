@@ -3,7 +3,10 @@ import { OutputChannel, Uri, window } from "vscode";
 import { ILogMessage } from "../../models/ILogMessage";
 import TYPES from "../../Types";
 import { IConnectionServiceProvider } from "../connectionServiceProvider/IConnectionServiceProvider";
+import { IWorkspaceService } from "../workspace/IWorkspaceService";
+import { NoWorkspaceFolder } from "../../models/NoWorkspaceFolder";
 import { IScriptIdService } from "../scriptId/IScriptIdService";
+import { ILogMirrorService } from "../logMirror/ILogMirrorService";
 import { ILogService } from "./ILogService";
 
 @injectable()
@@ -11,10 +14,15 @@ export class LogService implements ILogService {
     
     private allOutputChannel: OutputChannel | undefined = undefined;
     private currentScriptOutputChannel: OutputChannel | undefined = undefined;
+    private receiving = false;
+    private reopenMirrorInFlight: Promise<void> | undefined = undefined;
+    private readonly logCallbackRef = async (message: ILogMessage) => await this.logCallback(message);
 
     constructor(
         @inject(TYPES.services.connectionServiceProvider) private connectionServiceProvider: IConnectionServiceProvider,
         @inject(TYPES.services.scriptId) private scriptIdService: IScriptIdService,
+        @inject(TYPES.services.workspace) private workspaceService: IWorkspaceService,
+        @inject(TYPES.services.logMirror) private logMirrorService: ILogMirrorService,
     ) {}
 
     async startReceiving(): Promise<void> {
@@ -23,16 +31,72 @@ export class LogService implements ILogService {
         this.getcurrentScriptOutputChannel();
 
         await this.stopReceiving();
-        await this.connectionServiceProvider.getConnectionService().registerForLogs(async message => await this.logCallback(message));
+        await this.openMirrorIfConfigured();
+        await this.connectionServiceProvider.getConnectionService().registerForLogs(this.logCallbackRef);
+        this.receiving = true;
     }
     
     async stopReceiving(): Promise<void> {
-        await this.connectionServiceProvider.getConnectionService().unregisterForLogs(async message => await this.logCallback(message));
+        this.receiving = false;
+        await this.connectionServiceProvider.getConnectionService().unregisterForLogs(this.logCallbackRef);
+        this.dispose();
+    }
+
+    async reopenMirror(): Promise<void> {
+        if (!this.receiving) {
+            return;
+        }
+        // Socket.io may fire both "connect" and "reconnect"; coalesce concurrent calls.
+        if (this.reopenMirrorInFlight) {
+            return this.reopenMirrorInFlight;
+        }
+        this.reopenMirrorInFlight = this.reopenMirrorOnce().finally(() => {
+            this.reopenMirrorInFlight = undefined;
+        });
+        return this.reopenMirrorInFlight;
+    }
+
+    private async reopenMirrorOnce(): Promise<void> {
+        // Full connect already opened the mirror in startReceiving(); auto-reconnect
+        // calls onConnected after onDisconnected disposed it. Skip if still open so
+        // we do not write duplicate "mirror started" headers.
+        if (!this.logMirrorService.isOpen()) {
+            await this.openMirrorIfConfigured();
+        }
+        // Socket drop clears the host-side requireLog subscription; re-emit it.
+        // client.on() dedupes the same callback, so this does not stack listeners.
+        try {
+            await this.connectionServiceProvider.getConnectionService().registerForLogs(this.logCallbackRef);
+        } catch {
+            /* reconnect must not fail because of log re-subscribe */
+        }
+    }
+
+    dispose(): void {
+        this.logMirrorService.dispose();
+    }
+
+    async disposeAsync(): Promise<void> {
+        await this.logMirrorService.disposeAsync();
+    }
+
+    private async openMirrorIfConfigured(): Promise<void> {
+        try {
+            const folder = await this.workspaceService.getWorkspaceToUse();
+            if (folder instanceof NoWorkspaceFolder) {
+                return;
+            }
+            await this.logMirrorService.open(folder);
+        } catch (e) {
+            // Mirror must never abort connect; LogMirrorService already warns once.
+            void e;
+        }
     }
 
     private async logCallback(logMessage: ILogMessage) {
         if (logMessage.from.startsWith("javascript.")) {
             this.logMessageToChannel(logMessage, this.getAllOutputChannel());
+            this.logMirrorService.write(logMessage);
 
             if (await this.isRelevantMessage(logMessage)) {
                 this.logMessageToChannel(logMessage, this.getcurrentScriptOutputChannel());
