@@ -48,6 +48,23 @@ export class FileService implements IFileService {
 
     deleteDirectory(uri: Uri): Promise<void> {
         return new Promise((resolve, reject) => {
+            // Windows may not reject recursive rmdir on a file path; reject non-directories
+            // explicitly so callers (and tests) get a consistent error.
+            try {
+                const stats = fs.lstatSync(uri.fsPath);
+                if (!stats.isDirectory()) {
+                    reject(new Error(`Not a directory: ${uri.fsPath}`));
+                    return;
+                }
+            } catch (err: any) {
+                if (err?.code === "ENOENT") {
+                    resolve();
+                    return;
+                }
+                reject(err);
+                return;
+            }
+
             fs.rmdir(uri.fsPath, { recursive: true }, (err) => {
                 // A folder that is already gone counts as deleted, everything else is reported so
                 // callers do not silently continue with a folder that still exists on disk.

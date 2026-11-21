@@ -48,7 +48,12 @@ function createFakeSocket(): ISocketIoClient & { handlerCount(name: string): num
 suite('ConnectionServiceAdmin5 log registration', () => {
     test('unregisterForLogs removes the exact handler registered by registerForLogs', async () => {
         const fake = createFakeSocket();
-        const service = new ConnectionServiceAdmin5(fake);
+        const statusBar = {
+            init: () => undefined,
+            setText: () => undefined,
+            setStatusBarMessage: () => ({ dispose: () => undefined }),
+        } as any;
+        const service = new ConnectionServiceAdmin5(fake, statusBar);
         (service as any).client = fake;
         (service as any).isConnected = true;
 
@@ -63,7 +68,12 @@ suite('ConnectionServiceAdmin5 log registration', () => {
 
     test('registerForLogs twice with the same handler leaves exactly one listener', async () => {
         const fake = createFakeSocket();
-        const service = new ConnectionServiceAdmin5(fake);
+        const statusBar = {
+            init: () => undefined,
+            setText: () => undefined,
+            setStatusBarMessage: () => ({ dispose: () => undefined }),
+        } as any;
+        const service = new ConnectionServiceAdmin5(fake, statusBar);
         (service as any).client = fake;
         (service as any).isConnected = true;
 
