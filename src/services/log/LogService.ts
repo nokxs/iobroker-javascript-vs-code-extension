@@ -48,10 +48,16 @@ export class LogService implements ILogService {
         // Full connect already opened the mirror in startReceiving(); auto-reconnect
         // calls onConnected after onDisconnected disposed it. Skip if still open so
         // we do not write duplicate "mirror started" headers.
-        if (this.logMirrorService.isOpen()) {
-            return;
+        if (!this.logMirrorService.isOpen()) {
+            await this.openMirrorIfConfigured();
         }
-        await this.openMirrorIfConfigured();
+        // Socket drop clears the host-side requireLog subscription; re-emit it.
+        // client.on() dedupes the same callback, so this does not stack listeners.
+        try {
+            await this.connectionServiceProvider.getConnectionService().registerForLogs(this.logCallbackRef);
+        } catch {
+            /* reconnect must not fail because of log re-subscribe */
+        }
     }
 
     dispose(): void {

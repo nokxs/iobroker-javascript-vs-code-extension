@@ -67,6 +67,8 @@ export class ConnectionServiceAdmin5 implements IConnectionService {
                         resolve();
                     }
                 });
+            } else {
+                reject(new Error("Could not register for logs: Client is not connected"));
             }
         });
     }
