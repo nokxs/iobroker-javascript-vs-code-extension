@@ -15,6 +15,7 @@ export class LogService implements ILogService {
     private allOutputChannel: OutputChannel | undefined = undefined;
     private currentScriptOutputChannel: OutputChannel | undefined = undefined;
     private receiving = false;
+    private reopenMirrorInFlight: Promise<void> | undefined = undefined;
     private readonly logCallbackRef = async (message: ILogMessage) => await this.logCallback(message);
 
     constructor(
@@ -45,6 +46,17 @@ export class LogService implements ILogService {
         if (!this.receiving) {
             return;
         }
+        // Socket.io may fire both "connect" and "reconnect"; coalesce concurrent calls.
+        if (this.reopenMirrorInFlight) {
+            return this.reopenMirrorInFlight;
+        }
+        this.reopenMirrorInFlight = this.reopenMirrorOnce().finally(() => {
+            this.reopenMirrorInFlight = undefined;
+        });
+        return this.reopenMirrorInFlight;
+    }
+
+    private async reopenMirrorOnce(): Promise<void> {
         // Full connect already opened the mirror in startReceiving(); auto-reconnect
         // calls onConnected after onDisconnected disposed it. Skip if still open so
         // we do not write duplicate "mirror started" headers.
